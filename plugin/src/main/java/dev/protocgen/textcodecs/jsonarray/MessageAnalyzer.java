@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024 protobuf-text-codecs contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package dev.protocgen.textcodecs.jsonarray;
 
 import com.google.protobuf.DescriptorProtos.DescriptorProto;
@@ -76,7 +91,9 @@ public class MessageAnalyzer {
           "Message name '"
               + descriptor.getName()
               + "' contains invalid characters. "
-              + "Message names must match " + SAFE_IDENTIFIER + ".");
+              + "Message names must match "
+              + SAFE_IDENTIFIER
+              + ".");
     }
 
     String fullName = parentFullName + descriptor.getName();
@@ -150,7 +167,9 @@ public class MessageAnalyzer {
           "Enum name '"
               + descriptor.getName()
               + "' contains invalid characters. "
-              + "Enum names must match " + SAFE_IDENTIFIER + ".");
+              + "Enum names must match "
+              + SAFE_IDENTIFIER
+              + ".");
     }
     // Validate enum value names
     for (var v : descriptor.getValueList()) {
@@ -159,7 +178,9 @@ public class MessageAnalyzer {
             "Enum value name '"
                 + v.getName()
                 + "' contains invalid characters. "
-                + "Enum value names must match " + SAFE_IDENTIFIER + ".");
+                + "Enum value names must match "
+                + SAFE_IDENTIFIER
+                + ".");
       }
     }
     String fullName = parentFullName + descriptor.getName();
@@ -188,7 +209,9 @@ public class MessageAnalyzer {
               + field.getName()
               + "' in message '"
               + parentFullName
-              + "' contains invalid characters. Field names must match " + SAFE_IDENTIFIER + ".");
+              + "' contains invalid characters. Field names must match "
+              + SAFE_IDENTIFIER
+              + ".");
     }
 
     // Validate field number is positive

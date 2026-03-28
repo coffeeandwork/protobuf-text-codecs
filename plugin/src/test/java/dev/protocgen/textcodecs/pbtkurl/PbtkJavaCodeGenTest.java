@@ -1,12 +1,26 @@
+/*
+ * Copyright 2024 protobuf-text-codecs contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package dev.protocgen.textcodecs.pbtkurl;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.DescriptorProtos.*;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse;
-import java.util.List;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /** Tests for pbtk URL encoding Java code generation. */
 class PbtkJavaCodeGenTest {
@@ -55,8 +69,7 @@ class PbtkJavaCodeGenTest {
             .addMessageType(
                 DescriptorProto.newBuilder()
                     .setName("User")
-                    .addField(
-                        field("name", 1, FieldDescriptorProto.Type.TYPE_STRING)))
+                    .addField(field("name", 1, FieldDescriptorProto.Type.TYPE_STRING)))
             .build();
 
     String code = generatedCode(file);
@@ -168,8 +181,7 @@ class PbtkJavaCodeGenTest {
                     .addNestedType(
                         DescriptorProto.newBuilder()
                             .setName("Inner")
-                            .addField(
-                                field("value", 1, FieldDescriptorProto.Type.TYPE_INT32))))
+                            .addField(field("value", 1, FieldDescriptorProto.Type.TYPE_INT32))))
             .build();
 
     String code = generatedCode(file);
@@ -307,12 +319,9 @@ class PbtkJavaCodeGenTest {
                     .addNestedType(
                         DescriptorProto.newBuilder()
                             .setName("SettingsEntry")
-                            .setOptions(
-                                MessageOptions.newBuilder().setMapEntry(true))
-                            .addField(
-                                field("key", 1, FieldDescriptorProto.Type.TYPE_STRING))
-                            .addField(
-                                field("value", 2, FieldDescriptorProto.Type.TYPE_STRING))))
+                            .setOptions(MessageOptions.newBuilder().setMapEntry(true))
+                            .addField(field("key", 1, FieldDescriptorProto.Type.TYPE_STRING))
+                            .addField(field("value", 2, FieldDescriptorProto.Type.TYPE_STRING))))
             .build();
 
     String code = generatedCode(file);
@@ -349,7 +358,7 @@ class PbtkJavaCodeGenTest {
 
     String code = generatedCode(file);
     assertTrue(code.contains("package com.example;"), "Missing package declaration");
-    assertTrue(code.contains("public class User"), "Missing class declaration");
+    assertTrue(code.contains("public final class User"), "Missing class declaration");
     assertTrue(code.contains("getName()"), "Missing getter");
     assertTrue(code.contains("setName("), "Missing setter");
     assertTrue(code.contains("getAge()"), "Missing getter");
@@ -376,12 +385,10 @@ class PbtkJavaCodeGenTest {
   @Test
   void testEmptyMessage() {
     FileDescriptorProto file =
-        protoFile()
-            .addMessageType(DescriptorProto.newBuilder().setName("Empty"))
-            .build();
+        protoFile().addMessageType(DescriptorProto.newBuilder().setName("Empty")).build();
 
     String code = generatedCode(file);
-    assertTrue(code.contains("public class Empty"), "Missing class declaration");
+    assertTrue(code.contains("public final class Empty"), "Missing class declaration");
     assertTrue(code.contains("toPbtkUrl"), "Missing toPbtkUrl method");
     assertTrue(code.contains("fromPbtkUrl"), "Missing fromPbtkUrl method");
     assertTrue(code.contains("appendPbtkFields"), "Missing appendPbtkFields method");
@@ -416,8 +423,7 @@ class PbtkJavaCodeGenTest {
                     .addField(field("name", 1, FieldDescriptorProto.Type.TYPE_STRING))
                     .addField(emailField)
                     .addField(phoneField)
-                    .addOneofDecl(
-                        OneofDescriptorProto.newBuilder().setName("contact").build()))
+                    .addOneofDecl(OneofDescriptorProto.newBuilder().setName("contact").build()))
             .build();
 
     String code = generatedCode(file);
@@ -453,19 +459,16 @@ class PbtkJavaCodeGenTest {
                                 DescriptorProto.newBuilder()
                                     .setName("InnerInner")
                                     .addField(
-                                        field(
-                                            "value",
-                                            1,
-                                            FieldDescriptorProto.Type.TYPE_INT32)))))
+                                        field("value", 1, FieldDescriptorProto.Type.TYPE_INT32)))))
             .build();
 
     String code = generatedCode(file);
 
     // Outer has nested Inner which has nested InnerInner
-    assertTrue(code.contains("public class Outer"), "Missing Outer class");
-    assertTrue(code.contains("public static class Inner"), "Missing Inner nested class");
+    assertTrue(code.contains("public final class Outer"), "Missing Outer class");
+    assertTrue(code.contains("public static final class Inner"), "Missing Inner nested class");
     assertTrue(
-        code.contains("public static class InnerInner"), "Missing InnerInner nested class");
+        code.contains("public static final class InnerInner"), "Missing InnerInner nested class");
 
     // Each level should use 'm' type for message fields
     assertTrue(code.contains("!1m"), "Missing message field prefix at some level");
@@ -495,8 +498,7 @@ class PbtkJavaCodeGenTest {
                     .addNestedType(
                         DescriptorProto.newBuilder()
                             .setName("ChatMessage")
-                            .addField(
-                                field("text", 1, FieldDescriptorProto.Type.TYPE_STRING))))
+                            .addField(field("text", 1, FieldDescriptorProto.Type.TYPE_STRING))))
             .build();
 
     String code = generatedCode(file);
@@ -513,7 +515,8 @@ class PbtkJavaCodeGenTest {
 
     // Deserializer should add parsed messages to the list
     assertTrue(
-        code.contains("parsePbtkTokens"), "Missing parsePbtkTokens in repeated message deserializer");
+        code.contains("parsePbtkTokens"),
+        "Missing parsePbtkTokens in repeated message deserializer");
   }
 
   @Test
@@ -531,16 +534,14 @@ class PbtkJavaCodeGenTest {
                         DescriptorProto.newBuilder()
                             .setName("EntriesEntry")
                             .setOptions(MessageOptions.newBuilder().setMapEntry(true))
-                            .addField(
-                                field("key", 1, FieldDescriptorProto.Type.TYPE_STRING))
+                            .addField(field("key", 1, FieldDescriptorProto.Type.TYPE_STRING))
                             .addField(
                                 field("value", 2, FieldDescriptorProto.Type.TYPE_MESSAGE)
                                     .setTypeName(".com.example.Registry.Detail")))
                     .addNestedType(
                         DescriptorProto.newBuilder()
                             .setName("Detail")
-                            .addField(
-                                field("info", 1, FieldDescriptorProto.Type.TYPE_STRING))))
+                            .addField(field("info", 1, FieldDescriptorProto.Type.TYPE_STRING))))
             .build();
 
     String code = generatedCode(file);
@@ -548,12 +549,8 @@ class PbtkJavaCodeGenTest {
     // Map serialization uses m prefix with count for the entry
     assertTrue(code.contains("entrySet"), "Missing map iteration via entrySet");
     // Value is a message, so serializer should use countPbtkFields on it
-    assertTrue(
-        code.contains("!2m"),
-        "Missing !2m prefix for message-typed map value");
-    assertTrue(
-        code.contains("countPbtkFields"),
-        "Missing countPbtkFields for message map value");
+    assertTrue(code.contains("!2m"), "Missing !2m prefix for message-typed map value");
+    assertTrue(code.contains("countPbtkFields"), "Missing countPbtkFields for message map value");
   }
 
   @Test
@@ -574,8 +571,7 @@ class PbtkJavaCodeGenTest {
                 DescriptorProto.newBuilder()
                     .setName("Profile")
                     .addField(optField)
-                    .addOneofDecl(
-                        OneofDescriptorProto.newBuilder().setName("_nickname").build()))
+                    .addOneofDecl(OneofDescriptorProto.newBuilder().setName("_nickname").build()))
             .build();
 
     String code = generatedCode(file);
@@ -649,7 +645,9 @@ class PbtkJavaCodeGenTest {
       searchIdx++;
     }
     // At least 2 checks for double (serialize + count), plus float checks
-    assertTrue(nanCheckCount >= 4, "Expected NaN checks in both serializer and counter, found " + nanCheckCount);
+    assertTrue(
+        nanCheckCount >= 4,
+        "Expected NaN checks in both serializer and counter, found " + nanCheckCount);
   }
 
   @Test
@@ -700,6 +698,7 @@ class PbtkJavaCodeGenTest {
       forCount++;
       forIdx++;
     }
-    assertTrue(forCount >= 2, "Expected at least 2 for loops for 2 repeated fields, found " + forCount);
+    assertTrue(
+        forCount >= 2, "Expected at least 2 for loops for 2 repeated fields, found " + forCount);
   }
 }

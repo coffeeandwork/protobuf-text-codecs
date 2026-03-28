@@ -1,0 +1,16 @@
+protobuf-text-codecs
+Copyright 2024 protobuf-text-codecs contributors
+
+This product includes software developed at the protobuf-text-codecs project
+(https://github.com/coffeeandwork/protobuf-text-codecs).
+
+This product bundles the following third-party software:
+
+  Google Protocol Buffers (protobuf-java)
+  Copyright 2008 Google Inc.
+  Licensed under the BSD 3-Clause License
+  https://github.com/protocolbuffers/protobuf
+
+The pbtk URL encoding format used by protoc-gen-pbtkurl was reverse-engineered
+from publicly observable URL patterns. It is not based on any Google
+documentation, specification, or source code.

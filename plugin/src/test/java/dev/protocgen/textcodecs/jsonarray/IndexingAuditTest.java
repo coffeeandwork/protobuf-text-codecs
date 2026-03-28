@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024 protobuf-text-codecs contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package dev.protocgen.textcodecs.jsonarray;
 
 import com.google.protobuf.DescriptorProtos.DescriptorProto;
@@ -162,7 +177,8 @@ class IndexingAuditTest {
         content.contains("sb.append(\"null\"); // gap (no field number 4)"),
         "Should have null gap for field number 4");
 
-    // Count the total number of sb.append calls for field values and gaps in the appendJsonArray method
+    // Count the total number of sb.append calls for field values and gaps in the appendJsonArray
+    // method
     // There should be 3 field appends + 2 gap appends = 5 value appends
     String serializeBody = extractMethodBody(content, "appendJsonArray");
     int gapCount = countOccurrences(serializeBody, "sb.append(\"null\"); // gap");
@@ -403,10 +419,9 @@ class IndexingAuditTest {
         content.contains("presentFields_.get(4)"),
         "Serializer should check presentFields_.get(4) for field number 5");
 
-    // Deserializer: obj.presentFields_.set(4)
-    assertTrue(
-        content.contains("obj.presentFields_.set(4)"),
-        "Deserializer should set presentFields_ at arrayPosition 4");
+    // Deserializer uses Builder pattern: presence is set by Builder.setXxx() internally
+    // Verify the deserializer uses Builder
+    assertTrue(content.contains("builder.build()"), "Deserializer should use Builder pattern");
   }
 
   // ======================================================================

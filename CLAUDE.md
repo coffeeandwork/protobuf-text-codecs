@@ -96,10 +96,10 @@ Each language has 6 classes: Generator, CodeEmitter, SerializerGenerator, Deseri
 ./gradlew spotlessCheck                   # Code formatting
 ```
 
-- 12+ test classes covering JSON array generators, 1+ for pbtk
+- 14+ test classes covering JSON array generators, 3+ for pbtk
 - Parameterized tests across 8 non-Java languages
 - Golden-file snapshot tests for all 9 languages
-- Safety/security tests (SR-001–004, SEC-001–004)
+- Safety/security tests (SR-001–004, SEC-001–004) for both JSON array and pbtk formats
 - Integration tests (Java ↔ Python cross-language round-trip)
 
 ## Documentation

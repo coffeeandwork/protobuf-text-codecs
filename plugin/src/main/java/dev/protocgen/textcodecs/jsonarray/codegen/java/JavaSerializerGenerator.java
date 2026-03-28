@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024 protobuf-text-codecs contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package dev.protocgen.textcodecs.jsonarray.codegen.java;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
@@ -49,7 +64,9 @@ public class JavaSerializerGenerator {
     w.block(
         "public String toJsonString()",
         () -> {
-          w.line("StringBuilder sb = new StringBuilder(%d);", Math.max(64, message.getMaxFieldNumber() * 32));
+          w.line(
+              "StringBuilder sb = new StringBuilder(%d);",
+              Math.max(64, message.getMaxFieldNumber() * 32));
           w.line("appendJsonArray(sb);");
           w.line("return sb.toString();");
         });
@@ -230,8 +247,7 @@ public class JavaSerializerGenerator {
                       });
                   w.line("else { sb.append(\"null\"); }");
                 } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
-                  w.line(
-                      "sb.append(%s != null ? %s.getNumber() : 0);", elementVar, elementVar);
+                  w.line("sb.append(%s != null ? %s.getNumber() : 0);", elementVar, elementVar);
                 } else {
                   emitScalarAppend(w, field, elementVar);
                 }
@@ -253,11 +269,7 @@ public class JavaSerializerGenerator {
             w.line("sb.append('{');");
             w.line("int %s = 0;", indexVar);
             w.block(
-                "for (java.util.Map.Entry<?, ?> "
-                    + entryVar
-                    + " : "
-                    + javaField
-                    + ".entrySet())",
+                "for (java.util.Map.Entry<?, ?> " + entryVar + " : " + javaField + ".entrySet())",
                 () -> {
                   w.line("if (%s > 0) sb.append(',');", indexVar);
                   // Key: always a quoted string
@@ -275,11 +287,7 @@ public class JavaSerializerGenerator {
             w.line("sb.append('[');");
             w.line("int %s = 0;", indexVar);
             w.block(
-                "for (java.util.Map.Entry<?, ?> "
-                    + entryVar
-                    + " : "
-                    + javaField
-                    + ".entrySet())",
+                "for (java.util.Map.Entry<?, ?> " + entryVar + " : " + javaField + ".entrySet())",
                 () -> {
                   w.line("if (%s > 0) sb.append(',');", indexVar);
                   w.line("sb.append('[');");
@@ -333,9 +341,7 @@ public class JavaSerializerGenerator {
       w.line("else { sb.append(\"null\"); }");
     } else if (valueType == FieldDescriptorProto.Type.TYPE_ENUM) {
       String enumType = simpleTypeName(field.getMapValueTypeReference());
-      w.line(
-          "sb.append(%s != null ? ((%s) %s).getNumber() : 0);",
-          valueExpr, enumType, valueExpr);
+      w.line("sb.append(%s != null ? ((%s) %s).getNumber() : 0);", valueExpr, enumType, valueExpr);
     } else if (valueType == FieldDescriptorProto.Type.TYPE_STRING) {
       w.line(
           "dev.protocgen.textcodecs.jsonarray.runtime.JsonArrayWriter.appendQuotedString(sb, (String) %s);",
@@ -347,18 +353,20 @@ public class JavaSerializerGenerator {
     } else if (valueType == FieldDescriptorProto.Type.TYPE_INT64
         || valueType == FieldDescriptorProto.Type.TYPE_SINT64
         || valueType == FieldDescriptorProto.Type.TYPE_SFIXED64) {
-      w.line(
-          "sb.append('\"').append(String.valueOf((Long) %s)).append('\"');", valueExpr);
+      w.line("sb.append('\"').append(String.valueOf((Long) %s)).append('\"');", valueExpr);
     } else if (valueType == FieldDescriptorProto.Type.TYPE_UINT64
         || valueType == FieldDescriptorProto.Type.TYPE_FIXED64) {
-      w.line(
-          "sb.append('\"').append(Long.toUnsignedString((Long) %s)).append('\"');", valueExpr);
+      w.line("sb.append('\"').append(Long.toUnsignedString((Long) %s)).append('\"');", valueExpr);
     } else if (valueType == FieldDescriptorProto.Type.TYPE_UINT32
         || valueType == FieldDescriptorProto.Type.TYPE_FIXED32) {
       w.line("sb.append(Integer.toUnsignedLong((Integer) %s));", valueExpr);
     } else if (valueType == FieldDescriptorProto.Type.TYPE_DOUBLE) {
       w.block(
-          "if (Double.isNaN((Double) " + valueExpr + ") || Double.isInfinite((Double) " + valueExpr + "))",
+          "if (Double.isNaN((Double) "
+              + valueExpr
+              + ") || Double.isInfinite((Double) "
+              + valueExpr
+              + "))",
           () -> {
             w.line("sb.append(\"null\");");
           });
@@ -369,7 +377,11 @@ public class JavaSerializerGenerator {
           });
     } else if (valueType == FieldDescriptorProto.Type.TYPE_FLOAT) {
       w.block(
-          "if (Float.isNaN((Float) " + valueExpr + ") || Float.isInfinite((Float) " + valueExpr + "))",
+          "if (Float.isNaN((Float) "
+              + valueExpr
+              + ") || Float.isInfinite((Float) "
+              + valueExpr
+              + "))",
           () -> {
             w.line("sb.append(\"null\");");
           });

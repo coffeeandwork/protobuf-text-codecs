@@ -227,85 +227,15 @@ The `lang=` parameter is passed through protoc's `--jsonarray_out` option. The f
 
 ### Per-Language Examples
 
-**Java:**
+Substitute any supported language identifier from the table above:
 
 ```bash
 protoc \
   --plugin=protoc-gen-jsonarray=./protoc-gen-jsonarray \
-  --jsonarray_out=lang=java:./gen-java \
+  --jsonarray_out=lang=<language>:<output-dir> \
   user.proto address.proto
-```
 
-**Python:**
-
-```bash
-protoc \
-  --plugin=protoc-gen-jsonarray=./protoc-gen-jsonarray \
-  --jsonarray_out=lang=python:./gen-python \
-  user.proto address.proto
-```
-
-**Go:**
-
-```bash
-protoc \
-  --plugin=protoc-gen-jsonarray=./protoc-gen-jsonarray \
-  --jsonarray_out=lang=go:./gen-go \
-  user.proto address.proto
-```
-
-**TypeScript:**
-
-```bash
-protoc \
-  --plugin=protoc-gen-jsonarray=./protoc-gen-jsonarray \
-  --jsonarray_out=lang=typescript:./gen-ts \
-  user.proto address.proto
-```
-
-**Rust:**
-
-```bash
-protoc \
-  --plugin=protoc-gen-jsonarray=./protoc-gen-jsonarray \
-  --jsonarray_out=lang=rust:./gen-rust \
-  user.proto address.proto
-```
-
-**C:**
-
-```bash
-protoc \
-  --plugin=protoc-gen-jsonarray=./protoc-gen-jsonarray \
-  --jsonarray_out=lang=c:./gen-c \
-  user.proto address.proto
-```
-
-**C++:**
-
-```bash
-protoc \
-  --plugin=protoc-gen-jsonarray=./protoc-gen-jsonarray \
-  --jsonarray_out=lang=cpp:./gen-cpp \
-  user.proto address.proto
-```
-
-**JavaScript:**
-
-```bash
-protoc \
-  --plugin=protoc-gen-jsonarray=./protoc-gen-jsonarray \
-  --jsonarray_out=lang=javascript:./gen-js \
-  user.proto address.proto
-```
-
-**Zig:**
-
-```bash
-protoc \
-  --plugin=protoc-gen-jsonarray=./protoc-gen-jsonarray \
-  --jsonarray_out=lang=zig:./gen-zig \
-  user.proto address.proto
+# e.g. lang=java:./gen-java, lang=python:./gen-python, lang=rust:./gen-rust
 ```
 
 ### Generating Multiple Languages
@@ -327,7 +257,7 @@ protoc --plugin=protoc-gen-jsonarray=./protoc-gen-jsonarray \
 
 The plugin works as a local plugin with [Buf](https://buf.build/) -- no special integration is needed. Add the plugin to your `buf.gen.yaml`:
 
-**Java:**
+**Single language:**
 
 ```yaml
 version: v2
@@ -336,50 +266,6 @@ plugins:
     out: gen/java
     opt:
       - lang=java
-```
-
-**Python:**
-
-```yaml
-version: v2
-plugins:
-  - local: protoc-gen-jsonarray
-    out: gen/python
-    opt:
-      - lang=python
-```
-
-**Go:**
-
-```yaml
-version: v2
-plugins:
-  - local: protoc-gen-jsonarray
-    out: gen/go
-    opt:
-      - lang=go
-```
-
-**TypeScript:**
-
-```yaml
-version: v2
-plugins:
-  - local: protoc-gen-jsonarray
-    out: gen/ts
-    opt:
-      - lang=typescript
-```
-
-**Rust:**
-
-```yaml
-version: v2
-plugins:
-  - local: protoc-gen-jsonarray
-    out: gen/rust
-    opt:
-      - lang=rust
 ```
 
 **Multiple languages in one `buf.gen.yaml`:**
@@ -418,8 +304,10 @@ Ensure that `protoc-gen-jsonarray` is on your `PATH`, or use an absolute path in
 | Proto Type | JSON Representation | Example |
 |---|---|---|
 | `string` | JSON string | `"Alice"` |
-| `int32`, `int64`, `sint32`, `sint64`, `sfixed32`, `sfixed64` | JSON number | `30` |
-| `uint32`, `uint64`, `fixed32`, `fixed64` | JSON number | `30` |
+| `int32`, `sint32`, `sfixed32` | JSON number | `30` |
+| `int64`, `sint64`, `sfixed64` | JSON string (preserves precision beyond 2^53) | `"30"` |
+| `uint32`, `fixed32` | JSON number | `30` |
+| `uint64`, `fixed64` | JSON string (preserves precision beyond 2^53) | `"30"` |
 | `float`, `double` | JSON number | `3.14` |
 | `bool` | JSON boolean | `true` |
 | `bytes` | Base64-encoded JSON string | `"AQID"` |
@@ -720,7 +608,7 @@ const user = try User.fromJsonString(json, allocator);
 
 ### pbtk URL API (All Languages)
 
-The pbtk URL plugin (`protoc-gen-pbtkurl`) generates classes with the same structure (fields, getters/setters, constructors) but with pbtk URL serialization instead of JSON array methods. No JSON library dependency is required.
+The pbtk URL plugin (`protoc-gen-pbtkurl`) generates classes with the same structure (fields, getters/setters, constructors) but with pbtk URL serialization instead of JSON array methods. No JSON library dependency is required. Method names follow each language's conventions:
 
 **Java:**
 
@@ -736,27 +624,6 @@ url = user.to_pbtk_url()            # "!1sAlice!2sSmith!3i30!4m4..."
 user = User.from_pbtk_url(url)
 ```
 
-**Go:**
-
-```go
-url := user.ToPbtkUrl()             // "!1sAlice!2sSmith!3i30!4m4..."
-user := DeserializeUserFromPbtkUrl(url)
-```
-
-**JavaScript:**
-
-```javascript
-const url = user.toPbtkUrl();       // "!1sAlice!2sSmith!3i30!4m4..."
-const user = User.fromPbtkUrl(url);
-```
-
-**TypeScript:**
-
-```typescript
-const url: string = user.toPbtkUrl();
-const user: User = User.fromPbtkUrl(url);
-```
-
 **C:**
 
 ```c
@@ -766,26 +633,7 @@ user_free(user);
 free(url);
 ```
 
-**C++:**
-
-```cpp
-std::string url = user.to_pbtk_url();
-User user = User::from_pbtk_url(url);
-```
-
-**Rust:**
-
-```rust
-let url: String = user.to_pbtk_url();
-let user: User = User::from_pbtk_url(&url);
-```
-
-**Zig:**
-
-```zig
-const url = try user.toPbtkUrl(allocator);
-const user = try User.fromPbtkUrl(url, allocator);
-```
+Other languages follow the same pattern: `toPbtkUrl()`/`fromPbtkUrl()` (JS/TS/Go), `to_pbtk_url()`/`from_pbtk_url()` (Rust/C++), `toPbtkUrl(allocator)`/`fromPbtkUrl(url, allocator)` (Zig).
 
 ---
 

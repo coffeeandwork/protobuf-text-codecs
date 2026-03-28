@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024 protobuf-text-codecs contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package dev.protocgen.textcodecs.pbtkurl.codegen.rust;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
@@ -19,8 +34,8 @@ import java.util.Set;
 
 /**
  * Rust language code generator for pbtk URL encoding. Produces Rust source files with
- * to_pbtk_url()/from_pbtk_url() serialization methods using the {@code !<fieldNumber><typeChar><value>}
- * format.
+ * to_pbtk_url()/from_pbtk_url() serialization methods using the {@code
+ * !<fieldNumber><typeChar><value>} format.
  */
 public class PbtkRustGenerator implements LanguageGenerator {
 
@@ -31,8 +46,7 @@ public class PbtkRustGenerator implements LanguageGenerator {
   private final RustTypeMapper typeMapper = new RustTypeMapper();
 
   private final Set<String> emittedModFiles = new HashSet<>();
-  private final java.util.Map<String, Set<String>> modulesByDir =
-      new java.util.LinkedHashMap<>();
+  private final java.util.Map<String, Set<String>> modulesByDir = new java.util.LinkedHashMap<>();
 
   @Override
   public List<CodeGeneratorResponse.File> generate(ProtoFile file, TypeRegistry registry) {
@@ -274,12 +288,10 @@ public class PbtkRustGenerator implements LanguageGenerator {
       w.blankLine();
       if (isRustCopyType(field)) {
         w.block(
-            "pub fn " + getterName + "(&self) -> " + rustType,
-            () -> w.line("self.%s", rustName));
+            "pub fn " + getterName + "(&self) -> " + rustType, () -> w.line("self.%s", rustName));
       } else {
         w.block(
-            "pub fn " + getterName + "(&self) -> &" + rustType,
-            () -> w.line("&self.%s", rustName));
+            "pub fn " + getterName + "(&self) -> &" + rustType, () -> w.line("&self.%s", rustName));
       }
 
       w.blankLine();
@@ -297,8 +309,7 @@ public class PbtkRustGenerator implements LanguageGenerator {
         w.blankLine();
         String hasName = "has_" + nameResolver.fieldName(field.getName());
         w.block(
-            "pub fn " + hasName + "(&self) -> bool",
-            () -> w.line("self.%s.is_some()", rustName));
+            "pub fn " + hasName + "(&self) -> bool", () -> w.line("self.%s.is_some()", rustName));
       }
     }
   }
@@ -369,8 +380,7 @@ public class PbtkRustGenerator implements LanguageGenerator {
     }
   }
 
-  private void emitScalarSerialize(
-      CodeWriter w, ProtoField field, String rustField, int fieldNum) {
+  private void emitScalarSerialize(CodeWriter w, ProtoField field, String rustField, int fieldNum) {
     FieldDescriptorProto.Type type = field.getProtoType();
     String typeChar = pbtkTypeChar(type);
 
@@ -409,36 +419,42 @@ public class PbtkRustGenerator implements LanguageGenerator {
         break;
       case TYPE_STRING:
         if (isRef) {
-          w.line(
-              "s.push_str(\"%s\"); s.push_str(&urlencoding::encode(%s));",
-              prefix, rustField);
+          w.line("s.push_str(\"%s\"); s.push_str(&urlencoding::encode(%s));", prefix, rustField);
         } else {
-          w.line(
-              "s.push_str(\"%s\"); s.push_str(&urlencoding::encode(&%s));",
-              prefix, rustField);
+          w.line("s.push_str(\"%s\"); s.push_str(&urlencoding::encode(&%s));", prefix, rustField);
         }
         break;
       case TYPE_FLOAT:
         w.line(
             "if !%s%s.is_nan() && !%s%s.is_infinite() { s.push_str(\"%s\"); s.push_str(&%s%s.to_string()); }",
-            isRef ? "*" : "", rustField, isRef ? "*" : "", rustField, prefix,
-            isRef ? "*" : "", rustField);
+            isRef ? "*" : "",
+            rustField,
+            isRef ? "*" : "",
+            rustField,
+            prefix,
+            isRef ? "*" : "",
+            rustField);
         break;
       case TYPE_DOUBLE:
         w.line(
             "if !%s%s.is_nan() && !%s%s.is_infinite() { s.push_str(\"%s\"); s.push_str(&%s%s.to_string()); }",
-            isRef ? "*" : "", rustField, isRef ? "*" : "", rustField, prefix,
-            isRef ? "*" : "", rustField);
+            isRef ? "*" : "",
+            rustField,
+            isRef ? "*" : "",
+            rustField,
+            prefix,
+            isRef ? "*" : "",
+            rustField);
         break;
       default:
-        w.line("s.push_str(\"%s\"); s.push_str(&%s%s.to_string());", prefix,
-            isRef ? "*" : "", rustField);
+        w.line(
+            "s.push_str(\"%s\"); s.push_str(&%s%s.to_string());",
+            prefix, isRef ? "*" : "", rustField);
         break;
     }
   }
 
-  private void emitEnumSerialize(
-      CodeWriter w, ProtoField field, String rustField, int fieldNum) {
+  private void emitEnumSerialize(CodeWriter w, ProtoField field, String rustField, int fieldNum) {
     String prefix = String.format("!%de", fieldNum);
     if (field.isProto3Optional()) {
       w.block(
@@ -454,8 +470,7 @@ public class PbtkRustGenerator implements LanguageGenerator {
     w.block(
         "if let Some(ref v) = " + rustField,
         () -> {
-          w.line(
-              "s.push_str(&format!(\"!%dm{}\", v.count_pbtk_fields()));", fieldNum);
+          w.line("s.push_str(&format!(\"!%dm{}\", v.count_pbtk_fields()));", fieldNum);
           w.line("v.append_pbtk_fields(s);");
         });
   }
@@ -468,22 +483,18 @@ public class PbtkRustGenerator implements LanguageGenerator {
         () -> {
           if (field.getKind() == ProtoField.FieldKind.MESSAGE
               || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
-            w.line(
-                "s.push_str(&format!(\"!%dm{}\", %s.count_pbtk_fields()));",
-                fieldNum, elemVar);
+            w.line("s.push_str(&format!(\"!%dm{}\", %s.count_pbtk_fields()));", fieldNum, elemVar);
             w.line("%s.append_pbtk_fields(s);", elemVar);
           } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
             w.line(
-                "s.push_str(\"!%de\"); s.push_str(&(*%s as i32).to_string());",
-                fieldNum, elemVar);
+                "s.push_str(\"!%de\"); s.push_str(&(*%s as i32).to_string());", fieldNum, elemVar);
           } else {
             emitScalarAppend(w, field, elemVar, fieldNum, true);
           }
         });
   }
 
-  private void emitMapSerialize(
-      CodeWriter w, ProtoField field, String rustField, int fieldNum) {
+  private void emitMapSerialize(CodeWriter w, ProtoField field, String rustField, int fieldNum) {
     w.block(
         "for (k, v) in &" + rustField,
         () -> {
@@ -493,28 +504,24 @@ public class PbtkRustGenerator implements LanguageGenerator {
           // Key (field 1)
           String keyTypeChar = pbtkTypeChar(field.getMapKeyType());
           if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_STRING) {
-            w.line(
-                "s.push_str(\"!1%s\"); s.push_str(&urlencoding::encode(k));", keyTypeChar);
+            w.line("s.push_str(\"!1%s\"); s.push_str(&urlencoding::encode(k));", keyTypeChar);
           } else if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_BOOL) {
             w.line(
-                "s.push_str(\"!1%s\"); s.push_str(if *k { \"1\" } else { \"0\" });",
-                keyTypeChar);
+                "s.push_str(\"!1%s\"); s.push_str(if *k { \"1\" } else { \"0\" });", keyTypeChar);
           } else {
             w.line("s.push_str(\"!1%s\"); s.push_str(&k.to_string());", keyTypeChar);
           }
 
           // Value (field 2)
           if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE) {
-            w.line(
-                "s.push_str(&format!(\"!2m{}\", v.count_pbtk_fields()));");
+            w.line("s.push_str(&format!(\"!2m{}\", v.count_pbtk_fields()));");
             w.line("v.append_pbtk_fields(s);");
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
             w.line("s.push_str(\"!2e\"); s.push_str(&(*v as i32).to_string());");
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_STRING) {
             w.line("s.push_str(\"!2s\"); s.push_str(&urlencoding::encode(v));");
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
-            w.line(
-                "s.push_str(\"!2z\"); s.push_str(&general_purpose::STANDARD.encode(v));");
+            w.line("s.push_str(\"!2z\"); s.push_str(&general_purpose::STANDARD.encode(v));");
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BOOL) {
             w.line("s.push_str(\"!2b\"); s.push_str(if *v { \"1\" } else { \"0\" });");
           } else {
@@ -569,7 +576,8 @@ public class PbtkRustGenerator implements LanguageGenerator {
                 w.line("let token = tokens[*offset];");
                 w.line(
                     "let num_end = token.find(|c: char| !c.is_ascii_digit()).unwrap_or(token.len());");
-                w.line("if num_end == 0 || num_end >= token.len() { *offset += 1; consumed += 1; continue; }");
+                w.line(
+                    "if num_end == 0 || num_end >= token.len() { *offset += 1; consumed += 1; continue; }");
                 w.line("let field_num: i32 = token[..num_end].parse().unwrap_or(0);");
                 w.line("let type_char = token.as_bytes()[num_end] as char;");
                 w.line("let value = &token[num_end + 1..];");
@@ -631,22 +639,23 @@ public class PbtkRustGenerator implements LanguageGenerator {
       w.line("obj.%s = %s;", rustName, readExpr);
     }
     if (field.isOneofMember()) {
-      w.line("obj.%s_case = %d;", nameResolver.fieldName(field.getOneofName()),
-          field.getFieldNumber());
+      w.line(
+          "obj.%s_case = %d;",
+          nameResolver.fieldName(field.getOneofName()), field.getFieldNumber());
     }
   }
 
   private void emitEnumDeserialize(CodeWriter w, ProtoField field, String rustName) {
     String enumType = simpleTypeName(field.getTypeReference());
     if (field.isProto3Optional()) {
-      w.line(
-          "obj.%s = Some(%s::from(value.parse::<i32>().unwrap_or(0)));", rustName, enumType);
+      w.line("obj.%s = Some(%s::from(value.parse::<i32>().unwrap_or(0)));", rustName, enumType);
     } else {
       w.line("obj.%s = %s::from(value.parse::<i32>().unwrap_or(0));", rustName, enumType);
     }
     if (field.isOneofMember()) {
-      w.line("obj.%s_case = %d;", nameResolver.fieldName(field.getOneofName()),
-          field.getFieldNumber());
+      w.line(
+          "obj.%s_case = %d;",
+          nameResolver.fieldName(field.getOneofName()), field.getFieldNumber());
     }
   }
 
@@ -654,12 +663,12 @@ public class PbtkRustGenerator implements LanguageGenerator {
     String msgType = simpleTypeName(field.getTypeReference());
     w.line("let sub_count: usize = value.parse().unwrap_or(0);");
     w.line("*offset += 1;");
-    w.line(
-        "obj.%s = Some(%s::parse_pbtk_tokens(tokens, sub_count, offset));", rustName, msgType);
+    w.line("obj.%s = Some(%s::parse_pbtk_tokens(tokens, sub_count, offset));", rustName, msgType);
     w.line("*offset -= 1;"); // compensate for outer offset increment
     if (field.isOneofMember()) {
-      w.line("obj.%s_case = %d;", nameResolver.fieldName(field.getOneofName()),
-          field.getFieldNumber());
+      w.line(
+          "obj.%s_case = %d;",
+          nameResolver.fieldName(field.getOneofName()), field.getFieldNumber());
     }
   }
 
@@ -669,14 +678,11 @@ public class PbtkRustGenerator implements LanguageGenerator {
       String msgType = simpleTypeName(field.getTypeReference());
       w.line("let sub_count: usize = value.parse().unwrap_or(0);");
       w.line("*offset += 1;");
-      w.line(
-          "obj.%s.push(%s::parse_pbtk_tokens(tokens, sub_count, offset));",
-          rustName, msgType);
+      w.line("obj.%s.push(%s::parse_pbtk_tokens(tokens, sub_count, offset));", rustName, msgType);
       w.line("*offset -= 1;");
     } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
       String enumType = simpleTypeName(field.getTypeReference());
-      w.line(
-          "obj.%s.push(%s::from(value.parse::<i32>().unwrap_or(0)));", rustName, enumType);
+      w.line("obj.%s.push(%s::from(value.parse::<i32>().unwrap_or(0)));", rustName, enumType);
     } else {
       String readExpr = scalarReadExpr(field.getProtoType(), "value");
       w.line("obj.%s.push(%s);", rustName, readExpr);
@@ -705,8 +711,7 @@ public class PbtkRustGenerator implements LanguageGenerator {
         () -> {
           w.line("if *offset >= tokens.len() { break; }");
           w.line("let mt = tokens[*offset];");
-          w.line(
-              "let mne = mt.find(|c: char| !c.is_ascii_digit()).unwrap_or(mt.len());");
+          w.line("let mne = mt.find(|c: char| !c.is_ascii_digit()).unwrap_or(mt.len());");
           w.line("if mne == 0 || mne >= mt.len() { *offset += 1; continue; }");
           w.line("let mfn: i32 = mt[..mne].parse().unwrap_or(0);");
           w.line("let mval = &mt[mne + 1..];");
@@ -724,15 +729,11 @@ public class PbtkRustGenerator implements LanguageGenerator {
                   String msgType = simpleTypeName(field.getMapValueTypeReference());
                   w.line("let vsc: usize = mval.parse().unwrap_or(0);");
                   w.line("*offset += 1;");
-                  w.line(
-                      "entry_val = Some(%s::parse_pbtk_tokens(tokens, vsc, offset));",
-                      msgType);
+                  w.line("entry_val = Some(%s::parse_pbtk_tokens(tokens, vsc, offset));", msgType);
                   w.line("*offset -= 1;");
                 } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
                   String enumType = simpleTypeName(field.getMapValueTypeReference());
-                  w.line(
-                      "entry_val = Some(%s::from(mval.parse::<i32>().unwrap_or(0)));",
-                      enumType);
+                  w.line("entry_val = Some(%s::from(mval.parse::<i32>().unwrap_or(0)));", enumType);
                 } else {
                   String valRead = scalarReadExpr(field.getMapValueType(), "mval");
                   w.line("entry_val = Some(%s);", valRead);
@@ -756,10 +757,8 @@ public class PbtkRustGenerator implements LanguageGenerator {
       case TYPE_INT32, TYPE_SINT32, TYPE_SFIXED32 -> valueVar + ".parse::<i32>().unwrap_or(0)";
       case TYPE_UINT32, TYPE_FIXED32 -> valueVar + ".parse::<u32>().unwrap_or(0)";
       case TYPE_BOOL -> valueVar + " == \"1\"";
-      case TYPE_STRING ->
-          "urlencoding::decode(" + valueVar + ").unwrap_or_default().into_owned()";
-      case TYPE_BYTES ->
-          "general_purpose::STANDARD.decode(" + valueVar + ").unwrap_or_default()";
+      case TYPE_STRING -> "urlencoding::decode(" + valueVar + ").unwrap_or_default().into_owned()";
+      case TYPE_BYTES -> "general_purpose::STANDARD.decode(" + valueVar + ").unwrap_or_default()";
       default -> valueVar + ".to_string()";
     };
   }
@@ -810,13 +809,11 @@ public class PbtkRustGenerator implements LanguageGenerator {
                     () -> {
                       for (ProtoEnum.EnumValue val : protoEnum.getValues()) {
                         String rustName = nameResolver.enumConstantName(val.name());
-                        w.line(
-                            "%d => %s::%s,", val.number(), protoEnum.getName(), rustName);
+                        w.line("%d => %s::%s,", val.number(), protoEnum.getName(), rustName);
                       }
                       if (!protoEnum.getValues().isEmpty()) {
                         String firstName =
-                            nameResolver.enumConstantName(
-                                protoEnum.getValues().get(0).name());
+                            nameResolver.enumConstantName(protoEnum.getValues().get(0).name());
                         w.line("_ => %s::%s,", protoEnum.getName(), firstName);
                       }
                     });
@@ -909,8 +906,16 @@ public class PbtkRustGenerator implements LanguageGenerator {
   static String pbtkTypeChar(FieldDescriptorProto.Type type) {
     return switch (type) {
       case TYPE_BOOL -> "b";
-      case TYPE_INT32, TYPE_SINT32, TYPE_SFIXED32, TYPE_UINT32, TYPE_FIXED32, TYPE_INT64,
-          TYPE_SINT64, TYPE_SFIXED64, TYPE_UINT64, TYPE_FIXED64 ->
+      case TYPE_INT32,
+          TYPE_SINT32,
+          TYPE_SFIXED32,
+          TYPE_UINT32,
+          TYPE_FIXED32,
+          TYPE_INT64,
+          TYPE_SINT64,
+          TYPE_SFIXED64,
+          TYPE_UINT64,
+          TYPE_FIXED64 ->
           "i";
       case TYPE_FLOAT -> "f";
       case TYPE_DOUBLE -> "d";
@@ -954,16 +959,25 @@ public class PbtkRustGenerator implements LanguageGenerator {
         || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) return false;
     if (field.getKind() == ProtoField.FieldKind.ENUM) return true;
     return switch (field.getProtoType()) {
-      case TYPE_DOUBLE, TYPE_FLOAT, TYPE_INT64, TYPE_SINT64, TYPE_SFIXED64, TYPE_UINT64,
-          TYPE_FIXED64, TYPE_INT32, TYPE_SINT32, TYPE_SFIXED32, TYPE_UINT32, TYPE_FIXED32,
+      case TYPE_DOUBLE,
+          TYPE_FLOAT,
+          TYPE_INT64,
+          TYPE_SINT64,
+          TYPE_SFIXED64,
+          TYPE_UINT64,
+          TYPE_FIXED64,
+          TYPE_INT32,
+          TYPE_SINT32,
+          TYPE_SFIXED32,
+          TYPE_UINT32,
+          TYPE_FIXED32,
           TYPE_BOOL ->
           true;
       default -> false;
     };
   }
 
-  private boolean hasFieldOfType(
-      ProtoMessage message, FieldDescriptorProto.Type type) {
+  private boolean hasFieldOfType(ProtoMessage message, FieldDescriptorProto.Type type) {
     for (ProtoField field : message.getFields()) {
       if (field.getProtoType() == type) return true;
     }

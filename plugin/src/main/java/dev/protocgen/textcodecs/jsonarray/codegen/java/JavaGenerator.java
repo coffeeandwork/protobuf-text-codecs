@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024 protobuf-text-codecs contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package dev.protocgen.textcodecs.jsonarray.codegen.java;
 
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse;
@@ -10,8 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Java language code generator. Produces Java source files with Jackson-based JSON array
- * serialization.
+ * Java language code generator. Produces Java source files with zero-dependency JSON array
+ * serialization (StringBuilder-based, no Jackson or other JSON library required).
  */
 public class JavaGenerator implements LanguageGenerator {
 

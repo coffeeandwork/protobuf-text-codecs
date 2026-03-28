@@ -50,7 +50,7 @@ protobuf-text-codecs/
 │       │       └── LanguageGenerator.java (interface)
 │       └── test/java/.../            # 12 test files, ~7,071 lines
 ├── runtime/                          # Per-language runtime libraries
-│   ├── java/  (Jackson-based, 2 classes)
+│   ├── java/  (zero-dependency, 2 classes)
 │   ├── c/     (cJSON-based, 2 files)
 │   ├── cpp/   (nlohmann/json header-only, 1 file)
 │   └── rust/  (serde_json-based, 1 crate)
@@ -77,9 +77,9 @@ Key directories:
 | Entry Point | Type | Location | Description |
 |-------------|------|----------|-------------|
 | `main()` | CLI (protoc plugin) | `Main.java:12` | Reads CodeGeneratorRequest from stdin, writes CodeGeneratorResponse to stdout |
-| `--version` flag | CLI | `Main.java:14-18` | Prints `protoc-gen-jsonarray 0.1.0` to stdout and exits |
+| `--version` flag | CLI | `Main.java:14-18` | Prints `protoc-gen-jsonarray 0.2.0` to stdout and exits |
 | `protoc-gen-jsonarray` | Shell wrapper | `protoc-gen-jsonarray:1` | Validates java/JAR existence, delegates to Main |
-| `PluginRunner.run()` | Internal API | `PluginRunner.java:44` | Core orchestration — can be called programmatically (used by 484 unit tests) |
+| `PluginRunner.run()` | Internal API | `PluginRunner.java:44` | Core orchestration — can be called programmatically (used by 500+ unit tests) |
 | `LanguageGenerator.generate()` | Internal API | `LanguageGenerator.java:15` | Per-language code generation interface (9 implementations) |
 
 ## 4. Components
@@ -118,7 +118,7 @@ Key directories:
 
 | Runtime | Location | Lines | Language Dependencies |
 |---------|----------|-------|----------------------|
-| Java | `runtime/java/` | 146 | Jackson databind 2.18.2 |
+| Java | `runtime/java/` | 146 | None (zero-dependency JsonArrayWriter/JsonArrayReader since v0.2.0) |
 | C | `runtime/c/` | 264 | cJSON (user-provided) |
 | C++ | `runtime/cpp/` | 113 | nlohmann/json (user-provided) |
 | Rust | `runtime/rust/` | 156 | serde_json 1.x, base64 0.22 |
@@ -282,7 +282,7 @@ No environment variables, no config files, no system properties. The plugin's be
 | [UNKNOWN_CRITICALITY] | All 9 generators | Cannot determine which target languages are mission-critical vs. nice-to-have | Which languages will be used in production? |
 | [ASSUMED_BEHAVIOR] | `FieldCodecs.java` reflection | Assumes well-known types have standard getters (`getSeconds()`, `getNanos()`, `getValue()`) | Confirm protobuf-java maintains these across versions |
 | [EXTERNAL_DEPENDENCY] | `protoc` compiler | Plugin correctness depends on protoc providing valid CodeGeneratorRequest | protoc version compatibility range (tested: 33.4, claimed: "any") |
-| [EXTERNAL_DEPENDENCY] | Jackson 2.18.2 | Java runtime depends on Jackson `ArrayNode` behavior | Jackson version compatibility range for generated code |
+| ~~[EXTERNAL_DEPENDENCY]~~ | ~~Jackson 2.18.2~~ | **Resolved**: Jackson removed in v0.2.0; replaced with built-in JsonArrayWriter/JsonArrayReader | — |
 | [ASSUMED_BEHAVIOR] | Zig generator | Generated Zig uses `std.json`/`std.base64` APIs that change across Zig versions | Target Zig version(s) |
 | [INCOMPLETE_ANALYSIS] | C runtime (`codec.c`) | Memory safety of base64 encode/decode not verified with dynamic analysis | Valgrind/ASan testing |
 | [ASSUMED_BEHAVIOR] | Generated C code | `malloc`/`free` patterns assumed correct from static review | Dynamic analysis would confirm |
@@ -389,7 +389,7 @@ The core encoding format that all generated code must implement:
 | SafetySecurityTest | 116 | Safety (SR-001–004), security (SEC-001–004), fault injection (39 @Test + 9 @ParameterizedTest = 116 invocations) |
 | GoldenFileTest | 9 | 1 @ParameterizedTest × 9 languages — exact output comparison against golden files |
 
-**Total: 484 tests. Overall coverage: 78.6% instructions, 80.0% lines.**
+**Total: 500+ tests. Overall coverage: 78.6% instructions, 80.0% lines.**
 
 Integration tests (not in JUnit):
 - Cross-language round-trip (Java ↔ Python): 5 assertions
@@ -400,7 +400,7 @@ Integration tests (not in JUnit):
 
 ### Strengths
 1. **Clean architecture:** Language-neutral model layer cleanly separates proto analysis from code generation. Adding a new language requires implementing 6 classes with no changes to the core.
-2. **Comprehensive testing:** 484 unit tests (78.6% coverage) + integration tests + 71 end-to-end code generation tests verifying actual generated source code.
+2. **Thorough testing:** 500+ unit tests (78.6% coverage) + integration tests + 71 end-to-end code generation tests verifying actual generated source code.
 3. **Immutable model:** All model objects use `List.copyOf()` — no accidental mutation.
 4. **Defense-in-depth:** Field name validation, path traversal, keyword escaping, collision detection — even though protoc validates most inputs upstream.
 5. **Zero runtime dependencies:** The plugin itself only needs `protobuf-java`. No network, no disk, no state.

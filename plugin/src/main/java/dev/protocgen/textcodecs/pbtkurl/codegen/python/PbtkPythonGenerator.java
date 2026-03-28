@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024 protobuf-text-codecs contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package dev.protocgen.textcodecs.pbtkurl.codegen.python;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
@@ -21,9 +36,9 @@ import java.util.Set;
  * Python language code generator for pbtk URL encoding. Produces Python source files with
  * to_pbtk_url()/from_pbtk_url() serialization methods.
  *
- * <p>The pbtk URL format encodes protobuf messages as URL strings using the syntax:
- * {@code !<fieldNumber><typeChar><value>} where type chars are: b=bool(0/1), i=integer, f=float,
- * d=double, s=string(URL-encoded), e=enum(int), m=message(count of sub-fields), z=bytes(base64).
+ * <p>The pbtk URL format encodes protobuf messages as URL strings using the syntax: {@code
+ * !<fieldNumber><typeChar><value>} where type chars are: b=bool(0/1), i=integer, f=float, d=double,
+ * s=string(URL-encoded), e=enum(int), m=message(count of sub-fields), z=bytes(base64).
  */
 public class PbtkPythonGenerator implements LanguageGenerator {
 
@@ -405,8 +420,7 @@ public class PbtkPythonGenerator implements LanguageGenerator {
     }
   }
 
-  private void emitScalarSerialize(
-      CodeWriter w, ProtoField field, String pyField, int fieldNum) {
+  private void emitScalarSerialize(CodeWriter w, ProtoField field, String pyField, int fieldNum) {
     if (field.hasExplicitPresence() && !field.isRequired()) {
       w.line("if self._present_fields[%d]:", field.getArrayPosition());
       w.indent();
@@ -417,16 +431,13 @@ public class PbtkPythonGenerator implements LanguageGenerator {
     emitScalarAppend(w, field, pyField, fieldNum);
   }
 
-  private void emitScalarAppend(
-      CodeWriter w, ProtoField field, String pyField, int fieldNum) {
+  private void emitScalarAppend(CodeWriter w, ProtoField field, String pyField, int fieldNum) {
     FieldDescriptorProto.Type type = field.getProtoType();
     String typeChar = pbtkTypeChar(type);
 
     switch (type) {
       case TYPE_BOOL:
-        w.line(
-            "parts.append(\"!%d%s\" + (\"1\" if %s else \"0\"))",
-            fieldNum, typeChar, pyField);
+        w.line("parts.append(\"!%d%s\" + (\"1\" if %s else \"0\"))", fieldNum, typeChar, pyField);
         break;
       case TYPE_BYTES:
         w.line(
@@ -439,14 +450,16 @@ public class PbtkPythonGenerator implements LanguageGenerator {
             fieldNum, typeChar, pyField);
         break;
       case TYPE_DOUBLE:
-        w.line("if not (%s != %s or %s == float(\"inf\") or %s == float(\"-inf\")):",
+        w.line(
+            "if not (%s != %s or %s == float(\"inf\") or %s == float(\"-inf\")):",
             pyField, pyField, pyField, pyField);
         w.indent();
         w.line("parts.append(\"!%d%s\" + str(%s))", fieldNum, typeChar, pyField);
         w.dedent();
         break;
       case TYPE_FLOAT:
-        w.line("if not (%s != %s or %s == float(\"inf\") or %s == float(\"-inf\")):",
+        w.line(
+            "if not (%s != %s or %s == float(\"inf\") or %s == float(\"-inf\")):",
             pyField, pyField, pyField, pyField);
         w.indent();
         w.line("parts.append(\"!%d%s\" + str(%s))", fieldNum, typeChar, pyField);
@@ -458,8 +471,7 @@ public class PbtkPythonGenerator implements LanguageGenerator {
     }
   }
 
-  private void emitEnumSerialize(
-      CodeWriter w, ProtoField field, String pyField, int fieldNum) {
+  private void emitEnumSerialize(CodeWriter w, ProtoField field, String pyField, int fieldNum) {
     if (field.hasExplicitPresence() && !field.isRequired()) {
       w.line("if self._present_fields[%d]:", field.getArrayPosition());
       w.indent();
@@ -470,19 +482,15 @@ public class PbtkPythonGenerator implements LanguageGenerator {
     }
   }
 
-  private void emitMessageSerialize(
-      CodeWriter w, ProtoField field, String pyField, int fieldNum) {
+  private void emitMessageSerialize(CodeWriter w, ProtoField field, String pyField, int fieldNum) {
     w.line("if %s is not None:", pyField);
     w.indent();
-    w.line(
-        "parts.append(\"!%dm\" + str(%s._count_pbtk_fields()))",
-        fieldNum, pyField);
+    w.line("parts.append(\"!%dm\" + str(%s._count_pbtk_fields()))", fieldNum, pyField);
     w.line("%s._append_pbtk_fields(parts)", pyField);
     w.dedent();
   }
 
-  private void emitRepeatedSerialize(
-      CodeWriter w, ProtoField field, String pyField, int fieldNum) {
+  private void emitRepeatedSerialize(CodeWriter w, ProtoField field, String pyField, int fieldNum) {
     String elemVar = "__" + nameResolver.fieldName(field.getName()) + "_item";
     w.line("for %s in %s:", elemVar, pyField);
     w.indent();
@@ -490,9 +498,7 @@ public class PbtkPythonGenerator implements LanguageGenerator {
     if (field.getKind() == ProtoField.FieldKind.MESSAGE) {
       w.line("if %s is not None:", elemVar);
       w.indent();
-      w.line(
-          "parts.append(\"!%dm\" + str(%s._count_pbtk_fields()))",
-          fieldNum, elemVar);
+      w.line("parts.append(\"!%dm\" + str(%s._count_pbtk_fields()))", fieldNum, elemVar);
       w.line("%s._append_pbtk_fields(parts)", elemVar);
       w.dedent();
     } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
@@ -504,8 +510,7 @@ public class PbtkPythonGenerator implements LanguageGenerator {
     w.dedent();
   }
 
-  private void emitMapSerialize(
-      CodeWriter w, ProtoField field, String pyField, int fieldNum) {
+  private void emitMapSerialize(CodeWriter w, ProtoField field, String pyField, int fieldNum) {
     // Maps serialize as repeated entries: !<fieldNum>m2!1<keyType><key>!2<valType><val>
     String keyVar = "__mk";
     String valVar = "__mv";
@@ -518,13 +523,10 @@ public class PbtkPythonGenerator implements LanguageGenerator {
     switch (field.getMapKeyType()) {
       case TYPE_STRING:
         w.line(
-            "parts.append(\"!1%s\" + urllib.parse.quote(str(%s), safe=\"\"))",
-            keyTypeChar, keyVar);
+            "parts.append(\"!1%s\" + urllib.parse.quote(str(%s), safe=\"\"))", keyTypeChar, keyVar);
         break;
       case TYPE_BOOL:
-        w.line(
-            "parts.append(\"!1%s\" + (\"1\" if %s else \"0\"))",
-            keyTypeChar, keyVar);
+        w.line("parts.append(\"!1%s\" + (\"1\" if %s else \"0\"))", keyTypeChar, keyVar);
         break;
       default:
         w.line("parts.append(\"!1%s\" + str(%s))", keyTypeChar, keyVar);
@@ -541,17 +543,11 @@ public class PbtkPythonGenerator implements LanguageGenerator {
     } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
       w.line("parts.append(\"!2e\" + str(%s))", valVar);
     } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_STRING) {
-      w.line(
-          "parts.append(\"!2s\" + urllib.parse.quote(str(%s), safe=\"\"))",
-          valVar);
+      w.line("parts.append(\"!2s\" + urllib.parse.quote(str(%s), safe=\"\"))", valVar);
     } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
-      w.line(
-          "parts.append(\"!2z\" + base64.b64encode(%s).decode(\"ascii\"))",
-          valVar);
+      w.line("parts.append(\"!2z\" + base64.b64encode(%s).decode(\"ascii\"))", valVar);
     } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BOOL) {
-      w.line(
-          "parts.append(\"!2b\" + (\"1\" if %s else \"0\"))",
-          valVar);
+      w.line("parts.append(\"!2b\" + (\"1\" if %s else \"0\"))", valVar);
     } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT
         || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
       String valTypeChar = pbtkTypeChar(field.getMapValueType());
@@ -787,9 +783,7 @@ public class PbtkPythonGenerator implements LanguageGenerator {
       String msgType = simpleTypeName(field.getTypeReference());
       w.line("sub_count = int(value)");
       w.line("offset[0] += 1");
-      w.line(
-          "%s.append(%s._parse_pbtk_tokens(tokens, sub_count, offset))",
-          pyField, msgType);
+      w.line("%s.append(%s._parse_pbtk_tokens(tokens, sub_count, offset))", pyField, msgType);
       w.line("consumed += 1");
     } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
       w.line("%s.append(int(value))", pyField);
@@ -845,7 +839,7 @@ public class PbtkPythonGenerator implements LanguageGenerator {
       w.line("val_sub_count = int(mval)");
       w.line("offset[0] += 1");
       w.line("entry_val = %s._parse_pbtk_tokens(tokens, val_sub_count, offset)", msgType);
-      w.line("offset[0] -= 1");  // compensate for the outer offset[0]++ below
+      w.line("offset[0] -= 1"); // compensate for the outer offset[0]++ below
     } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
       w.line("entry_val = int(mval)");
     } else {
@@ -876,8 +870,16 @@ public class PbtkPythonGenerator implements LanguageGenerator {
   private static String pbtkTypeChar(FieldDescriptorProto.Type type) {
     return switch (type) {
       case TYPE_BOOL -> "b";
-      case TYPE_INT32, TYPE_SINT32, TYPE_SFIXED32, TYPE_UINT32, TYPE_FIXED32, TYPE_INT64,
-          TYPE_SINT64, TYPE_SFIXED64, TYPE_UINT64, TYPE_FIXED64 ->
+      case TYPE_INT32,
+          TYPE_SINT32,
+          TYPE_SFIXED32,
+          TYPE_UINT32,
+          TYPE_FIXED32,
+          TYPE_INT64,
+          TYPE_SINT64,
+          TYPE_SFIXED64,
+          TYPE_UINT64,
+          TYPE_FIXED64 ->
           "i";
       case TYPE_FLOAT -> "f";
       case TYPE_DOUBLE -> "d";
@@ -892,8 +894,16 @@ public class PbtkPythonGenerator implements LanguageGenerator {
   private String scalarReadExpr(FieldDescriptorProto.Type type, String valueVar) {
     return switch (type) {
       case TYPE_DOUBLE, TYPE_FLOAT -> "float(" + valueVar + ")";
-      case TYPE_INT64, TYPE_SINT64, TYPE_SFIXED64, TYPE_UINT64, TYPE_FIXED64, TYPE_INT32,
-          TYPE_SINT32, TYPE_SFIXED32, TYPE_UINT32, TYPE_FIXED32 ->
+      case TYPE_INT64,
+          TYPE_SINT64,
+          TYPE_SFIXED64,
+          TYPE_UINT64,
+          TYPE_FIXED64,
+          TYPE_INT32,
+          TYPE_SINT32,
+          TYPE_SFIXED32,
+          TYPE_UINT32,
+          TYPE_FIXED32 ->
           "int(" + valueVar + ")";
       case TYPE_BOOL -> valueVar + " == \"1\"";
       case TYPE_STRING -> "urllib.parse.unquote(" + valueVar + ")";
@@ -913,8 +923,8 @@ public class PbtkPythonGenerator implements LanguageGenerator {
   // ---------------------------------------------------------------------------
 
   /**
-   * Collect cross-file import statements for types referenced by this message. These are emitted
-   * as lazy imports inside method bodies to avoid circular import issues.
+   * Collect cross-file import statements for types referenced by this message. These are emitted as
+   * lazy imports inside method bodies to avoid circular import issues.
    */
   private void collectReferencedTypes(
       ProtoMessage message, ProtoFile file, Set<String> imports, TypeRegistry registry) {

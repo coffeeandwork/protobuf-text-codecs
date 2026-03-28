@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024 protobuf-text-codecs contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package dev.protocgen.textcodecs.pbtkurl.codegen.c;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
@@ -21,9 +36,10 @@ import java.util.Set;
  * pbtk URL serialization/deserialization using the {@code !<fieldNumber><typeChar><value>} format.
  *
  * <p>For each message, two CodeGeneratorResponse.File entries are produced:
+ *
  * <ol>
- *   <li>message_name.h - struct definition and function declarations</li>
- *   <li>message_name.c - function implementations (to_pbtk_url, from_pbtk_url, free)</li>
+ *   <li>message_name.h - struct definition and function declarations
+ *   <li>message_name.c - function implementations (to_pbtk_url, from_pbtk_url, free)
  * </ol>
  *
  * <p>For top-level enums, only a .h file is produced (enums need no implementation).
@@ -158,8 +174,8 @@ public class PbtkCGenerator implements LanguageGenerator {
           nameResolver.functionPrefix(pkg, message.getName() + "_" + nested.getName());
       w.blankLine();
       w.line("/* Nested message: %s */", nested.getName());
-      emitNestedMessageHeader(w, nested, file, nestedTypeName, nestedFuncPrefix, pkg,
-          message.getName() + "_");
+      emitNestedMessageHeader(
+          w, nested, file, nestedTypeName, nestedFuncPrefix, pkg, message.getName() + "_");
     }
 
     w.blankLine();
@@ -239,8 +255,8 @@ public class PbtkCGenerator implements LanguageGenerator {
           nameResolver.qualifiedTypeName(pkg, message.getName() + "_" + nested.getName());
       String nestedFuncPrefix =
           nameResolver.functionPrefix(pkg, message.getName() + "_" + nested.getName());
-      emitNestedMessageSource(w, nested, file, nestedTypeName, nestedFuncPrefix, pkg,
-          message.getName() + "_");
+      emitNestedMessageSource(
+          w, nested, file, nestedTypeName, nestedFuncPrefix, pkg, message.getName() + "_");
     }
 
     // Internal field-count function
@@ -276,17 +292,23 @@ public class PbtkCGenerator implements LanguageGenerator {
     w.line("char* out = (char*)malloc(len * 3 + 1);");
     w.line("if (!out) return NULL;");
     w.line("size_t j = 0;");
-    w.block("for (size_t i = 0; i < len; i++)", () -> {
-      w.line("unsigned char c = (unsigned char)input[i];");
-      w.block("if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || "
-          + "(c >= '0' && c <= '9') || c == '-' || c == '_' || c == '.' || c == '~')", () -> {
-        w.line("out[j++] = c;");
-      });
-      w.block("else", () -> {
-        w.line("snprintf(out + j, 4, \"%%25%%02X\", c);");
-        w.line("j += 3;");
-      });
-    });
+    w.block(
+        "for (size_t i = 0; i < len; i++)",
+        () -> {
+          w.line("unsigned char c = (unsigned char)input[i];");
+          w.block(
+              "if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || "
+                  + "(c >= '0' && c <= '9') || c == '-' || c == '_' || c == '.' || c == '~')",
+              () -> {
+                w.line("out[j++] = c;");
+              });
+          w.block(
+              "else",
+              () -> {
+                w.line("snprintf(out + j, 4, \"%%25%%02X\", c);");
+                w.line("j += 3;");
+              });
+        });
     w.line("out[j] = '\\0';");
     w.line("return out;");
     w.dedent();
@@ -312,18 +334,24 @@ public class PbtkCGenerator implements LanguageGenerator {
     w.line("char* out = (char*)malloc(len + 1);");
     w.line("if (!out) return NULL;");
     w.line("size_t j = 0;");
-    w.block("for (size_t i = 0; i < len; i++)", () -> {
-      w.block("if (input[i] == '%%' && i + 2 < len)", () -> {
-        w.line("int hi = pbtk_hex_val(input[i + 1]);");
-        w.line("int lo = pbtk_hex_val(input[i + 2]);");
-        w.block("if (hi >= 0 && lo >= 0)", () -> {
-          w.line("out[j++] = (char)((hi << 4) | lo);");
-          w.line("i += 2;");
-          w.line("continue;");
+    w.block(
+        "for (size_t i = 0; i < len; i++)",
+        () -> {
+          w.block(
+              "if (input[i] == '%%' && i + 2 < len)",
+              () -> {
+                w.line("int hi = pbtk_hex_val(input[i + 1]);");
+                w.line("int lo = pbtk_hex_val(input[i + 2]);");
+                w.block(
+                    "if (hi >= 0 && lo >= 0)",
+                    () -> {
+                      w.line("out[j++] = (char)((hi << 4) | lo);");
+                      w.line("i += 2;");
+                      w.line("continue;");
+                    });
+              });
+          w.line("out[j++] = input[i];");
         });
-      });
-      w.line("out[j++] = input[i];");
-    });
     w.line("out[j] = '\\0';");
     w.line("return out;");
     w.dedent();
@@ -332,8 +360,9 @@ public class PbtkCGenerator implements LanguageGenerator {
   }
 
   private void emitBase64EncodeHelper(CodeWriter w) {
-    w.line("static const char pbtk_b64_table[] = "
-        + "\"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/\";");
+    w.line(
+        "static const char pbtk_b64_table[] = "
+            + "\"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/\";");
     w.blankLine();
     w.line("static char* pbtk_base64_encode(const uint8_t* data, size_t len) {");
     w.indent();
@@ -342,16 +371,18 @@ public class PbtkCGenerator implements LanguageGenerator {
     w.line("char* out = (char*)malloc(out_len + 1);");
     w.line("if (!out) return NULL;");
     w.line("size_t j = 0;");
-    w.block("for (size_t i = 0; i < len; i += 3)", () -> {
-      w.line("uint32_t a = data[i];");
-      w.line("uint32_t b = (i + 1 < len) ? data[i + 1] : 0;");
-      w.line("uint32_t c = (i + 2 < len) ? data[i + 2] : 0;");
-      w.line("uint32_t triple = (a << 16) | (b << 8) | c;");
-      w.line("out[j++] = pbtk_b64_table[(triple >> 18) & 0x3F];");
-      w.line("out[j++] = pbtk_b64_table[(triple >> 12) & 0x3F];");
-      w.line("out[j++] = (i + 1 < len) ? pbtk_b64_table[(triple >> 6) & 0x3F] : '=';");
-      w.line("out[j++] = (i + 2 < len) ? pbtk_b64_table[triple & 0x3F] : '=';");
-    });
+    w.block(
+        "for (size_t i = 0; i < len; i += 3)",
+        () -> {
+          w.line("uint32_t a = data[i];");
+          w.line("uint32_t b = (i + 1 < len) ? data[i + 1] : 0;");
+          w.line("uint32_t c = (i + 2 < len) ? data[i + 2] : 0;");
+          w.line("uint32_t triple = (a << 16) | (b << 8) | c;");
+          w.line("out[j++] = pbtk_b64_table[(triple >> 18) & 0x3F];");
+          w.line("out[j++] = pbtk_b64_table[(triple >> 12) & 0x3F];");
+          w.line("out[j++] = (i + 1 < len) ? pbtk_b64_table[(triple >> 6) & 0x3F] : '=';");
+          w.line("out[j++] = (i + 2 < len) ? pbtk_b64_table[triple & 0x3F] : '=';");
+        });
     w.line("out[j] = '\\0';");
     w.line("return out;");
     w.dedent();
@@ -384,17 +415,20 @@ public class PbtkCGenerator implements LanguageGenerator {
     w.line("uint8_t* out = (uint8_t*)malloc(*out_len);");
     w.line("if (!out) return NULL;");
     w.line("size_t j = 0;");
-    w.block("for (size_t i = 0; i < len; i += 4)", () -> {
-      w.line("int a = pbtk_b64_val(input[i]);");
-      w.line("int b = (i + 1 < len) ? pbtk_b64_val(input[i + 1]) : 0;");
-      w.line("int c = (i + 2 < len) ? pbtk_b64_val(input[i + 2]) : 0;");
-      w.line("int d = (i + 3 < len) ? pbtk_b64_val(input[i + 3]) : 0;");
-      w.line("if (a < 0) a = 0; if (b < 0) b = 0; if (c < 0) c = 0; if (d < 0) d = 0;");
-      w.line("uint32_t triple = ((uint32_t)a << 18) | ((uint32_t)b << 12) | ((uint32_t)c << 6) | (uint32_t)d;");
-      w.line("if (j < *out_len) out[j++] = (triple >> 16) & 0xFF;");
-      w.line("if (j < *out_len) out[j++] = (triple >> 8) & 0xFF;");
-      w.line("if (j < *out_len) out[j++] = triple & 0xFF;");
-    });
+    w.block(
+        "for (size_t i = 0; i < len; i += 4)",
+        () -> {
+          w.line("int a = pbtk_b64_val(input[i]);");
+          w.line("int b = (i + 1 < len) ? pbtk_b64_val(input[i + 1]) : 0;");
+          w.line("int c = (i + 2 < len) ? pbtk_b64_val(input[i + 2]) : 0;");
+          w.line("int d = (i + 3 < len) ? pbtk_b64_val(input[i + 3]) : 0;");
+          w.line("if (a < 0) a = 0; if (b < 0) b = 0; if (c < 0) c = 0; if (d < 0) d = 0;");
+          w.line(
+              "uint32_t triple = ((uint32_t)a << 18) | ((uint32_t)b << 12) | ((uint32_t)c << 6) | (uint32_t)d;");
+          w.line("if (j < *out_len) out[j++] = (triple >> 16) & 0xFF;");
+          w.line("if (j < *out_len) out[j++] = (triple >> 8) & 0xFF;");
+          w.line("if (j < *out_len) out[j++] = triple & 0xFF;");
+        });
     w.line("return out;");
     w.dedent();
     w.line("}");
@@ -418,12 +452,14 @@ public class PbtkCGenerator implements LanguageGenerator {
     w.indent();
     w.line("if (!buf->data || !str) return;");
     w.line("size_t slen = strlen(str);");
-    w.block("if (buf->len + slen + 1 > buf->cap)", () -> {
-      w.line("buf->cap = (buf->len + slen + 1) * 2;");
-      w.line("char* newdata = (char*)realloc(buf->data, buf->cap);");
-      w.line("if (!newdata) return;");
-      w.line("buf->data = newdata;");
-    });
+    w.block(
+        "if (buf->len + slen + 1 > buf->cap)",
+        () -> {
+          w.line("buf->cap = (buf->len + slen + 1) * 2;");
+          w.line("char* newdata = (char*)realloc(buf->data, buf->cap);");
+          w.line("if (!newdata) return;");
+          w.line("buf->data = newdata;");
+        });
     w.line("memcpy(buf->data + buf->len, str, slen);");
     w.line("buf->len += slen;");
     w.line("buf->data[buf->len] = '\\0';");
@@ -480,15 +516,17 @@ public class PbtkCGenerator implements LanguageGenerator {
   // Serialize implementation
   // ========================================================================
 
-  private void emitCountFunction(CodeWriter w, ProtoMessage message, String funcPrefix,
-      String typeName) {
-    w.block("static int " + funcPrefix + "_count_pbtk_fields(const " + typeName + "* msg)", () -> {
-      w.line("int count = 0;");
-      for (ProtoField field : message.getFields()) {
-        emitFieldCount(w, field, funcPrefix);
-      }
-      w.line("return count;");
-    });
+  private void emitCountFunction(
+      CodeWriter w, ProtoMessage message, String funcPrefix, String typeName) {
+    w.block(
+        "static int " + funcPrefix + "_count_pbtk_fields(const " + typeName + "* msg)",
+        () -> {
+          w.line("int count = 0;");
+          for (ProtoField field : message.getFields()) {
+            emitFieldCount(w, field, funcPrefix);
+          }
+          w.line("return count;");
+        });
     w.blankLine();
   }
 
@@ -497,9 +535,14 @@ public class PbtkCGenerator implements LanguageGenerator {
     String accessor = "msg->" + fieldName;
 
     if (field.isOneofMember()) {
-      String caseConst = funcPrefix.toUpperCase() + "_" + field.getOneofName().toUpperCase()
-          + "_" + field.getName().toUpperCase();
-      w.line("if (msg->%s_case == %s) count++;",
+      String caseConst =
+          funcPrefix.toUpperCase()
+              + "_"
+              + field.getOneofName().toUpperCase()
+              + "_"
+              + field.getName().toUpperCase();
+      w.line(
+          "if (msg->%s_case == %s) count++;",
           nameResolver.fieldName(field.getOneofName()), caseConst);
       return;
     }
@@ -518,14 +561,19 @@ public class PbtkCGenerator implements LanguageGenerator {
     }
   }
 
-  private void emitAppendFieldsFunction(CodeWriter w, ProtoMessage message, String funcPrefix,
-      String typeName) {
-    w.block("static void " + funcPrefix + "_append_pbtk_fields(pbtk_buf_t* buf, const "
-        + typeName + "* msg)", () -> {
-      for (ProtoField field : message.getFields()) {
-        emitFieldSerialize(w, field, funcPrefix);
-      }
-    });
+  private void emitAppendFieldsFunction(
+      CodeWriter w, ProtoMessage message, String funcPrefix, String typeName) {
+    w.block(
+        "static void "
+            + funcPrefix
+            + "_append_pbtk_fields(pbtk_buf_t* buf, const "
+            + typeName
+            + "* msg)",
+        () -> {
+          for (ProtoField field : message.getFields()) {
+            emitFieldSerialize(w, field, funcPrefix);
+          }
+        });
     w.blankLine();
   }
 
@@ -535,13 +583,22 @@ public class PbtkCGenerator implements LanguageGenerator {
     int fieldNum = field.getFieldNumber();
 
     if (field.isOneofMember()) {
-      String caseConst = funcPrefix.toUpperCase() + "_" + field.getOneofName().toUpperCase()
-          + "_" + field.getName().toUpperCase();
+      String caseConst =
+          funcPrefix.toUpperCase()
+              + "_"
+              + field.getOneofName().toUpperCase()
+              + "_"
+              + field.getName().toUpperCase();
       String unionAccess = "msg->" + nameResolver.fieldName(field.getOneofName()) + "." + fieldName;
-      w.block("if (msg->" + nameResolver.fieldName(field.getOneofName()) + "_case == " + caseConst
-          + ")", () -> {
-        emitSingleFieldAppend(w, field, unionAccess, fieldNum, funcPrefix);
-      });
+      w.block(
+          "if (msg->"
+              + nameResolver.fieldName(field.getOneofName())
+              + "_case == "
+              + caseConst
+              + ")",
+          () -> {
+            emitSingleFieldAppend(w, field, unionAccess, fieldNum, funcPrefix);
+          });
       return;
     }
 
@@ -559,8 +616,8 @@ public class PbtkCGenerator implements LanguageGenerator {
     }
   }
 
-  private void emitSingleFieldAppend(CodeWriter w, ProtoField field, String accessor,
-      int fieldNum, String funcPrefix) {
+  private void emitSingleFieldAppend(
+      CodeWriter w, ProtoField field, String accessor, int fieldNum, String funcPrefix) {
     if (field.getKind() == ProtoField.FieldKind.MESSAGE
         || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
       emitMessageSerialize(w, field, accessor, fieldNum, funcPrefix);
@@ -576,57 +633,62 @@ public class PbtkCGenerator implements LanguageGenerator {
     FieldDescriptorProto.Type type = field.getProtoType();
     String typeChar = pbtkTypeChar(type);
 
-    Runnable appendCode = () -> {
-      switch (type) {
-        case TYPE_BOOL:
-          w.line("pbtk_buf_append(buf, \"!%d%s\");", fieldNum, typeChar);
-          w.line("pbtk_buf_append(buf, %s ? \"1\" : \"0\");", accessor);
-          break;
-        case TYPE_BYTES:
-          w.block("", () -> {
-            w.line("char* b64 = pbtk_base64_encode(%s, msg->%s_len);", accessor, fieldName);
-            w.line("pbtk_buf_append(buf, \"!%d%s\");", fieldNum, typeChar);
-            w.line("if (b64) { pbtk_buf_append(buf, b64); free(b64); }");
-          });
-          break;
-        case TYPE_STRING:
-          w.block("if (" + accessor + ")", () -> {
-            w.line("char* enc = pbtk_url_encode(%s);", accessor);
-            w.line("pbtk_buf_append(buf, \"!%d%s\");", fieldNum, typeChar);
-            w.line("if (enc) { pbtk_buf_append(buf, enc); free(enc); }");
-          });
-          break;
-        case TYPE_DOUBLE:
-          w.line("pbtk_buf_append(buf, \"!%d%s\");", fieldNum, typeChar);
-          w.line("pbtk_buf_append_double(buf, %s);", accessor);
-          break;
-        case TYPE_FLOAT:
-          w.line("pbtk_buf_append(buf, \"!%d%s\");", fieldNum, typeChar);
-          w.line("pbtk_buf_append_float(buf, %s);", accessor);
-          break;
-        case TYPE_UINT32:
-        case TYPE_FIXED32:
-          w.line("pbtk_buf_append(buf, \"!%d%s\");", fieldNum, typeChar);
-          w.line("pbtk_buf_append_uint(buf, (uint64_t)%s);", accessor);
-          break;
-        case TYPE_UINT64:
-        case TYPE_FIXED64:
-          w.line("pbtk_buf_append(buf, \"!%d%s\");", fieldNum, typeChar);
-          w.line("pbtk_buf_append_uint(buf, %s);", accessor);
-          break;
-        case TYPE_INT64:
-        case TYPE_SINT64:
-        case TYPE_SFIXED64:
-          w.line("pbtk_buf_append(buf, \"!%d%s\");", fieldNum, typeChar);
-          w.line("pbtk_buf_append_int(buf, %s);", accessor);
-          break;
-        default:
-          // int32 and similar
-          w.line("pbtk_buf_append(buf, \"!%d%s\");", fieldNum, typeChar);
-          w.line("pbtk_buf_append_int(buf, (int64_t)%s);", accessor);
-          break;
-      }
-    };
+    Runnable appendCode =
+        () -> {
+          switch (type) {
+            case TYPE_BOOL:
+              w.line("pbtk_buf_append(buf, \"!%d%s\");", fieldNum, typeChar);
+              w.line("pbtk_buf_append(buf, %s ? \"1\" : \"0\");", accessor);
+              break;
+            case TYPE_BYTES:
+              w.block(
+                  "",
+                  () -> {
+                    w.line("char* b64 = pbtk_base64_encode(%s, msg->%s_len);", accessor, fieldName);
+                    w.line("pbtk_buf_append(buf, \"!%d%s\");", fieldNum, typeChar);
+                    w.line("if (b64) { pbtk_buf_append(buf, b64); free(b64); }");
+                  });
+              break;
+            case TYPE_STRING:
+              w.block(
+                  "if (" + accessor + ")",
+                  () -> {
+                    w.line("char* enc = pbtk_url_encode(%s);", accessor);
+                    w.line("pbtk_buf_append(buf, \"!%d%s\");", fieldNum, typeChar);
+                    w.line("if (enc) { pbtk_buf_append(buf, enc); free(enc); }");
+                  });
+              break;
+            case TYPE_DOUBLE:
+              w.line("pbtk_buf_append(buf, \"!%d%s\");", fieldNum, typeChar);
+              w.line("pbtk_buf_append_double(buf, %s);", accessor);
+              break;
+            case TYPE_FLOAT:
+              w.line("pbtk_buf_append(buf, \"!%d%s\");", fieldNum, typeChar);
+              w.line("pbtk_buf_append_float(buf, %s);", accessor);
+              break;
+            case TYPE_UINT32:
+            case TYPE_FIXED32:
+              w.line("pbtk_buf_append(buf, \"!%d%s\");", fieldNum, typeChar);
+              w.line("pbtk_buf_append_uint(buf, (uint64_t)%s);", accessor);
+              break;
+            case TYPE_UINT64:
+            case TYPE_FIXED64:
+              w.line("pbtk_buf_append(buf, \"!%d%s\");", fieldNum, typeChar);
+              w.line("pbtk_buf_append_uint(buf, %s);", accessor);
+              break;
+            case TYPE_INT64:
+            case TYPE_SINT64:
+            case TYPE_SFIXED64:
+              w.line("pbtk_buf_append(buf, \"!%d%s\");", fieldNum, typeChar);
+              w.line("pbtk_buf_append_int(buf, %s);", accessor);
+              break;
+            default:
+              // int32 and similar
+              w.line("pbtk_buf_append(buf, \"!%d%s\");", fieldNum, typeChar);
+              w.line("pbtk_buf_append_int(buf, (int64_t)%s);", accessor);
+              break;
+          }
+        };
 
     if (field.isProto3Optional()) {
       w.block("if (msg->has_" + fieldName + ")", appendCode);
@@ -638,50 +700,59 @@ public class PbtkCGenerator implements LanguageGenerator {
   private void emitEnumSerialize(CodeWriter w, ProtoField field, String accessor, int fieldNum) {
     String fieldName = nameResolver.fieldName(field.getName());
     if (field.isProto3Optional()) {
-      w.block("if (msg->has_" + fieldName + ")", () -> {
-        w.line("pbtk_buf_append(buf, \"!%de\");", fieldNum);
-        w.line("pbtk_buf_append_int(buf, (int64_t)%s);", accessor);
-      });
+      w.block(
+          "if (msg->has_" + fieldName + ")",
+          () -> {
+            w.line("pbtk_buf_append(buf, \"!%de\");", fieldNum);
+            w.line("pbtk_buf_append_int(buf, (int64_t)%s);", accessor);
+          });
     } else {
       w.line("pbtk_buf_append(buf, \"!%de\");", fieldNum);
       w.line("pbtk_buf_append_int(buf, (int64_t)%s);", accessor);
     }
   }
 
-  private void emitMessageSerialize(CodeWriter w, ProtoField field, String accessor,
-      int fieldNum, String funcPrefix) {
+  private void emitMessageSerialize(
+      CodeWriter w, ProtoField field, String accessor, int fieldNum, String funcPrefix) {
     String refPrefix = nameResolver.resolveTypeFunctionPrefix(field.getTypeReference());
-    w.block("if (" + accessor + ")", () -> {
-      w.line("pbtk_buf_append(buf, \"!%dm\");", fieldNum);
-      w.line("pbtk_buf_append_int(buf, %s_count_pbtk_fields(%s));", refPrefix, accessor);
-      w.line("%s_append_pbtk_fields(buf, %s);", refPrefix, accessor);
-    });
-  }
-
-  private void emitRepeatedSerialize(CodeWriter w, ProtoField field, String accessor,
-      int fieldNum, String funcPrefix) {
-    String fieldName = nameResolver.fieldName(field.getName());
-    w.block("for (size_t __i = 0; __i < msg->" + fieldName + "_count; __i++)", () -> {
-      if (field.getKind() == ProtoField.FieldKind.MESSAGE
-          || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
-        String refPrefix = nameResolver.resolveTypeFunctionPrefix(field.getTypeReference());
-        w.block("if (" + accessor + "[__i])", () -> {
+    w.block(
+        "if (" + accessor + ")",
+        () -> {
           w.line("pbtk_buf_append(buf, \"!%dm\");", fieldNum);
-          w.line("pbtk_buf_append_int(buf, %s_count_pbtk_fields(%s[__i]));",
-              refPrefix, accessor);
-          w.line("%s_append_pbtk_fields(buf, %s[__i]);", refPrefix, accessor);
+          w.line("pbtk_buf_append_int(buf, %s_count_pbtk_fields(%s));", refPrefix, accessor);
+          w.line("%s_append_pbtk_fields(buf, %s);", refPrefix, accessor);
         });
-      } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
-        w.line("pbtk_buf_append(buf, \"!%de\");", fieldNum);
-        w.line("pbtk_buf_append_int(buf, (int64_t)%s[__i]);", accessor);
-      } else {
-        emitScalarElementAppend(w, field, accessor + "[__i]", fieldNum, fieldName);
-      }
-    });
   }
 
-  private void emitScalarElementAppend(CodeWriter w, ProtoField field, String elemAccessor,
-      int fieldNum, String fieldName) {
+  private void emitRepeatedSerialize(
+      CodeWriter w, ProtoField field, String accessor, int fieldNum, String funcPrefix) {
+    String fieldName = nameResolver.fieldName(field.getName());
+    w.block(
+        "for (size_t __i = 0; __i < msg->" + fieldName + "_count; __i++)",
+        () -> {
+          if (field.getKind() == ProtoField.FieldKind.MESSAGE
+              || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
+            String refPrefix = nameResolver.resolveTypeFunctionPrefix(field.getTypeReference());
+            w.block(
+                "if (" + accessor + "[__i])",
+                () -> {
+                  w.line("pbtk_buf_append(buf, \"!%dm\");", fieldNum);
+                  w.line(
+                      "pbtk_buf_append_int(buf, %s_count_pbtk_fields(%s[__i]));",
+                      refPrefix, accessor);
+                  w.line("%s_append_pbtk_fields(buf, %s[__i]);", refPrefix, accessor);
+                });
+          } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
+            w.line("pbtk_buf_append(buf, \"!%de\");", fieldNum);
+            w.line("pbtk_buf_append_int(buf, (int64_t)%s[__i]);", accessor);
+          } else {
+            emitScalarElementAppend(w, field, accessor + "[__i]", fieldNum, fieldName);
+          }
+        });
+  }
+
+  private void emitScalarElementAppend(
+      CodeWriter w, ProtoField field, String elemAccessor, int fieldNum, String fieldName) {
     FieldDescriptorProto.Type type = field.getProtoType();
     String typeChar = pbtkTypeChar(type);
 
@@ -691,17 +762,21 @@ public class PbtkCGenerator implements LanguageGenerator {
         w.line("pbtk_buf_append(buf, %s ? \"1\" : \"0\");", elemAccessor);
         break;
       case TYPE_STRING:
-        w.block("if (" + elemAccessor + ")", () -> {
-          w.line("char* enc = pbtk_url_encode(%s);", elemAccessor);
-          w.line("pbtk_buf_append(buf, \"!%d%s\");", fieldNum, typeChar);
-          w.line("if (enc) { pbtk_buf_append(buf, enc); free(enc); }");
-        });
+        w.block(
+            "if (" + elemAccessor + ")",
+            () -> {
+              w.line("char* enc = pbtk_url_encode(%s);", elemAccessor);
+              w.line("pbtk_buf_append(buf, \"!%d%s\");", fieldNum, typeChar);
+              w.line("if (enc) { pbtk_buf_append(buf, enc); free(enc); }");
+            });
         break;
       case TYPE_BYTES:
         w.line("pbtk_buf_append(buf, \"!%d%s\");", fieldNum, typeChar);
-        w.line("char* b64_%s = pbtk_base64_encode(%s, msg->%s_lengths[__i]);",
+        w.line(
+            "char* b64_%s = pbtk_base64_encode(%s, msg->%s_lengths[__i]);",
             fieldName, elemAccessor, fieldName);
-        w.line("if (b64_%s) { pbtk_buf_append(buf, b64_%s); free(b64_%s); }",
+        w.line(
+            "if (b64_%s) { pbtk_buf_append(buf, b64_%s); free(b64_%s); }",
             fieldName, fieldName, fieldName);
         break;
       case TYPE_DOUBLE:
@@ -726,66 +801,75 @@ public class PbtkCGenerator implements LanguageGenerator {
     }
   }
 
-  private void emitMapSerialize(CodeWriter w, ProtoField field, String accessor,
-      int fieldNum, String funcPrefix) {
+  private void emitMapSerialize(
+      CodeWriter w, ProtoField field, String accessor, int fieldNum, String funcPrefix) {
     String fieldName = nameResolver.fieldName(field.getName());
-    w.block("for (size_t __i = 0; __i < msg->" + fieldName + "_count; __i++)", () -> {
-      w.line("pbtk_buf_append(buf, \"!%dm2\");", fieldNum);
-      // Key (field 1)
-      String keyTypeChar = pbtkTypeChar(field.getMapKeyType());
-      String keyAccessor = accessor + "[__i].key";
-      if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_STRING) {
-        w.line("char* kenc = pbtk_url_encode(%s);", keyAccessor);
-        w.line("pbtk_buf_append(buf, \"!1%s\");", keyTypeChar);
-        w.line("if (kenc) { pbtk_buf_append(buf, kenc); free(kenc); }");
-      } else if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_BOOL) {
-        w.line("pbtk_buf_append(buf, \"!1%s\");", keyTypeChar);
-        w.line("pbtk_buf_append(buf, %s ? \"1\" : \"0\");", keyAccessor);
-      } else {
-        w.line("pbtk_buf_append(buf, \"!1%s\");", keyTypeChar);
-        w.line("pbtk_buf_append_int(buf, (int64_t)%s);", keyAccessor);
-      }
-      // Value (field 2)
-      String valAccessor = accessor + "[__i].value";
-      if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE) {
-        String refPrefix = nameResolver.resolveTypeFunctionPrefix(field.getMapValueTypeReference());
-        w.block("if (" + valAccessor + ")", () -> {
-          w.line("pbtk_buf_append(buf, \"!2m\");");
-          w.line("pbtk_buf_append_int(buf, %s_count_pbtk_fields(%s));", refPrefix, valAccessor);
-          w.line("%s_append_pbtk_fields(buf, %s);", refPrefix, valAccessor);
+    w.block(
+        "for (size_t __i = 0; __i < msg->" + fieldName + "_count; __i++)",
+        () -> {
+          w.line("pbtk_buf_append(buf, \"!%dm2\");", fieldNum);
+          // Key (field 1)
+          String keyTypeChar = pbtkTypeChar(field.getMapKeyType());
+          String keyAccessor = accessor + "[__i].key";
+          if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_STRING) {
+            w.line("char* kenc = pbtk_url_encode(%s);", keyAccessor);
+            w.line("pbtk_buf_append(buf, \"!1%s\");", keyTypeChar);
+            w.line("if (kenc) { pbtk_buf_append(buf, kenc); free(kenc); }");
+          } else if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_BOOL) {
+            w.line("pbtk_buf_append(buf, \"!1%s\");", keyTypeChar);
+            w.line("pbtk_buf_append(buf, %s ? \"1\" : \"0\");", keyAccessor);
+          } else {
+            w.line("pbtk_buf_append(buf, \"!1%s\");", keyTypeChar);
+            w.line("pbtk_buf_append_int(buf, (int64_t)%s);", keyAccessor);
+          }
+          // Value (field 2)
+          String valAccessor = accessor + "[__i].value";
+          if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE) {
+            String refPrefix =
+                nameResolver.resolveTypeFunctionPrefix(field.getMapValueTypeReference());
+            w.block(
+                "if (" + valAccessor + ")",
+                () -> {
+                  w.line("pbtk_buf_append(buf, \"!2m\");");
+                  w.line(
+                      "pbtk_buf_append_int(buf, %s_count_pbtk_fields(%s));",
+                      refPrefix, valAccessor);
+                  w.line("%s_append_pbtk_fields(buf, %s);", refPrefix, valAccessor);
+                });
+          } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
+            w.line("pbtk_buf_append(buf, \"!2e\");");
+            w.line("pbtk_buf_append_int(buf, (int64_t)%s);", valAccessor);
+          } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_STRING) {
+            w.line("char* venc = pbtk_url_encode(%s);", valAccessor);
+            w.line("pbtk_buf_append(buf, \"!2s\");");
+            w.line("if (venc) { pbtk_buf_append(buf, venc); free(venc); }");
+          } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+            // Use length from the entry struct if available -- maps with bytes values
+            // are rare, encode as base64
+            w.line("pbtk_buf_append(buf, \"!2z\");");
+            w.line("/* bytes map values not fully supported */");
+          } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BOOL) {
+            w.line("pbtk_buf_append(buf, \"!2b\");");
+            w.line("pbtk_buf_append(buf, %s ? \"1\" : \"0\");", valAccessor);
+          } else {
+            String valTypeChar = pbtkTypeChar(field.getMapValueType());
+            w.line("pbtk_buf_append(buf, \"!2%s\");", valTypeChar);
+            w.line("pbtk_buf_append_int(buf, (int64_t)%s);", valAccessor);
+          }
         });
-      } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
-        w.line("pbtk_buf_append(buf, \"!2e\");");
-        w.line("pbtk_buf_append_int(buf, (int64_t)%s);", valAccessor);
-      } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_STRING) {
-        w.line("char* venc = pbtk_url_encode(%s);", valAccessor);
-        w.line("pbtk_buf_append(buf, \"!2s\");");
-        w.line("if (venc) { pbtk_buf_append(buf, venc); free(venc); }");
-      } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
-        // Use length from the entry struct if available -- maps with bytes values
-        // are rare, encode as base64
-        w.line("pbtk_buf_append(buf, \"!2z\");");
-        w.line("/* bytes map values not fully supported */");
-      } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BOOL) {
-        w.line("pbtk_buf_append(buf, \"!2b\");");
-        w.line("pbtk_buf_append(buf, %s ? \"1\" : \"0\");", valAccessor);
-      } else {
-        String valTypeChar = pbtkTypeChar(field.getMapValueType());
-        w.line("pbtk_buf_append(buf, \"!2%s\");", valTypeChar);
-        w.line("pbtk_buf_append_int(buf, (int64_t)%s);", valAccessor);
-      }
-    });
   }
 
-  private void emitSerializeFunction(CodeWriter w, ProtoMessage message, String funcPrefix,
-      String typeName) {
-    w.block("char* " + funcPrefix + "_to_pbtk_url(const " + typeName + "* msg)", () -> {
-      w.line("if (!msg) return NULL;");
-      w.line("pbtk_buf_t buf;");
-      w.line("pbtk_buf_init(&buf);");
-      w.line("%s_append_pbtk_fields(&buf, msg);", funcPrefix);
-      w.line("return buf.data;");
-    });
+  private void emitSerializeFunction(
+      CodeWriter w, ProtoMessage message, String funcPrefix, String typeName) {
+    w.block(
+        "char* " + funcPrefix + "_to_pbtk_url(const " + typeName + "* msg)",
+        () -> {
+          w.line("if (!msg) return NULL;");
+          w.line("pbtk_buf_t buf;");
+          w.line("pbtk_buf_init(&buf);");
+          w.line("%s_append_pbtk_fields(&buf, msg);", funcPrefix);
+          w.line("return buf.data;");
+        });
     w.blankLine();
   }
 
@@ -793,34 +877,44 @@ public class PbtkCGenerator implements LanguageGenerator {
   // Deserialize implementation
   // ========================================================================
 
-  private void emitParseTokensFunction(CodeWriter w, ProtoMessage message, String funcPrefix,
-      String typeName) {
-    w.block("static " + typeName + "* " + funcPrefix
-        + "_parse_pbtk_tokens(const char** tokens, int field_count, int* offset)", () -> {
-      w.line("%s* obj = (%s*)calloc(1, sizeof(%s));", typeName, typeName, typeName);
-      w.line("if (!obj) return NULL;");
-      w.line("int consumed = 0;");
-      w.block("while (consumed < field_count && tokens[*offset])", () -> {
-        w.line("const char* token = tokens[*offset];");
-        w.line("int num_end = 0;");
-        w.line("while (token[num_end] >= '0' && token[num_end] <= '9') num_end++;");
-        w.line("if (num_end == 0 || token[num_end] == '\\0') { (*offset)++; consumed++; continue; }");
-        w.line("char field_num_str[16];");
-        w.line("if (num_end > 15) num_end = 15;");
-        w.line("memcpy(field_num_str, token, num_end);");
-        w.line("field_num_str[num_end] = '\\0';");
-        w.line("int field_num = atoi(field_num_str);");
-        w.line("const char* value = token + num_end + 1;");
-        w.blankLine();
-        w.block("switch (field_num)", () -> {
-          for (ProtoField field : message.getFields()) {
-            emitFieldCase(w, field, funcPrefix);
-          }
-          w.line("default: (*offset)++; consumed++; break;");
+  private void emitParseTokensFunction(
+      CodeWriter w, ProtoMessage message, String funcPrefix, String typeName) {
+    w.block(
+        "static "
+            + typeName
+            + "* "
+            + funcPrefix
+            + "_parse_pbtk_tokens(const char** tokens, int field_count, int* offset)",
+        () -> {
+          w.line("%s* obj = (%s*)calloc(1, sizeof(%s));", typeName, typeName, typeName);
+          w.line("if (!obj) return NULL;");
+          w.line("int consumed = 0;");
+          w.block(
+              "while (consumed < field_count && tokens[*offset])",
+              () -> {
+                w.line("const char* token = tokens[*offset];");
+                w.line("int num_end = 0;");
+                w.line("while (token[num_end] >= '0' && token[num_end] <= '9') num_end++;");
+                w.line(
+                    "if (num_end == 0 || token[num_end] == '\\0') { (*offset)++; consumed++; continue; }");
+                w.line("char field_num_str[16];");
+                w.line("if (num_end > 15) num_end = 15;");
+                w.line("memcpy(field_num_str, token, num_end);");
+                w.line("field_num_str[num_end] = '\\0';");
+                w.line("int field_num = atoi(field_num_str);");
+                w.line("const char* value = token + num_end + 1;");
+                w.blankLine();
+                w.block(
+                    "switch (field_num)",
+                    () -> {
+                      for (ProtoField field : message.getFields()) {
+                        emitFieldCase(w, field, funcPrefix);
+                      }
+                      w.line("default: (*offset)++; consumed++; break;");
+                    });
+              });
+          w.line("return obj;");
         });
-      });
-      w.line("return obj;");
-    });
     w.blankLine();
   }
 
@@ -828,23 +922,25 @@ public class PbtkCGenerator implements LanguageGenerator {
     int fieldNum = field.getFieldNumber();
     String fieldName = nameResolver.fieldName(field.getName());
 
-    w.block("case " + fieldNum + ":", () -> {
-      if (field.isMap()) {
-        emitMapDeserialize(w, field, funcPrefix);
-      } else if (field.isRepeated()) {
-        emitRepeatedDeserialize(w, field, funcPrefix);
-      } else if (field.getKind() == ProtoField.FieldKind.MESSAGE
-          || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
-        emitMessageDeserialize(w, field, funcPrefix);
-      } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
-        emitEnumDeserialize(w, field, funcPrefix);
-      } else {
-        emitScalarDeserialize(w, field, funcPrefix);
-      }
-      w.line("(*offset)++;");
-      w.line("consumed++;");
-      w.line("break;");
-    });
+    w.block(
+        "case " + fieldNum + ":",
+        () -> {
+          if (field.isMap()) {
+            emitMapDeserialize(w, field, funcPrefix);
+          } else if (field.isRepeated()) {
+            emitRepeatedDeserialize(w, field, funcPrefix);
+          } else if (field.getKind() == ProtoField.FieldKind.MESSAGE
+              || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
+            emitMessageDeserialize(w, field, funcPrefix);
+          } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
+            emitEnumDeserialize(w, field, funcPrefix);
+          } else {
+            emitScalarDeserialize(w, field, funcPrefix);
+          }
+          w.line("(*offset)++;");
+          w.line("consumed++;");
+          w.line("break;");
+        });
   }
 
   private void emitScalarDeserialize(CodeWriter w, ProtoField field, String funcPrefix) {
@@ -861,8 +957,12 @@ public class PbtkCGenerator implements LanguageGenerator {
       w.line("obj->has_%s = true;", fieldName);
     }
     if (field.isOneofMember()) {
-      String caseConst = funcPrefix.toUpperCase() + "_" + field.getOneofName().toUpperCase()
-          + "_" + field.getName().toUpperCase();
+      String caseConst =
+          funcPrefix.toUpperCase()
+              + "_"
+              + field.getOneofName().toUpperCase()
+              + "_"
+              + field.getName().toUpperCase();
       w.line("obj->%s_case = %s;", nameResolver.fieldName(field.getOneofName()), caseConst);
     }
   }
@@ -880,8 +980,12 @@ public class PbtkCGenerator implements LanguageGenerator {
       w.line("obj->has_%s = true;", fieldName);
     }
     if (field.isOneofMember()) {
-      String caseConst = funcPrefix.toUpperCase() + "_" + field.getOneofName().toUpperCase()
-          + "_" + field.getName().toUpperCase();
+      String caseConst =
+          funcPrefix.toUpperCase()
+              + "_"
+              + field.getOneofName().toUpperCase()
+              + "_"
+              + field.getName().toUpperCase();
       w.line("obj->%s_case = %s;", nameResolver.fieldName(field.getOneofName()), caseConst);
     }
   }
@@ -900,8 +1004,12 @@ public class PbtkCGenerator implements LanguageGenerator {
     w.line("%s = %s_parse_pbtk_tokens(tokens, sub_count, offset);", target, refPrefix);
     w.line("(*offset)--;"); // compensate for outer offset++
     if (field.isOneofMember()) {
-      String caseConst = funcPrefix.toUpperCase() + "_" + field.getOneofName().toUpperCase()
-          + "_" + field.getName().toUpperCase();
+      String caseConst =
+          funcPrefix.toUpperCase()
+              + "_"
+              + field.getOneofName().toUpperCase()
+              + "_"
+              + field.getName().toUpperCase();
       w.line("obj->%s_case = %s;", nameResolver.fieldName(field.getOneofName()), caseConst);
     }
   }
@@ -917,31 +1025,37 @@ public class PbtkCGenerator implements LanguageGenerator {
       w.line("(*offset)++;");
       w.line("%s* __elem = %s_parse_pbtk_tokens(tokens, sub_count, offset);", refType, refPrefix);
       w.line("(*offset)--;");
-      w.line("obj->%s = (%s**)realloc(obj->%s, sizeof(%s*) * (obj->%s_count + 1));",
+      w.line(
+          "obj->%s = (%s**)realloc(obj->%s, sizeof(%s*) * (obj->%s_count + 1));",
           fieldName, refType, fieldName, refType, fieldName);
       w.line("obj->%s[obj->%s_count++] = __elem;", fieldName, fieldName);
     } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
       String enumType = nameResolver.resolveTypeReference(field.getTypeReference(), null);
-      w.line("obj->%s = (%s*)realloc(obj->%s, sizeof(%s) * (obj->%s_count + 1));",
+      w.line(
+          "obj->%s = (%s*)realloc(obj->%s, sizeof(%s) * (obj->%s_count + 1));",
           fieldName, enumType, fieldName, enumType, fieldName);
       w.line("obj->%s[obj->%s_count++] = atoi(value);", fieldName, fieldName);
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_STRING) {
-      w.line("obj->%s = (char**)realloc(obj->%s, sizeof(char*) * (obj->%s_count + 1));",
+      w.line(
+          "obj->%s = (char**)realloc(obj->%s, sizeof(char*) * (obj->%s_count + 1));",
           fieldName, fieldName, fieldName);
       w.line("obj->%s[obj->%s_count++] = pbtk_url_decode(value);", fieldName, fieldName);
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
       w.line("size_t dec_len = 0;");
       w.line("uint8_t* dec_data = pbtk_base64_decode(value, &dec_len);");
-      w.line("obj->%s = (uint8_t**)realloc(obj->%s, sizeof(uint8_t*) * (obj->%s_count + 1));",
+      w.line(
+          "obj->%s = (uint8_t**)realloc(obj->%s, sizeof(uint8_t*) * (obj->%s_count + 1));",
           fieldName, fieldName, fieldName);
-      w.line("obj->%s_lengths = (size_t*)realloc(obj->%s_lengths, sizeof(size_t) * (obj->%s_count + 1));",
+      w.line(
+          "obj->%s_lengths = (size_t*)realloc(obj->%s_lengths, sizeof(size_t) * (obj->%s_count + 1));",
           fieldName, fieldName, fieldName);
       w.line("obj->%s[obj->%s_count] = dec_data;", fieldName, fieldName);
       w.line("obj->%s_lengths[obj->%s_count] = dec_len;", fieldName, fieldName);
       w.line("obj->%s_count++;", fieldName);
     } else {
       String cType = typeMapper.scalarType(field.getProtoType());
-      w.line("obj->%s = (%s*)realloc(obj->%s, sizeof(%s) * (obj->%s_count + 1));",
+      w.line(
+          "obj->%s = (%s*)realloc(obj->%s, sizeof(%s) * (obj->%s_count + 1));",
           fieldName, cType, fieldName, cType, fieldName);
       String readExpr = scalarReadExpr(field.getProtoType(), "value", fieldName);
       w.line("obj->%s[obj->%s_count++] = %s;", fieldName, fieldName, readExpr);
@@ -957,100 +1071,121 @@ public class PbtkCGenerator implements LanguageGenerator {
     // Parse key and value from the next entry_count tokens
     w.line("%s entry;", entryType);
     w.line("memset(&entry, 0, sizeof(entry));");
-    w.block("for (int __mi = 0; __mi < entry_count && tokens[*offset]; __mi++)", () -> {
-      w.line("const char* map_token = tokens[*offset];");
-      w.line("int mne = 0;");
-      w.line("while (map_token[mne] >= '0' && map_token[mne] <= '9') mne++;");
-      w.line("if (mne == 0 || map_token[mne] == '\\0') { (*offset)++; continue; }");
-      w.line("int mfn = atoi(map_token);");
-      w.line("const char* mval = map_token + mne + 1;");
-      w.block("if (mfn == 1)", () -> {
-        // Key
-        if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_STRING) {
-          w.line("entry.key = pbtk_url_decode(mval);");
-        } else if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_BOOL) {
-          w.line("entry.key = (mval[0] == '1');");
-        } else {
-          w.line("entry.key = atol(mval);");
-        }
-      });
-      w.block("if (mfn == 2)", () -> {
-        // Value
-        if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE) {
-          String refPrefix =
-              nameResolver.resolveTypeFunctionPrefix(field.getMapValueTypeReference());
-          w.line("int val_sub_count = atoi(mval);");
+    w.block(
+        "for (int __mi = 0; __mi < entry_count && tokens[*offset]; __mi++)",
+        () -> {
+          w.line("const char* map_token = tokens[*offset];");
+          w.line("int mne = 0;");
+          w.line("while (map_token[mne] >= '0' && map_token[mne] <= '9') mne++;");
+          w.line("if (mne == 0 || map_token[mne] == '\\0') { (*offset)++; continue; }");
+          w.line("int mfn = atoi(map_token);");
+          w.line("const char* mval = map_token + mne + 1;");
+          w.block(
+              "if (mfn == 1)",
+              () -> {
+                // Key
+                if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_STRING) {
+                  w.line("entry.key = pbtk_url_decode(mval);");
+                } else if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_BOOL) {
+                  w.line("entry.key = (mval[0] == '1');");
+                } else {
+                  w.line("entry.key = atol(mval);");
+                }
+              });
+          w.block(
+              "if (mfn == 2)",
+              () -> {
+                // Value
+                if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE) {
+                  String refPrefix =
+                      nameResolver.resolveTypeFunctionPrefix(field.getMapValueTypeReference());
+                  w.line("int val_sub_count = atoi(mval);");
+                  w.line("(*offset)++;");
+                  w.line(
+                      "entry.value = %s_parse_pbtk_tokens(tokens, val_sub_count, offset);",
+                      refPrefix);
+                  w.line("(*offset)--;");
+                } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
+                  w.line("entry.value = atoi(mval);");
+                } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_STRING) {
+                  w.line("entry.value = pbtk_url_decode(mval);");
+                } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BOOL) {
+                  w.line("entry.value = (mval[0] == '1');");
+                } else {
+                  w.line("entry.value = atol(mval);");
+                }
+              });
           w.line("(*offset)++;");
-          w.line("entry.value = %s_parse_pbtk_tokens(tokens, val_sub_count, offset);", refPrefix);
-          w.line("(*offset)--;");
-        } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
-          w.line("entry.value = atoi(mval);");
-        } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_STRING) {
-          w.line("entry.value = pbtk_url_decode(mval);");
-        } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BOOL) {
-          w.line("entry.value = (mval[0] == '1');");
-        } else {
-          w.line("entry.value = atol(mval);");
-        }
-      });
-      w.line("(*offset)++;");
-    });
+        });
     w.line("(*offset)--;"); // compensate for outer offset++
     // Add entry to the array
-    w.line("obj->%s = (%s*)realloc(obj->%s, sizeof(%s) * (obj->%s_count + 1));",
+    w.line(
+        "obj->%s = (%s*)realloc(obj->%s, sizeof(%s) * (obj->%s_count + 1));",
         fieldName, entryType, fieldName, entryType, fieldName);
     w.line("obj->%s[obj->%s_count++] = entry;", fieldName, fieldName);
   }
 
-  private void emitDeserializeFunction(CodeWriter w, ProtoMessage message, String funcPrefix,
-      String typeName) {
-    w.block(typeName + "* " + funcPrefix + "_from_pbtk_url(const char* input)", () -> {
-      w.line("if (!input || input[0] == '\\0') return NULL;");
-      w.blankLine();
-      w.line("/* Tokenize: split on '!' */");
-      w.line("size_t input_len = strlen(input);");
-      w.line("size_t max_tokens = input_len / 2 + 2;");
-      w.line("const char** tokens = (const char**)malloc(sizeof(const char*) * (max_tokens + 1));");
-      w.line("if (!tokens) return NULL;");
-      w.line("size_t token_count = 0;");
-      w.line("const char* p = input;");
-      w.line("if (*p == '!') p++;");
-      w.block("while (*p)", () -> {
-        w.line("tokens[token_count++] = p;");
-        w.line("const char* next = strchr(p, '!');");
-        w.block("if (!next)", () -> {
-          w.line("break;");
+  private void emitDeserializeFunction(
+      CodeWriter w, ProtoMessage message, String funcPrefix, String typeName) {
+    w.block(
+        typeName + "* " + funcPrefix + "_from_pbtk_url(const char* input)",
+        () -> {
+          w.line("if (!input || input[0] == '\\0') return NULL;");
+          w.blankLine();
+          w.line("/* Tokenize: split on '!' */");
+          w.line("size_t input_len = strlen(input);");
+          w.line("size_t max_tokens = input_len / 2 + 2;");
+          w.line(
+              "const char** tokens = (const char**)malloc(sizeof(const char*) * (max_tokens + 1));");
+          w.line("if (!tokens) return NULL;");
+          w.line("size_t token_count = 0;");
+          w.line("const char* p = input;");
+          w.line("if (*p == '!') p++;");
+          w.block(
+              "while (*p)",
+              () -> {
+                w.line("tokens[token_count++] = p;");
+                w.line("const char* next = strchr(p, '!');");
+                w.block(
+                    "if (!next)",
+                    () -> {
+                      w.line("break;");
+                    });
+                // We need a mutable copy for null-termination -- create one
+                w.line("p = next + 1;");
+              });
+          w.line("tokens[token_count] = NULL;");
+          w.blankLine();
+          w.line("/* Create a mutable copy for null-termination of tokens */");
+          w.line("char* mutable_input = strdup(input);");
+          w.line("if (!mutable_input) { free(tokens); return NULL; }");
+          w.line("/* Re-tokenize using mutable copy */");
+          w.line("token_count = 0;");
+          w.line("p = mutable_input;");
+          w.line("if (*p == '!') p++;");
+          w.block(
+              "while (*p)",
+              () -> {
+                w.line("tokens[token_count++] = p;");
+                w.line("char* next = strchr(p, '!');");
+                w.block(
+                    "if (!next)",
+                    () -> {
+                      w.line("break;");
+                    });
+                w.line("*next = '\\0';");
+                w.line("p = next + 1;");
+              });
+          w.line("tokens[token_count] = NULL;");
+          w.blankLine();
+          w.line("int offset = 0;");
+          w.line(
+              "%s* result = %s_parse_pbtk_tokens(tokens, (int)token_count, &offset);",
+              typeName, funcPrefix);
+          w.line("free(mutable_input);");
+          w.line("free(tokens);");
+          w.line("return result;");
         });
-        // We need a mutable copy for null-termination -- create one
-        w.line("p = next + 1;");
-      });
-      w.line("tokens[token_count] = NULL;");
-      w.blankLine();
-      w.line("/* Create a mutable copy for null-termination of tokens */");
-      w.line("char* mutable_input = strdup(input);");
-      w.line("if (!mutable_input) { free(tokens); return NULL; }");
-      w.line("/* Re-tokenize using mutable copy */");
-      w.line("token_count = 0;");
-      w.line("p = mutable_input;");
-      w.line("if (*p == '!') p++;");
-      w.block("while (*p)", () -> {
-        w.line("tokens[token_count++] = p;");
-        w.line("char* next = strchr(p, '!');");
-        w.block("if (!next)", () -> {
-          w.line("break;");
-        });
-        w.line("*next = '\\0';");
-        w.line("p = next + 1;");
-      });
-      w.line("tokens[token_count] = NULL;");
-      w.blankLine();
-      w.line("int offset = 0;");
-      w.line("%s* result = %s_parse_pbtk_tokens(tokens, (int)token_count, &offset);",
-          typeName, funcPrefix);
-      w.line("free(mutable_input);");
-      w.line("free(tokens);");
-      w.line("return result;");
-    });
     w.blankLine();
   }
 
@@ -1058,22 +1193,24 @@ public class PbtkCGenerator implements LanguageGenerator {
   // Free function
   // ========================================================================
 
-  private void emitFreeFunction(CodeWriter w, ProtoMessage message, String funcPrefix,
-      String typeName, String pkg) {
-    w.block("void " + funcPrefix + "_free(" + typeName + "* msg)", () -> {
-      w.line("if (!msg) return;");
+  private void emitFreeFunction(
+      CodeWriter w, ProtoMessage message, String funcPrefix, String typeName, String pkg) {
+    w.block(
+        "void " + funcPrefix + "_free(" + typeName + "* msg)",
+        () -> {
+          w.line("if (!msg) return;");
 
-      for (ProtoField field : message.getFields()) {
-        if (field.isOneofMember()) continue;
-        emitFieldFree(w, field, funcPrefix, pkg);
-      }
+          for (ProtoField field : message.getFields()) {
+            if (field.isOneofMember()) continue;
+            emitFieldFree(w, field, funcPrefix, pkg);
+          }
 
-      for (ProtoMessage.OneofGroup group : message.getOneofGroups()) {
-        emitOneofFree(w, group, funcPrefix);
-      }
+          for (ProtoMessage.OneofGroup group : message.getOneofGroups()) {
+            emitOneofFree(w, group, funcPrefix);
+          }
 
-      w.line("free(msg);");
-    });
+          w.line("free(msg);");
+        });
     w.blankLine();
   }
 
@@ -1082,41 +1219,53 @@ public class PbtkCGenerator implements LanguageGenerator {
     String accessor = "msg->" + fieldName;
 
     if (field.isMap()) {
-      w.block("if (" + accessor + ")", () -> {
-        w.block("for (size_t i = 0; i < msg->" + fieldName + "_count; i++)", () -> {
-          if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_STRING) {
-            w.line("free(%s[i].key);", accessor);
-          }
-          if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_STRING) {
-            w.line("free(%s[i].value);", accessor);
-          } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE) {
-            String refPrefix =
-                nameResolver.resolveTypeFunctionPrefix(field.getMapValueTypeReference());
-            w.line("%s_free(%s[i].value);", refPrefix, accessor);
-          }
-        });
-        w.line("free(%s);", accessor);
-      });
+      w.block(
+          "if (" + accessor + ")",
+          () -> {
+            w.block(
+                "for (size_t i = 0; i < msg->" + fieldName + "_count; i++)",
+                () -> {
+                  if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_STRING) {
+                    w.line("free(%s[i].key);", accessor);
+                  }
+                  if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_STRING) {
+                    w.line("free(%s[i].value);", accessor);
+                  } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE) {
+                    String refPrefix =
+                        nameResolver.resolveTypeFunctionPrefix(field.getMapValueTypeReference());
+                    w.line("%s_free(%s[i].value);", refPrefix, accessor);
+                  }
+                });
+            w.line("free(%s);", accessor);
+          });
     } else if (field.isRepeated()) {
-      w.block("if (" + accessor + ")", () -> {
-        if (field.getKind() == ProtoField.FieldKind.MESSAGE
-            || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
-          String refPrefix = nameResolver.resolveTypeFunctionPrefix(field.getTypeReference());
-          w.block("for (size_t i = 0; i < msg->" + fieldName + "_count; i++)", () -> {
-            w.line("%s_free(%s[i]);", refPrefix, accessor);
+      w.block(
+          "if (" + accessor + ")",
+          () -> {
+            if (field.getKind() == ProtoField.FieldKind.MESSAGE
+                || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
+              String refPrefix = nameResolver.resolveTypeFunctionPrefix(field.getTypeReference());
+              w.block(
+                  "for (size_t i = 0; i < msg->" + fieldName + "_count; i++)",
+                  () -> {
+                    w.line("%s_free(%s[i]);", refPrefix, accessor);
+                  });
+            } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_STRING) {
+              w.block(
+                  "for (size_t i = 0; i < msg->" + fieldName + "_count; i++)",
+                  () -> {
+                    w.line("free(%s[i]);", accessor);
+                  });
+            } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+              w.block(
+                  "for (size_t i = 0; i < msg->" + fieldName + "_count; i++)",
+                  () -> {
+                    w.line("free(%s[i]);", accessor);
+                  });
+              w.line("free(msg->%s_lengths);", fieldName);
+            }
+            w.line("free(%s);", accessor);
           });
-        } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_STRING) {
-          w.block("for (size_t i = 0; i < msg->" + fieldName + "_count; i++)", () -> {
-            w.line("free(%s[i]);", accessor);
-          });
-        } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
-          w.block("for (size_t i = 0; i < msg->" + fieldName + "_count; i++)", () -> {
-            w.line("free(%s[i]);", accessor);
-          });
-          w.line("free(msg->%s_lengths);", fieldName);
-        }
-        w.line("free(%s);", accessor);
-      });
     } else if (field.getKind() == ProtoField.FieldKind.MESSAGE
         || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
       String refPrefix = nameResolver.resolveTypeFunctionPrefix(field.getTypeReference());
@@ -1132,41 +1281,56 @@ public class PbtkCGenerator implements LanguageGenerator {
     String oneofField = nameResolver.fieldName(group.name());
     String caseField = "msg->" + oneofField + "_case";
 
-    boolean hasFreeable = group.members().stream().anyMatch(m ->
-        m.getKind() == ProtoField.FieldKind.MESSAGE
-            || m.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE
-            || m.getProtoType() == FieldDescriptorProto.Type.TYPE_STRING
-            || m.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES);
+    boolean hasFreeable =
+        group.members().stream()
+            .anyMatch(
+                m ->
+                    m.getKind() == ProtoField.FieldKind.MESSAGE
+                        || m.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE
+                        || m.getProtoType() == FieldDescriptorProto.Type.TYPE_STRING
+                        || m.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES);
 
     if (!hasFreeable) return;
 
-    w.block("switch (" + caseField + ")", () -> {
-      for (ProtoField member : group.members()) {
-        String memberName = nameResolver.fieldName(member.getName());
-        String caseConst = funcPrefix.toUpperCase() + "_" + group.name().toUpperCase()
-            + "_" + member.getName().toUpperCase();
-        String unionAccess = "msg->" + oneofField + "." + memberName;
+    w.block(
+        "switch (" + caseField + ")",
+        () -> {
+          for (ProtoField member : group.members()) {
+            String memberName = nameResolver.fieldName(member.getName());
+            String caseConst =
+                funcPrefix.toUpperCase()
+                    + "_"
+                    + group.name().toUpperCase()
+                    + "_"
+                    + member.getName().toUpperCase();
+            String unionAccess = "msg->" + oneofField + "." + memberName;
 
-        if (member.getKind() == ProtoField.FieldKind.MESSAGE
-            || member.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
-          String refPrefix = nameResolver.resolveTypeFunctionPrefix(member.getTypeReference());
-          w.line("case %s: %s_free(%s); break;", caseConst, refPrefix, unionAccess);
-        } else if (member.getProtoType() == FieldDescriptorProto.Type.TYPE_STRING) {
-          w.line("case %s: free(%s); break;", caseConst, unionAccess);
-        } else if (member.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
-          w.line("case %s: free(%s); break;", caseConst, unionAccess);
-        }
-      }
-      w.line("default: break;");
-    });
+            if (member.getKind() == ProtoField.FieldKind.MESSAGE
+                || member.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
+              String refPrefix = nameResolver.resolveTypeFunctionPrefix(member.getTypeReference());
+              w.line("case %s: %s_free(%s); break;", caseConst, refPrefix, unionAccess);
+            } else if (member.getProtoType() == FieldDescriptorProto.Type.TYPE_STRING) {
+              w.line("case %s: free(%s); break;", caseConst, unionAccess);
+            } else if (member.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+              w.line("case %s: free(%s); break;", caseConst, unionAccess);
+            }
+          }
+          w.line("default: break;");
+        });
   }
 
   // ========================================================================
   // Nested message helpers
   // ========================================================================
 
-  private void emitNestedMessageHeader(CodeWriter w, ProtoMessage nested, ProtoFile file,
-      String typeName, String funcPrefix, String pkg, String parentPrefix) {
+  private void emitNestedMessageHeader(
+      CodeWriter w,
+      ProtoMessage nested,
+      ProtoFile file,
+      String typeName,
+      String funcPrefix,
+      String pkg,
+      String parentPrefix) {
     for (ProtoEnum protoEnum : nested.getEnums()) {
       emitEnumDef(w, protoEnum, pkg, parentPrefix + nested.getName() + "_");
     }
@@ -1181,24 +1345,46 @@ public class PbtkCGenerator implements LanguageGenerator {
     w.line("void %s_free(%s* msg);", funcPrefix, typeName);
 
     for (ProtoMessage deepNested : nested.getNestedMessages()) {
-      String deepTypeName = nameResolver.qualifiedTypeName(pkg,
-          parentPrefix + nested.getName() + "_" + deepNested.getName());
-      String deepFuncPrefix = nameResolver.functionPrefix(pkg,
-          parentPrefix + nested.getName() + "_" + deepNested.getName());
+      String deepTypeName =
+          nameResolver.qualifiedTypeName(
+              pkg, parentPrefix + nested.getName() + "_" + deepNested.getName());
+      String deepFuncPrefix =
+          nameResolver.functionPrefix(
+              pkg, parentPrefix + nested.getName() + "_" + deepNested.getName());
       w.blankLine();
-      emitNestedMessageHeader(w, deepNested, file, deepTypeName, deepFuncPrefix, pkg,
+      emitNestedMessageHeader(
+          w,
+          deepNested,
+          file,
+          deepTypeName,
+          deepFuncPrefix,
+          pkg,
           parentPrefix + nested.getName() + "_");
     }
   }
 
-  private void emitNestedMessageSource(CodeWriter w, ProtoMessage nested, ProtoFile file,
-      String typeName, String funcPrefix, String pkg, String parentPrefix) {
+  private void emitNestedMessageSource(
+      CodeWriter w,
+      ProtoMessage nested,
+      ProtoFile file,
+      String typeName,
+      String funcPrefix,
+      String pkg,
+      String parentPrefix) {
     for (ProtoMessage deepNested : nested.getNestedMessages()) {
-      String deepTypeName = nameResolver.qualifiedTypeName(pkg,
-          parentPrefix + nested.getName() + "_" + deepNested.getName());
-      String deepFuncPrefix = nameResolver.functionPrefix(pkg,
-          parentPrefix + nested.getName() + "_" + deepNested.getName());
-      emitNestedMessageSource(w, deepNested, file, deepTypeName, deepFuncPrefix, pkg,
+      String deepTypeName =
+          nameResolver.qualifiedTypeName(
+              pkg, parentPrefix + nested.getName() + "_" + deepNested.getName());
+      String deepFuncPrefix =
+          nameResolver.functionPrefix(
+              pkg, parentPrefix + nested.getName() + "_" + deepNested.getName());
+      emitNestedMessageSource(
+          w,
+          deepNested,
+          file,
+          deepTypeName,
+          deepFuncPrefix,
+          pkg,
           parentPrefix + nested.getName() + "_");
     }
 
@@ -1253,11 +1439,14 @@ public class PbtkCGenerator implements LanguageGenerator {
       String enumName = funcPrefix.toUpperCase() + "_" + group.name().toUpperCase() + "_CASE";
       w.line("typedef enum {");
       w.indent();
-      w.line("%s_NOT_SET = 0,",
-          funcPrefix.toUpperCase() + "_" + group.name().toUpperCase());
+      w.line("%s_NOT_SET = 0,", funcPrefix.toUpperCase() + "_" + group.name().toUpperCase());
       for (ProtoField member : group.members()) {
-        String constName = funcPrefix.toUpperCase() + "_" + group.name().toUpperCase()
-            + "_" + member.getName().toUpperCase();
+        String constName =
+            funcPrefix.toUpperCase()
+                + "_"
+                + group.name().toUpperCase()
+                + "_"
+                + member.getName().toUpperCase();
         w.line("%s = %d,", constName, member.getFieldNumber());
       }
       w.dedent();
@@ -1278,8 +1467,8 @@ public class PbtkCGenerator implements LanguageGenerator {
     }
   }
 
-  private void emitStructDef(CodeWriter w, ProtoMessage message, String typeName,
-      String funcPrefix, String pkg) {
+  private void emitStructDef(
+      CodeWriter w, ProtoMessage message, String typeName, String funcPrefix, String pkg) {
     w.line("typedef struct {");
     w.indent();
 
@@ -1344,18 +1533,18 @@ public class PbtkCGenerator implements LanguageGenerator {
     }
   }
 
-  private void collectCrossFileIncludes(ProtoMessage message, ProtoFile file,
-      Set<String> includes) {
+  private void collectCrossFileIncludes(
+      ProtoMessage message, ProtoFile file, Set<String> includes) {
     String pkg = nameResolver.resolvePackage(file);
     String currentPrefix =
         file.getProtoPackage().isEmpty() ? "." : "." + file.getProtoPackage() + ".";
 
     for (ProtoField field : message.getFields()) {
-      collectTypeInclude(field.getTypeReference(), field, message, file, currentPrefix,
-          pkg, includes);
+      collectTypeInclude(
+          field.getTypeReference(), field, message, file, currentPrefix, pkg, includes);
       if (field.isMap() && field.getMapValueTypeReference() != null) {
-        collectTypeInclude(field.getMapValueTypeReference(), null, message, file, currentPrefix,
-            pkg, includes);
+        collectTypeInclude(
+            field.getMapValueTypeReference(), null, message, file, currentPrefix, pkg, includes);
       }
     }
 
@@ -1364,8 +1553,14 @@ public class PbtkCGenerator implements LanguageGenerator {
     }
   }
 
-  private void collectTypeInclude(String typeRef, ProtoField field, ProtoMessage message,
-      ProtoFile file, String currentPrefix, String pkg, Set<String> includes) {
+  private void collectTypeInclude(
+      String typeRef,
+      ProtoField field,
+      ProtoMessage message,
+      ProtoFile file,
+      String currentPrefix,
+      String pkg,
+      Set<String> includes) {
     if (typeRef == null) return;
     if (field != null && field.isWellKnownType()) return;
 
@@ -1393,8 +1588,7 @@ public class PbtkCGenerator implements LanguageGenerator {
     return typeMapper.scalarType(field.getProtoType());
   }
 
-  private String scalarReadExpr(FieldDescriptorProto.Type type, String valueVar,
-      String fieldName) {
+  private String scalarReadExpr(FieldDescriptorProto.Type type, String valueVar, String fieldName) {
     return switch (type) {
       case TYPE_DOUBLE -> "strtod(" + valueVar + ", NULL)";
       case TYPE_FLOAT -> "(float)strtod(" + valueVar + ", NULL)";
@@ -1435,8 +1629,16 @@ public class PbtkCGenerator implements LanguageGenerator {
   static String pbtkTypeChar(FieldDescriptorProto.Type type) {
     return switch (type) {
       case TYPE_BOOL -> "b";
-      case TYPE_INT32, TYPE_SINT32, TYPE_SFIXED32, TYPE_UINT32, TYPE_FIXED32, TYPE_INT64,
-          TYPE_SINT64, TYPE_SFIXED64, TYPE_UINT64, TYPE_FIXED64 ->
+      case TYPE_INT32,
+          TYPE_SINT32,
+          TYPE_SFIXED32,
+          TYPE_UINT32,
+          TYPE_FIXED32,
+          TYPE_INT64,
+          TYPE_SINT64,
+          TYPE_SFIXED64,
+          TYPE_UINT64,
+          TYPE_FIXED64 ->
           "i";
       case TYPE_FLOAT -> "f";
       case TYPE_DOUBLE -> "d";

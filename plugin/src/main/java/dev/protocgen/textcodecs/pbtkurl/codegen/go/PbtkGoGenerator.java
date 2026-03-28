@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024 protobuf-text-codecs contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package dev.protocgen.textcodecs.pbtkurl.codegen.go;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
@@ -21,9 +36,9 @@ import java.util.Set;
  * DeserializeMsgFromPbtkUrl() methods. Generated code uses only Go stdlib (strings, strconv,
  * net/url, encoding/base64, fmt).
  *
- * <p>The pbtk format encodes protobuf messages as URL strings: {@code !<fieldNumber><typeChar><value>}
- * where type chars are: b=bool(0/1), i=integer, f=float, d=double, s=string(URL-encoded),
- * e=enum(int), m=message(count of sub-fields), z=bytes(base64).
+ * <p>The pbtk format encodes protobuf messages as URL strings: {@code
+ * !<fieldNumber><typeChar><value>} where type chars are: b=bool(0/1), i=integer, f=float, d=double,
+ * s=string(URL-encoded), e=enum(int), m=message(count of sub-fields), z=bytes(base64).
  */
 public class PbtkGoGenerator implements LanguageGenerator {
 
@@ -271,18 +286,12 @@ public class PbtkGoGenerator implements LanguageGenerator {
   private void emitOneofConstants(CodeWriter w, ProtoMessage message, String structName) {
     for (ProtoMessage.OneofGroup group : message.getOneofGroups()) {
       w.blankLine();
-      w.line(
-          "// Oneof case constants for %s.%s",
-          structName, snakeToPascal(group.name()));
+      w.line("// Oneof case constants for %s.%s", structName, snakeToPascal(group.name()));
       w.line("const (");
       w.indent();
       for (ProtoField member : group.members()) {
         String constName =
-            structName
-                + "_"
-                + snakeToPascal(group.name())
-                + "_"
-                + snakeToPascal(member.getName());
+            structName + "_" + snakeToPascal(group.name()) + "_" + snakeToPascal(member.getName());
         w.line("%s = %d", constName, member.getFieldNumber());
       }
       w.dedent();
@@ -406,8 +415,7 @@ public class PbtkGoGenerator implements LanguageGenerator {
     }
   }
 
-  private void emitScalarSerialize(
-      CodeWriter w, ProtoField field, String goField, int fieldNum) {
+  private void emitScalarSerialize(CodeWriter w, ProtoField field, String goField, int fieldNum) {
     FieldDescriptorProto.Type type = field.getProtoType();
     String typeChar = pbtkTypeChar(type);
 
@@ -424,11 +432,7 @@ public class PbtkGoGenerator implements LanguageGenerator {
   }
 
   private void emitScalarAppend(
-      CodeWriter w,
-      FieldDescriptorProto.Type type,
-      String goField,
-      int fieldNum,
-      String typeChar) {
+      CodeWriter w, FieldDescriptorProto.Type type, String goField, int fieldNum, String typeChar) {
     switch (type) {
       case TYPE_BOOL:
         w.block(
@@ -443,64 +447,45 @@ public class PbtkGoGenerator implements LanguageGenerator {
             });
         break;
       case TYPE_BYTES:
-        w.line(
-            "sb.WriteString(\"!%d%s\")", fieldNum, typeChar);
-        w.line(
-            "sb.WriteString(base64.StdEncoding.EncodeToString(%s))", goField);
+        w.line("sb.WriteString(\"!%d%s\")", fieldNum, typeChar);
+        w.line("sb.WriteString(base64.StdEncoding.EncodeToString(%s))", goField);
         break;
       case TYPE_STRING:
-        w.line(
-            "sb.WriteString(\"!%d%s\")", fieldNum, typeChar);
-        w.line(
-            "sb.WriteString(url.QueryEscape(%s))", goField);
+        w.line("sb.WriteString(\"!%d%s\")", fieldNum, typeChar);
+        w.line("sb.WriteString(url.QueryEscape(%s))", goField);
         break;
       case TYPE_DOUBLE:
-        w.line(
-            "sb.WriteString(\"!%d%s\")", fieldNum, typeChar);
-        w.line(
-            "sb.WriteString(strconv.FormatFloat(%s, 'g', -1, 64))", goField);
+        w.line("sb.WriteString(\"!%d%s\")", fieldNum, typeChar);
+        w.line("sb.WriteString(strconv.FormatFloat(%s, 'g', -1, 64))", goField);
         break;
       case TYPE_FLOAT:
-        w.line(
-            "sb.WriteString(\"!%d%s\")", fieldNum, typeChar);
-        w.line(
-            "sb.WriteString(strconv.FormatFloat(float64(%s), 'g', -1, 32))", goField);
+        w.line("sb.WriteString(\"!%d%s\")", fieldNum, typeChar);
+        w.line("sb.WriteString(strconv.FormatFloat(float64(%s), 'g', -1, 32))", goField);
         break;
       case TYPE_INT64, TYPE_SINT64, TYPE_SFIXED64:
-        w.line(
-            "sb.WriteString(\"!%d%s\")", fieldNum, typeChar);
-        w.line(
-            "sb.WriteString(strconv.FormatInt(%s, 10))", goField);
+        w.line("sb.WriteString(\"!%d%s\")", fieldNum, typeChar);
+        w.line("sb.WriteString(strconv.FormatInt(%s, 10))", goField);
         break;
       case TYPE_UINT64, TYPE_FIXED64:
-        w.line(
-            "sb.WriteString(\"!%d%s\")", fieldNum, typeChar);
-        w.line(
-            "sb.WriteString(strconv.FormatUint(%s, 10))", goField);
+        w.line("sb.WriteString(\"!%d%s\")", fieldNum, typeChar);
+        w.line("sb.WriteString(strconv.FormatUint(%s, 10))", goField);
         break;
       case TYPE_INT32, TYPE_SINT32, TYPE_SFIXED32:
-        w.line(
-            "sb.WriteString(\"!%d%s\")", fieldNum, typeChar);
-        w.line(
-            "sb.WriteString(strconv.FormatInt(int64(%s), 10))", goField);
+        w.line("sb.WriteString(\"!%d%s\")", fieldNum, typeChar);
+        w.line("sb.WriteString(strconv.FormatInt(int64(%s), 10))", goField);
         break;
       case TYPE_UINT32, TYPE_FIXED32:
-        w.line(
-            "sb.WriteString(\"!%d%s\")", fieldNum, typeChar);
-        w.line(
-            "sb.WriteString(strconv.FormatUint(uint64(%s), 10))", goField);
+        w.line("sb.WriteString(\"!%d%s\")", fieldNum, typeChar);
+        w.line("sb.WriteString(strconv.FormatUint(uint64(%s), 10))", goField);
         break;
       default:
-        w.line(
-            "sb.WriteString(\"!%d%s\")", fieldNum, typeChar);
-        w.line(
-            "sb.WriteString(fmt.Sprintf(\"%%v\", %s))", goField);
+        w.line("sb.WriteString(\"!%d%s\")", fieldNum, typeChar);
+        w.line("sb.WriteString(fmt.Sprintf(\"%%v\", %s))", goField);
         break;
     }
   }
 
-  private void emitEnumSerialize(
-      CodeWriter w, ProtoField field, String goField, int fieldNum) {
+  private void emitEnumSerialize(CodeWriter w, ProtoField field, String goField, int fieldNum) {
     if (field.isProto3Optional()) {
       w.block(
           "if " + goField + " != nil",
@@ -514,8 +499,7 @@ public class PbtkGoGenerator implements LanguageGenerator {
     }
   }
 
-  private void emitMessageSerialize(
-      CodeWriter w, ProtoField field, String goField, int fieldNum) {
+  private void emitMessageSerialize(CodeWriter w, ProtoField field, String goField, int fieldNum) {
     w.block(
         "if " + goField + " != nil",
         () -> {
@@ -525,8 +509,7 @@ public class PbtkGoGenerator implements LanguageGenerator {
         });
   }
 
-  private void emitRepeatedSerialize(
-      CodeWriter w, ProtoField field, String goField, int fieldNum) {
+  private void emitRepeatedSerialize(CodeWriter w, ProtoField field, String goField, int fieldNum) {
     String itemVar = snakeToCamel(field.getName()) + "Item";
     w.block(
         "for _, " + itemVar + " := range " + goField,
@@ -537,21 +520,20 @@ public class PbtkGoGenerator implements LanguageGenerator {
                 "if " + itemVar + " != nil",
                 () -> {
                   w.line("sb.WriteString(\"!%dm\")", fieldNum);
-                  w.line(
-                      "sb.WriteString(strconv.Itoa(%s.countPbtkFields()))", itemVar);
+                  w.line("sb.WriteString(strconv.Itoa(%s.countPbtkFields()))", itemVar);
                   w.line("%s.appendPbtkFields(sb)", itemVar);
                 });
           } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
             w.line("sb.WriteString(\"!%de\")", fieldNum);
             w.line("sb.WriteString(strconv.FormatInt(int64(%s), 10))", itemVar);
           } else {
-            emitScalarAppend(w, field.getProtoType(), itemVar, fieldNum, pbtkTypeChar(field.getProtoType()));
+            emitScalarAppend(
+                w, field.getProtoType(), itemVar, fieldNum, pbtkTypeChar(field.getProtoType()));
           }
         });
   }
 
-  private void emitMapSerialize(
-      CodeWriter w, ProtoField field, String goField, int fieldNum) {
+  private void emitMapSerialize(CodeWriter w, ProtoField field, String goField, int fieldNum) {
     String entryKey = snakeToCamel(field.getName()) + "Key";
     String entryVal = snakeToCamel(field.getName()) + "Val";
     w.block(
@@ -577,12 +559,8 @@ public class PbtkGoGenerator implements LanguageGenerator {
         w.line("sb.WriteString(url.QueryEscape(%s))", keyExpr);
         break;
       case TYPE_BOOL:
-        w.block(
-            "if " + keyExpr,
-            () -> w.line("sb.WriteString(\"!1%s1\")", typeChar));
-        w.block(
-            "if !" + keyExpr,
-            () -> w.line("sb.WriteString(\"!1%s0\")", typeChar));
+        w.block("if " + keyExpr, () -> w.line("sb.WriteString(\"!1%s1\")", typeChar));
+        w.block("if !" + keyExpr, () -> w.line("sb.WriteString(\"!1%s0\")", typeChar));
         break;
       case TYPE_INT64, TYPE_SINT64, TYPE_SFIXED64:
         w.line("sb.WriteString(\"!1%s\")", typeChar);
@@ -638,12 +616,8 @@ public class PbtkGoGenerator implements LanguageGenerator {
         w.line("sb.WriteString(base64.StdEncoding.EncodeToString(%s))", valExpr);
         break;
       case TYPE_BOOL:
-        w.block(
-            "if " + valExpr,
-            () -> w.line("sb.WriteString(\"!2%s1\")", typeChar));
-        w.block(
-            "if !" + valExpr,
-            () -> w.line("sb.WriteString(\"!2%s0\")", typeChar));
+        w.block("if " + valExpr, () -> w.line("sb.WriteString(\"!2%s1\")", typeChar));
+        w.block("if !" + valExpr, () -> w.line("sb.WriteString(\"!2%s0\")", typeChar));
         break;
       case TYPE_DOUBLE:
         w.line("sb.WriteString(\"!2%s\")", typeChar);
@@ -696,7 +670,10 @@ public class PbtkGoGenerator implements LanguageGenerator {
   private void emitParsePbtkTokens(CodeWriter w, ProtoMessage message, String structName) {
     w.blankLine();
     w.block(
-        "func parse" + structName + "PbtkTokens(tokens []string, fieldCount int, offset *int) *" + structName,
+        "func parse"
+            + structName
+            + "PbtkTokens(tokens []string, fieldCount int, offset *int) *"
+            + structName,
         () -> {
           w.line("obj := &%s{}", structName);
           w.line("consumed := 0");
@@ -767,8 +744,7 @@ public class PbtkGoGenerator implements LanguageGenerator {
     w.dedent();
   }
 
-  private void emitScalarDeserialize(
-      CodeWriter w, ProtoField field, String goField) {
+  private void emitScalarDeserialize(CodeWriter w, ProtoField field, String goField) {
     FieldDescriptorProto.Type type = field.getProtoType();
     boolean isPointer = field.isProto3Optional();
 
@@ -852,15 +828,13 @@ public class PbtkGoGenerator implements LanguageGenerator {
     }
   }
 
-  private void emitEnumDeserialize(
-      CodeWriter w, ProtoField field, String goField) {
+  private void emitEnumDeserialize(CodeWriter w, ProtoField field, String goField) {
     String enumType = simpleTypeName(field.getTypeReference());
     w.line("tmpEnumVal, _ := strconv.ParseInt(value, 10, 32)");
     w.line("%s = %s(int32(tmpEnumVal))", goField, enumType);
   }
 
-  private void emitMessageDeserialize(
-      CodeWriter w, ProtoField field, String goField) {
+  private void emitMessageDeserialize(CodeWriter w, ProtoField field, String goField) {
     String msgType = simpleTypeName(field.getTypeReference());
     w.line("subCount, _ := strconv.Atoi(value)");
     w.line("*offset++");
@@ -868,14 +842,15 @@ public class PbtkGoGenerator implements LanguageGenerator {
     w.line("*offset--"); // compensate for the outer *offset++ after break
   }
 
-  private void emitRepeatedDeserialize(
-      CodeWriter w, ProtoField field, String goField) {
+  private void emitRepeatedDeserialize(CodeWriter w, ProtoField field, String goField) {
     if (field.getKind() == ProtoField.FieldKind.MESSAGE
         || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
       String msgType = simpleTypeName(field.getTypeReference());
       w.line("subCount, _ := strconv.Atoi(value)");
       w.line("*offset++");
-      w.line("%s = append(%s, parse%sPbtkTokens(tokens, subCount, offset))", goField, goField, msgType);
+      w.line(
+          "%s = append(%s, parse%sPbtkTokens(tokens, subCount, offset))",
+          goField, goField, msgType);
       w.line("*offset--");
     } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
       String enumType = simpleTypeName(field.getTypeReference());
@@ -886,8 +861,7 @@ public class PbtkGoGenerator implements LanguageGenerator {
     }
   }
 
-  private void emitRepeatedScalarDeserialize(
-      CodeWriter w, ProtoField field, String goField) {
+  private void emitRepeatedScalarDeserialize(CodeWriter w, ProtoField field, String goField) {
     FieldDescriptorProto.Type type = field.getProtoType();
     switch (type) {
       case TYPE_BOOL:
@@ -934,9 +908,7 @@ public class PbtkGoGenerator implements LanguageGenerator {
   private void emitMapDeserialize(CodeWriter w, ProtoField field, String goField) {
     String mapType = typeMapper.languageType(field);
     // Initialize map if nil
-    w.block(
-        "if " + goField + " == nil",
-        () -> w.line("%s = make(%s)", goField, mapType));
+    w.block("if " + goField + " == nil", () -> w.line("%s = make(%s)", goField, mapType));
 
     w.line("entryCount, _ := strconv.Atoi(value)");
     w.line("*offset++");
@@ -961,12 +933,8 @@ public class PbtkGoGenerator implements LanguageGenerator {
               });
           w.line("mfn, _ := strconv.Atoi(mapToken[:mne])");
           w.line("mval := mapToken[mne+1:]");
-          w.block(
-              "if mfn == 1",
-              () -> emitMapKeyParse(w, field.getMapKeyType(), "mval"));
-          w.block(
-              "if mfn == 2",
-              () -> emitMapValueParse(w, field, "mval"));
+          w.block("if mfn == 1", () -> emitMapKeyParse(w, field.getMapKeyType(), "mval"));
+          w.block("if mfn == 2", () -> emitMapValueParse(w, field, "mval"));
           w.line("*offset++");
         });
 
@@ -1084,9 +1052,7 @@ public class PbtkGoGenerator implements LanguageGenerator {
     w.block(
         "func Deserialize" + structName + "FromPbtkUrl(input string) *" + structName,
         () -> {
-          w.block(
-              "if input == \"\"",
-              () -> w.line("return &%s{}", structName));
+          w.block("if input == \"\"", () -> w.line("return &%s{}", structName));
           // Tokenize: split on '!'
           w.line("tokens := pbtkTokenize(input)");
           w.line("offset := 0");
@@ -1107,9 +1073,7 @@ public class PbtkGoGenerator implements LanguageGenerator {
         () -> {
           w.line("var tokens []string");
           w.line("i := 0");
-          w.block(
-              "if len(input) > 0 && input[0] == '!'",
-              () -> w.line("i = 1"));
+          w.block("if len(input) > 0 && input[0] == '!'", () -> w.line("i = 1"));
           w.block(
               "for i < len(input)",
               () -> {
@@ -1135,8 +1099,16 @@ public class PbtkGoGenerator implements LanguageGenerator {
   static String pbtkTypeChar(FieldDescriptorProto.Type type) {
     return switch (type) {
       case TYPE_BOOL -> "b";
-      case TYPE_INT32, TYPE_SINT32, TYPE_SFIXED32, TYPE_UINT32, TYPE_FIXED32, TYPE_INT64,
-          TYPE_SINT64, TYPE_SFIXED64, TYPE_UINT64, TYPE_FIXED64 ->
+      case TYPE_INT32,
+          TYPE_SINT32,
+          TYPE_SFIXED32,
+          TYPE_UINT32,
+          TYPE_FIXED32,
+          TYPE_INT64,
+          TYPE_SINT64,
+          TYPE_SFIXED64,
+          TYPE_UINT64,
+          TYPE_FIXED64 ->
           "i";
       case TYPE_FLOAT -> "f";
       case TYPE_DOUBLE -> "d";
@@ -1209,8 +1181,7 @@ public class PbtkGoGenerator implements LanguageGenerator {
       if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
         return true;
       }
-      if (field.isMap()
-          && field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+      if (field.isMap() && field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
         return true;
       }
     }

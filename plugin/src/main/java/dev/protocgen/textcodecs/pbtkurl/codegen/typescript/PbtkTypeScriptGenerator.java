@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024 protobuf-text-codecs contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package dev.protocgen.textcodecs.pbtkurl.codegen.typescript;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
@@ -328,8 +343,7 @@ public class PbtkTypeScriptGenerator implements LanguageGenerator {
     }
   }
 
-  private void emitScalarSerialize(
-      CodeWriter w, ProtoField field, String jsField, int fieldNum) {
+  private void emitScalarSerialize(CodeWriter w, ProtoField field, String jsField, int fieldNum) {
     if (field.isProto3Optional()) {
       w.block(
           "if (this._presentFields[" + field.getArrayPosition() + "])",
@@ -361,8 +375,7 @@ public class PbtkTypeScriptGenerator implements LanguageGenerator {
     }
   }
 
-  private void emitEnumSerialize(
-      CodeWriter w, ProtoField field, String jsField, int fieldNum) {
+  private void emitEnumSerialize(CodeWriter w, ProtoField field, String jsField, int fieldNum) {
     if (field.isProto3Optional()) {
       w.block(
           "if (this._presentFields[" + field.getArrayPosition() + "])",
@@ -372,19 +385,16 @@ public class PbtkTypeScriptGenerator implements LanguageGenerator {
     }
   }
 
-  private void emitMessageSerialize(
-      CodeWriter w, ProtoField field, String jsField, int fieldNum) {
+  private void emitMessageSerialize(CodeWriter w, ProtoField field, String jsField, int fieldNum) {
     w.block(
         "if (" + jsField + " != null)",
         () -> {
-          w.line(
-              "parts.push('!%dm' + (%s as any)._countPbtkFields());", fieldNum, jsField);
+          w.line("parts.push('!%dm' + (%s as any)._countPbtkFields());", fieldNum, jsField);
           w.line("(%s as any)._appendPbtkFields(parts);", jsField);
         });
   }
 
-  private void emitRepeatedSerialize(
-      CodeWriter w, ProtoField field, String jsField, int fieldNum) {
+  private void emitRepeatedSerialize(CodeWriter w, ProtoField field, String jsField, int fieldNum) {
     String elemVar = "__" + nameResolver.fieldName(field.getName()) + "Item";
     w.block(
         "for (const " + elemVar + " of " + jsField + ")",
@@ -393,22 +403,18 @@ public class PbtkTypeScriptGenerator implements LanguageGenerator {
             w.block(
                 "if (" + elemVar + " != null)",
                 () -> {
-                  w.line(
-                      "parts.push('!%dm' + (%s as any)._countPbtkFields());",
-                      fieldNum, elemVar);
+                  w.line("parts.push('!%dm' + (%s as any)._countPbtkFields());", fieldNum, elemVar);
                   w.line("(%s as any)._appendPbtkFields(parts);", elemVar);
                 });
           } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
-            w.line(
-                "parts.push('!%de' + (%s != null ? %s : 0));", fieldNum, elemVar, elemVar);
+            w.line("parts.push('!%de' + (%s != null ? %s : 0));", fieldNum, elemVar, elemVar);
           } else {
             emitScalarAppend(w, field, elemVar, fieldNum);
           }
         });
   }
 
-  private void emitMapSerialize(
-      CodeWriter w, ProtoField field, String jsField, int fieldNum) {
+  private void emitMapSerialize(CodeWriter w, ProtoField field, String jsField, int fieldNum) {
     w.block(
         "for (const [__key, __val] of Object.entries(" + jsField + "))",
         () -> {
@@ -429,8 +435,7 @@ public class PbtkTypeScriptGenerator implements LanguageGenerator {
             w.block(
                 "if (__val != null)",
                 () -> {
-                  w.line(
-                      "parts.push('!2m' + (__val as any)._countPbtkFields());");
+                  w.line("parts.push('!2m' + (__val as any)._countPbtkFields());");
                   w.line("(__val as any)._appendPbtkFields(parts);");
                 });
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
@@ -501,8 +506,7 @@ public class PbtkTypeScriptGenerator implements LanguageGenerator {
           w.line("if (input == null || input.length === 0) return new %s();", className);
           w.line("const tokens: string[] = %s._tokenizePbtk(input);", className);
           w.line("const offset: {v: number} = {v: 0};");
-          w.line(
-              "return %s._parsePbtkTokens(tokens, tokens.length, offset);", className);
+          w.line("return %s._parsePbtkTokens(tokens, tokens.length, offset);", className);
         });
 
     // _tokenizePbtk — split on '!'
@@ -573,8 +577,7 @@ public class PbtkTypeScriptGenerator implements LanguageGenerator {
     String msgType = typeMapper.simpleTypeName(field.getTypeReference());
     w.line("const subCount: number = parseInt(value, 10);");
     w.line("offset.v++;");
-    w.line(
-        "%s((%s as any)._parsePbtkTokens(tokens, subCount, offset));", setter, msgType);
+    w.line("%s((%s as any)._parsePbtkTokens(tokens, subCount, offset));", setter, msgType);
     w.line("offset.v--;"); // compensate for outer offset.v++
   }
 
@@ -583,9 +586,7 @@ public class PbtkTypeScriptGenerator implements LanguageGenerator {
       String msgType = typeMapper.simpleTypeName(field.getTypeReference());
       w.line("const subCount: number = parseInt(value, 10);");
       w.line("offset.v++;");
-      w.line(
-          "%s.push((%s as any)._parsePbtkTokens(tokens, subCount, offset));",
-          getter, msgType);
+      w.line("%s.push((%s as any)._parsePbtkTokens(tokens, subCount, offset));", getter, msgType);
       w.line("offset.v--;");
     } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
       w.line("%s.push(parseInt(value, 10));", getter);
@@ -705,8 +706,7 @@ public class PbtkTypeScriptGenerator implements LanguageGenerator {
     w.line("export { %s };", exports.toString());
   }
 
-  private void collectReferencedTypeNames(
-      ProtoMessage message, ProtoFile file, Set<String> names) {
+  private void collectReferencedTypeNames(ProtoMessage message, ProtoFile file, Set<String> names) {
     String currentPrefix =
         file.getProtoPackage().isEmpty() ? "." : "." + file.getProtoPackage() + ".";
 
@@ -769,8 +769,16 @@ public class PbtkTypeScriptGenerator implements LanguageGenerator {
   static String pbtkTypeChar(FieldDescriptorProto.Type type) {
     return switch (type) {
       case TYPE_BOOL -> "b";
-      case TYPE_INT32, TYPE_SINT32, TYPE_SFIXED32, TYPE_UINT32, TYPE_FIXED32, TYPE_INT64,
-          TYPE_SINT64, TYPE_SFIXED64, TYPE_UINT64, TYPE_FIXED64 ->
+      case TYPE_INT32,
+          TYPE_SINT32,
+          TYPE_SFIXED32,
+          TYPE_UINT32,
+          TYPE_FIXED32,
+          TYPE_INT64,
+          TYPE_SINT64,
+          TYPE_SFIXED64,
+          TYPE_UINT64,
+          TYPE_FIXED64 ->
           "i";
       case TYPE_FLOAT -> "f";
       case TYPE_DOUBLE -> "d";

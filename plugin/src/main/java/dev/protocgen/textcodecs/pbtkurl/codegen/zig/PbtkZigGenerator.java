@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024 protobuf-text-codecs contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package dev.protocgen.textcodecs.pbtkurl.codegen.zig;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
@@ -216,8 +231,7 @@ public class PbtkZigGenerator implements LanguageGenerator {
     // Internal append helper
     w.blankLine();
     w.block(
-        "fn appendPbtkFields(self: *const " + structName
-            + ", buf: *std.ArrayList(u8)) void",
+        "fn appendPbtkFields(self: *const " + structName + ", buf: *std.ArrayList(u8)) void",
         () -> {
           for (ProtoField field : message.getFields()) {
             emitFieldSerialize(w, field);
@@ -239,8 +253,7 @@ public class PbtkZigGenerator implements LanguageGenerator {
     // Public method
     w.blankLine();
     w.block(
-        "pub fn toPbtkUrl(self: *const " + structName
-            + ", allocator: std.mem.Allocator) ![]u8",
+        "pub fn toPbtkUrl(self: *const " + structName + ", allocator: std.mem.Allocator) ![]u8",
         () -> {
           w.line("var buf = std.ArrayList(u8).init(allocator);");
           w.line("self.appendPbtkFields(&buf);");
@@ -291,22 +304,17 @@ public class PbtkZigGenerator implements LanguageGenerator {
       w.line("buf.writer().print(\"!%dm{d}\", .{v.countPbtkFields()}) catch {};", fieldNum);
       w.line("v.appendPbtkFields(buf);");
     } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
-      w.line(
-          "buf.writer().print(\"!%de{d}\", .{@intFromEnum(%s)}) catch {};",
-          fieldNum, zigField);
+      w.line("buf.writer().print(\"!%de{d}\", .{@intFromEnum(%s)}) catch {};", fieldNum, zigField);
     } else {
       emitScalarAppendDirect(w, field, zigField, fieldNum);
     }
   }
 
-  private void emitScalarSerialize(
-      CodeWriter w, ProtoField field, String zigField, int fieldNum) {
+  private void emitScalarSerialize(CodeWriter w, ProtoField field, String zigField, int fieldNum) {
     FieldDescriptorProto.Type type = field.getProtoType();
 
     if (field.isProto3Optional()) {
-      w.block(
-          "if (" + zigField + ") |v|",
-          () -> emitScalarAppendDirect(w, field, "v", fieldNum));
+      w.block("if (" + zigField + ") |v|", () -> emitScalarAppendDirect(w, field, "v", fieldNum));
       return;
     }
 
@@ -325,91 +333,60 @@ public class PbtkZigGenerator implements LanguageGenerator {
             fieldNum, typeChar, zigField);
         break;
       case TYPE_BYTES:
-        w.line(
-            "buf.writer().print(\"!%d%s\", .{}) catch {};",
-            fieldNum, typeChar);
-        w.line(
-            "const encoded = std.base64.standard.Encoder.encode(%s);",
-            zigField);
+        w.line("buf.writer().print(\"!%d%s\", .{}) catch {};", fieldNum, typeChar);
+        w.line("const encoded = std.base64.standard.Encoder.encode(%s);", zigField);
         w.line("buf.appendSlice(encoded) catch {};");
         break;
       case TYPE_STRING:
-        w.line(
-            "buf.writer().print(\"!%d%s\", .{}) catch {};",
-            fieldNum, typeChar);
+        w.line("buf.writer().print(\"!%d%s\", .{}) catch {};", fieldNum, typeChar);
         w.line(
             "const pct = std.Uri.percentEncode(%s, std.Uri.Component.query) catch return;",
             zigField);
         w.line("buf.writer().writeAll(pct) catch {};");
         break;
       case TYPE_FLOAT:
+        w.line("if (!std.math.isNan(%s) and !std.math.isInf(%s))", zigField, zigField);
         w.line(
-            "if (!std.math.isNan(%s) and !std.math.isInf(%s))",
-            zigField, zigField);
-        w.line(
-            "    buf.writer().print(\"!%d%s{d}\", .{%s}) catch {};",
-            fieldNum, typeChar, zigField);
+            "    buf.writer().print(\"!%d%s{d}\", .{%s}) catch {};", fieldNum, typeChar, zigField);
         break;
       case TYPE_DOUBLE:
+        w.line("if (!std.math.isNan(%s) and !std.math.isInf(%s))", zigField, zigField);
         w.line(
-            "if (!std.math.isNan(%s) and !std.math.isInf(%s))",
-            zigField, zigField);
-        w.line(
-            "    buf.writer().print(\"!%d%s{d}\", .{%s}) catch {};",
-            fieldNum, typeChar, zigField);
+            "    buf.writer().print(\"!%d%s{d}\", .{%s}) catch {};", fieldNum, typeChar, zigField);
         break;
       case TYPE_INT32, TYPE_SINT32, TYPE_SFIXED32:
-        w.line(
-            "buf.writer().print(\"!%d%s{d}\", .{%s}) catch {};",
-            fieldNum, typeChar, zigField);
+        w.line("buf.writer().print(\"!%d%s{d}\", .{%s}) catch {};", fieldNum, typeChar, zigField);
         break;
       case TYPE_UINT32, TYPE_FIXED32:
-        w.line(
-            "buf.writer().print(\"!%d%s{d}\", .{%s}) catch {};",
-            fieldNum, typeChar, zigField);
+        w.line("buf.writer().print(\"!%d%s{d}\", .{%s}) catch {};", fieldNum, typeChar, zigField);
         break;
       case TYPE_INT64, TYPE_SINT64, TYPE_SFIXED64:
-        w.line(
-            "buf.writer().print(\"!%d%s{d}\", .{%s}) catch {};",
-            fieldNum, typeChar, zigField);
+        w.line("buf.writer().print(\"!%d%s{d}\", .{%s}) catch {};", fieldNum, typeChar, zigField);
         break;
       case TYPE_UINT64, TYPE_FIXED64:
-        w.line(
-            "buf.writer().print(\"!%d%s{d}\", .{%s}) catch {};",
-            fieldNum, typeChar, zigField);
+        w.line("buf.writer().print(\"!%d%s{d}\", .{%s}) catch {};", fieldNum, typeChar, zigField);
         break;
       default:
-        w.line(
-            "buf.writer().print(\"!%d%s{d}\", .{%s}) catch {};",
-            fieldNum, typeChar, zigField);
+        w.line("buf.writer().print(\"!%d%s{d}\", .{%s}) catch {};", fieldNum, typeChar, zigField);
         break;
     }
   }
 
-  private void emitEnumSerialize(
-      CodeWriter w, ProtoField field, String zigField, int fieldNum) {
+  private void emitEnumSerialize(CodeWriter w, ProtoField field, String zigField, int fieldNum) {
     if (field.isProto3Optional()) {
       w.block(
           "if (" + zigField + ") |v|",
-          () ->
-              w.line(
-                  "buf.writer().print(\"!%de{d}\", .{@intFromEnum(v)}) catch {};",
-                  fieldNum));
+          () -> w.line("buf.writer().print(\"!%de{d}\", .{@intFromEnum(v)}) catch {};", fieldNum));
     } else {
-      w.line(
-          "buf.writer().print(\"!%de{d}\", .{@intFromEnum(%s)}) catch {};",
-          fieldNum, zigField);
+      w.line("buf.writer().print(\"!%de{d}\", .{@intFromEnum(%s)}) catch {};", fieldNum, zigField);
     }
   }
 
-  private void emitMessageSerialize(
-      CodeWriter w, ProtoField field, String zigField, int fieldNum) {
+  private void emitMessageSerialize(CodeWriter w, ProtoField field, String zigField, int fieldNum) {
     w.block(
         "if (" + zigField + ") |v|",
         () -> {
-          w.line(
-              "buf.writer().print(\"!%dm{d}\", .{v.countPbtkFields()}) catch {};",
-              fieldNum);
+          w.line("buf.writer().print(\"!%dm{d}\", .{v.countPbtkFields()}) catch {};", fieldNum);
           w.line("v.appendPbtkFields(buf);");
         });
   }
@@ -422,21 +399,17 @@ public class PbtkZigGenerator implements LanguageGenerator {
           if (field.getKind() == ProtoField.FieldKind.MESSAGE
               || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
             w.line(
-                "buf.writer().print(\"!%dm{d}\", .{item.countPbtkFields()}) catch {};",
-                fieldNum);
+                "buf.writer().print(\"!%dm{d}\", .{item.countPbtkFields()}) catch {};", fieldNum);
             w.line("item.appendPbtkFields(buf);");
           } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
-            w.line(
-                "buf.writer().print(\"!%de{d}\", .{@intFromEnum(item)}) catch {};",
-                fieldNum);
+            w.line("buf.writer().print(\"!%de{d}\", .{@intFromEnum(item)}) catch {};", fieldNum);
           } else {
             emitScalarAppendDirect(w, field, "item", fieldNum);
           }
         });
   }
 
-  private void emitMapSerialize(
-      CodeWriter w, ProtoField field, String zigField, int fieldNum) {
+  private void emitMapSerialize(CodeWriter w, ProtoField field, String zigField, int fieldNum) {
     w.block(
         "var it = " + zigField + ".iterator(); while (it.next()) |entry|",
         () -> {
@@ -455,9 +428,7 @@ public class PbtkZigGenerator implements LanguageGenerator {
                 "buf.writer().print(\"!1%s{s}\", .{if (entry.key_ptr.*) \"1\" else \"0\"}) catch {};",
                 keyTypeChar);
           } else {
-            w.line(
-                "buf.writer().print(\"!1%s{d}\", .{entry.key_ptr.*}) catch {};",
-                keyTypeChar);
+            w.line("buf.writer().print(\"!1%s{d}\", .{entry.key_ptr.*}) catch {};", keyTypeChar);
           }
 
           // Value (field 2)
@@ -466,8 +437,7 @@ public class PbtkZigGenerator implements LanguageGenerator {
                 "buf.writer().print(\"!2m{d}\", .{entry.value_ptr.*.countPbtkFields()}) catch {};");
             w.line("entry.value_ptr.*.appendPbtkFields(buf);");
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
-            w.line(
-                "buf.writer().print(\"!2e{d}\", .{@intFromEnum(entry.value_ptr.*)}) catch {};");
+            w.line("buf.writer().print(\"!2e{d}\", .{@intFromEnum(entry.value_ptr.*)}) catch {};");
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_STRING) {
             w.line("buf.writer().print(\"!2s\", .{}) catch {};");
             w.line(
@@ -475,17 +445,14 @@ public class PbtkZigGenerator implements LanguageGenerator {
             w.line("buf.writer().writeAll(pct_val) catch {};");
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
             w.line("buf.writer().print(\"!2z\", .{}) catch {};");
-            w.line(
-                "const b64_val = std.base64.standard.Encoder.encode(entry.value_ptr.*);");
+            w.line("const b64_val = std.base64.standard.Encoder.encode(entry.value_ptr.*);");
             w.line("buf.appendSlice(b64_val) catch {};");
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BOOL) {
             w.line(
                 "buf.writer().print(\"!2b{s}\", .{if (entry.value_ptr.*) \"1\" else \"0\"}) catch {};");
           } else {
             String valTypeChar = pbtkTypeChar(field.getMapValueType());
-            w.line(
-                "buf.writer().print(\"!2%s{d}\", .{entry.value_ptr.*}) catch {};",
-                valTypeChar);
+            w.line("buf.writer().print(\"!2%s{d}\", .{entry.value_ptr.*}) catch {};", valTypeChar);
           }
         });
   }
@@ -520,9 +487,7 @@ public class PbtkZigGenerator implements LanguageGenerator {
       w.line("if (%s != null) count += 1;", zigField);
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_FLOAT
         || field.getProtoType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
-      w.line(
-          "if (!std.math.isNan(%s) and !std.math.isInf(%s)) count += 1;",
-          zigField, zigField);
+      w.line("if (!std.math.isNan(%s) and !std.math.isInf(%s)) count += 1;", zigField, zigField);
     } else {
       w.line("count += 1;");
     }
@@ -556,8 +521,7 @@ public class PbtkZigGenerator implements LanguageGenerator {
                       w.line("consumed += 1;");
                       w.line("continue;");
                     });
-                w.line(
-                    "const field_num = std.fmt.parseInt(i32, token[0..num_end], 10) catch 0;");
+                w.line("const field_num = std.fmt.parseInt(i32, token[0..num_end], 10) catch 0;");
                 w.line("const value = token[num_end + 1 ..];");
 
                 // Switch on field number
@@ -584,8 +548,7 @@ public class PbtkZigGenerator implements LanguageGenerator {
         "pub fn fromPbtkUrl(input: []const u8, allocator: std.mem.Allocator) !" + structName,
         () -> {
           w.line("if (input.len == 0) return %s{};", structName);
-          w.line(
-              "const trimmed = if (input[0] == '!') input[1..] else input;");
+          w.line("const trimmed = if (input[0] == '!') input[1..] else input;");
           // Tokenize by splitting on '!'
           w.line("var token_list = std.ArrayList([]const u8).init(allocator);");
           w.line("defer token_list.deinit();");
@@ -603,8 +566,7 @@ public class PbtkZigGenerator implements LanguageGenerator {
           w.line("if (start <= trimmed.len) try token_list.append(trimmed[start..]);");
           w.line("const tokens = token_list.items;");
           w.line("var offset: usize = 0;");
-          w.line(
-              "return parsePbtkTokens(tokens, tokens.len, &offset);");
+          w.line("return parsePbtkTokens(tokens, tokens.len, &offset);");
         });
   }
 
@@ -647,8 +609,7 @@ public class PbtkZigGenerator implements LanguageGenerator {
   }
 
   private void emitEnumDeserialize(CodeWriter w, ProtoField field, String zigName) {
-    w.line(
-        "obj.%s = @enumFromInt(std.fmt.parseInt(i32, value, 10) catch 0);", zigName);
+    w.line("obj.%s = @enumFromInt(std.fmt.parseInt(i32, value, 10) catch 0);", zigName);
     if (field.isOneofMember()) {
       String unionField = nameResolver.fieldName(field.getOneofName());
       String tagName = nameResolver.fieldName(field.getName());
@@ -660,11 +621,9 @@ public class PbtkZigGenerator implements LanguageGenerator {
 
   private void emitMessageDeserialize(CodeWriter w, ProtoField field, String zigName) {
     String msgType = zigSimpleTypeName(field.getTypeReference());
-    w.line(
-        "const sub_count = std.fmt.parseInt(usize, value, 10) catch 0;");
+    w.line("const sub_count = std.fmt.parseInt(usize, value, 10) catch 0;");
     w.line("offset.* += 1;");
-    w.line(
-        "obj.%s = %s.parsePbtkTokens(tokens, sub_count, offset);", zigName, msgType);
+    w.line("obj.%s = %s.parsePbtkTokens(tokens, sub_count, offset);", zigName, msgType);
     w.line("offset.* -= 1;"); // compensate for outer increment
     if (field.isOneofMember()) {
       String unionField = nameResolver.fieldName(field.getOneofName());
@@ -679,8 +638,7 @@ public class PbtkZigGenerator implements LanguageGenerator {
     if (field.getKind() == ProtoField.FieldKind.MESSAGE
         || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
       String msgType = zigSimpleTypeName(field.getTypeReference());
-      w.line(
-          "const sub_count = std.fmt.parseInt(usize, value, 10) catch 0;");
+      w.line("const sub_count = std.fmt.parseInt(usize, value, 10) catch 0;");
       w.line("offset.* += 1;");
       w.line(
           "obj.%s.append(%s.parsePbtkTokens(tokens, sub_count, offset)) catch {};",
@@ -697,8 +655,7 @@ public class PbtkZigGenerator implements LanguageGenerator {
   }
 
   private void emitMapDeserialize(CodeWriter w, ProtoField field, String zigName) {
-    w.line(
-        "const entry_count = std.fmt.parseInt(usize, value, 10) catch 0;");
+    w.line("const entry_count = std.fmt.parseInt(usize, value, 10) catch 0;");
     w.line("offset.* += 1;");
 
     // Determine key/value types for temporaries
@@ -729,8 +686,7 @@ public class PbtkZigGenerator implements LanguageGenerator {
                 w.line("offset.* += 1;");
                 w.line("continue;");
               });
-          w.line(
-              "const mfn = std.fmt.parseInt(i32, mt[0..mne], 10) catch 0;");
+          w.line("const mfn = std.fmt.parseInt(i32, mt[0..mne], 10) catch 0;");
           w.line("const mval = mt[mne + 1 ..];");
 
           w.block(
@@ -744,16 +700,12 @@ public class PbtkZigGenerator implements LanguageGenerator {
               () -> {
                 if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE) {
                   String msgType = zigSimpleTypeName(field.getMapValueTypeReference());
-                  w.line(
-                      "const vsc = std.fmt.parseInt(usize, mval, 10) catch 0;");
+                  w.line("const vsc = std.fmt.parseInt(usize, mval, 10) catch 0;");
                   w.line("offset.* += 1;");
-                  w.line(
-                      "entry_val = %s.parsePbtkTokens(tokens, vsc, offset);",
-                      msgType);
+                  w.line("entry_val = %s.parsePbtkTokens(tokens, vsc, offset);", msgType);
                   w.line("offset.* -= 1;");
                 } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
-                  w.line(
-                      "entry_val = @enumFromInt(std.fmt.parseInt(i32, mval, 10) catch 0);");
+                  w.line("entry_val = @enumFromInt(std.fmt.parseInt(i32, mval, 10) catch 0);");
                 } else {
                   String valRead = scalarReadExpr(field.getMapValueType(), "mval");
                   w.line("entry_val = %s;", valRead);
@@ -765,32 +717,23 @@ public class PbtkZigGenerator implements LanguageGenerator {
     w.block(
         "if (entry_key) |k|",
         () -> {
-          w.block(
-              "if (entry_val) |v|",
-              () -> w.line("obj.%s.put(k, v) catch {};", zigName));
+          w.block("if (entry_val) |v|", () -> w.line("obj.%s.put(k, v) catch {};", zigName));
         });
   }
 
   private String scalarReadExpr(FieldDescriptorProto.Type type, String valueVar) {
     return switch (type) {
-      case TYPE_DOUBLE ->
-          "std.fmt.parseFloat(f64, " + valueVar + ") catch 0.0";
-      case TYPE_FLOAT ->
-          "std.fmt.parseFloat(f32, " + valueVar + ") catch 0.0";
+      case TYPE_DOUBLE -> "std.fmt.parseFloat(f64, " + valueVar + ") catch 0.0";
+      case TYPE_FLOAT -> "std.fmt.parseFloat(f32, " + valueVar + ") catch 0.0";
       case TYPE_INT64, TYPE_SINT64, TYPE_SFIXED64 ->
           "std.fmt.parseInt(i64, " + valueVar + ", 10) catch 0";
-      case TYPE_UINT64, TYPE_FIXED64 ->
-          "std.fmt.parseInt(u64, " + valueVar + ", 10) catch 0";
+      case TYPE_UINT64, TYPE_FIXED64 -> "std.fmt.parseInt(u64, " + valueVar + ", 10) catch 0";
       case TYPE_INT32, TYPE_SINT32, TYPE_SFIXED32 ->
           "std.fmt.parseInt(i32, " + valueVar + ", 10) catch 0";
-      case TYPE_UINT32, TYPE_FIXED32 ->
-          "std.fmt.parseInt(u32, " + valueVar + ", 10) catch 0";
-      case TYPE_BOOL ->
-          "std.mem.eql(u8, " + valueVar + ", \"1\")";
-      case TYPE_STRING ->
-          "std.Uri.percentDecode(" + valueVar + ") catch " + valueVar;
-      case TYPE_BYTES ->
-          "std.base64.standard.Decoder.decode(" + valueVar + ") catch \"\"";
+      case TYPE_UINT32, TYPE_FIXED32 -> "std.fmt.parseInt(u32, " + valueVar + ", 10) catch 0";
+      case TYPE_BOOL -> "std.mem.eql(u8, " + valueVar + ", \"1\")";
+      case TYPE_STRING -> "std.Uri.percentDecode(" + valueVar + ") catch " + valueVar;
+      case TYPE_BYTES -> "std.base64.standard.Decoder.decode(" + valueVar + ") catch \"\"";
       default -> valueVar;
     };
   }
@@ -899,9 +842,7 @@ public class PbtkZigGenerator implements LanguageGenerator {
               hasCleanup = true;
             } else if (field.getKind() == ProtoField.FieldKind.MESSAGE
                 || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
-              w.block(
-                  "if (" + zigName + ") |*val|",
-                  () -> w.line("val.deinit(allocator);"));
+              w.block("if (" + zigName + ") |*val|", () -> w.line("val.deinit(allocator);"));
               hasCleanup = true;
             }
           }
@@ -949,8 +890,16 @@ public class PbtkZigGenerator implements LanguageGenerator {
   static String pbtkTypeChar(FieldDescriptorProto.Type type) {
     return switch (type) {
       case TYPE_BOOL -> "b";
-      case TYPE_INT32, TYPE_SINT32, TYPE_SFIXED32, TYPE_UINT32, TYPE_FIXED32, TYPE_INT64,
-          TYPE_SINT64, TYPE_SFIXED64, TYPE_UINT64, TYPE_FIXED64 ->
+      case TYPE_INT32,
+          TYPE_SINT32,
+          TYPE_SFIXED32,
+          TYPE_UINT32,
+          TYPE_FIXED32,
+          TYPE_INT64,
+          TYPE_SINT64,
+          TYPE_SFIXED64,
+          TYPE_UINT64,
+          TYPE_FIXED64 ->
           "i";
       case TYPE_FLOAT -> "f";
       case TYPE_DOUBLE -> "d";

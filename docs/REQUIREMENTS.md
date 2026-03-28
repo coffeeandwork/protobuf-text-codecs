@@ -168,7 +168,7 @@ LIMITATIONS:
 - **Derived From:** `Main.java:14-18`
 - **Statement:** When invoked with `--version`, the system SHALL print `protoc-gen-jsonarray <version>` to stdout and exit with code 0.
 - **Verification:** Test
-- **Acceptance Criteria:** `./protoc-gen-jsonarray --version` outputs `protoc-gen-jsonarray 0.1.0`.
+- **Acceptance Criteria:** `./protoc-gen-jsonarray --version` outputs `protoc-gen-jsonarray 0.2.0`.
 
 ### Well-Known Types
 
@@ -284,9 +284,9 @@ LIMITATIONS:
 - **Type:** Performance
 - **Priority:** Low
 - **Derived From:** Benchmark results
-- **Statement:** Generated Java serialization code SHALL serialize a simple 4-field message in under 10 microseconds per operation (excluding ObjectMapper creation, which is cached).
+- **Statement:** Generated Java serialization code SHALL serialize a simple 4-field message in under 10 microseconds per operation.
 - **Verification:** Benchmark
-- **Measurement:** Measured: 1.1μs/op for User message with ObjectMapper cached as static field.
+- **Measurement:** Measured: 1.1μs/op for User message using built-in JsonArrayWriter.
 
 ---
 
@@ -311,8 +311,8 @@ LIMITATIONS:
 - **ID:** IF-003
 - **Type:** Interface
 - **Priority:** High
-- **Statement:** Generated Java classes SHALL provide: `serialize(ObjectMapper)` returning `ArrayNode`; `toJsonString()` returning `String`; `toJsonBytes()` returning `byte[]`; `static deserialize(ArrayNode, ObjectMapper)`; `static fromJsonString(String)`; `static fromJsonBytes(byte[])`.
-- **Format:** Jackson `ArrayNode` for structured access; `String`/`byte[]` for convenience
+- **Statement:** Generated Java classes SHALL provide: `toJsonString()` returning `String`; `toJsonBytes()` returning `byte[]`; `static fromJsonString(String)`; `static fromJsonBytes(byte[])`. Serialization uses the built-in `JsonArrayWriter`; deserialization uses the built-in `JsonArrayReader`. No external JSON library is required.
+- **Format:** `String`/`byte[]` for all public API methods; zero external dependencies
 
 ---
 
@@ -348,14 +348,14 @@ LIMITATIONS:
 - **Confidence:** Medium
 - **Needs Confirmation:** Yes — should there be a hard limit?
 
-### DR-004: ObjectMapper Caching in Generated Code
+### DR-004: Zero-Dependency Java Serialization
 - **ID:** DR-004
 - **Type:** Derived
-- **Inferred From:** `JavaCodeEmitter.java` (MAPPER_ static field)
-- **Observed Behavior:** Generated Java classes use a `private static final ObjectMapper MAPPER_` to avoid per-call construction overhead.
-- **Proposed Requirement:** Generated Java code SHALL cache the Jackson ObjectMapper as a static final field, not create a new instance per serialization/deserialization call.
+- **Inferred From:** `JavaCodeEmitter.java` (JsonArrayWriter/JsonArrayReader usage)
+- **Observed Behavior:** Generated Java classes use built-in `JsonArrayWriter` and `JsonArrayReader` for JSON serialization and deserialization, with no external library dependency.
+- **Proposed Requirement:** Generated Java code SHALL NOT depend on any external JSON library. All JSON handling SHALL use the built-in writer and reader classes.
 - **Confidence:** High
-- **Needs Confirmation:** Yes — is shared ObjectMapper acceptable? (Thread-safe but not configurable per-call.)
+- **Needs Confirmation:** No — Jackson was removed in v0.2.0 and replaced with zero-dependency built-in JSON handling.
 
 ### DR-005: Generated equals/hashCode
 - **ID:** DR-005
@@ -418,7 +418,7 @@ LIMITATIONS:
 | Generated code runtime tests | Only Java and Python generated code is executed in tests | Compile and run generated code for all 9 languages |
 | Cross-language round-trip | Only Java↔Python tested | Extend to all language pairs (or at least all→canonical→all) |
 | Streaming serialization | No support for streaming to OutputStream | Future requirement (not blocking) |
-| Protobuf URL format | Planned second encoding format not yet implemented | Future requirement |
+| ~~Protobuf URL format~~ | ~~Planned second encoding format~~ **Resolved**: `protoc-gen-pbtkurl` implemented in v0.2.0 | — |
 
 ## 9. Approval
 

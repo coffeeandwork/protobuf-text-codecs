@@ -9,7 +9,7 @@
 #
 # Prerequisites: protoc, javac, java, python3 on PATH
 # Uses /tmp for generated code and compilation artifacts
-# Finds Jackson JARs from ~/.gradle/caches
+# No external dependencies -- uses built-in JsonArrayWriter/Reader
 
 set -euo pipefail
 
@@ -17,6 +17,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 PROTO_DIR="$PROJECT_ROOT/test-protos/src/main/proto"
 PLUGIN_JAR="$PROJECT_ROOT/plugin/build/libs/protoc-gen-jsonarray.jar"
+RUNTIME_DIR="$PROJECT_ROOT/runtime/java/src/main/java"
 PLUGIN_SCRIPT="$PROJECT_ROOT/protoc-gen-jsonarray"
 WORK_DIR="/tmp/jsonarray-cross-lang-test-$$"
 
@@ -62,19 +63,7 @@ if [ ! -f "$PLUGIN_JAR" ]; then
 fi
 echo "  Found plugin JAR: $PLUGIN_JAR"
 
-# Find Jackson JARs in Gradle cache
-JACKSON_DATABIND=$(find ~/.gradle/caches -path "*/com.fasterxml.jackson.core/jackson-databind*" -name "jackson-databind-*.jar" -not -name "*sources*" -not -name "*javadoc*" 2>/dev/null | sort -V | tail -1)
-JACKSON_CORE=$(find ~/.gradle/caches -path "*/com.fasterxml.jackson.core/jackson-core*" -name "jackson-core-*.jar" -not -name "*sources*" -not -name "*javadoc*" 2>/dev/null | sort -V | tail -1)
-JACKSON_ANNOTATIONS=$(find ~/.gradle/caches -path "*/com.fasterxml.jackson.core/jackson-annotations*" -name "jackson-annotations-*.jar" -not -name "*sources*" -not -name "*javadoc*" 2>/dev/null | sort -V | tail -1)
-
-if [ -z "$JACKSON_DATABIND" ] || [ -z "$JACKSON_CORE" ] || [ -z "$JACKSON_ANNOTATIONS" ]; then
-    echo "ERROR: Could not find Jackson JARs in ~/.gradle/caches"
-    echo "  Run: ./gradlew :runtime:java:build  (to populate the cache)"
-    exit 1
-fi
-echo "  Found Jackson databind: $JACKSON_DATABIND"
-echo "  Found Jackson core: $JACKSON_CORE"
-echo "  Found Jackson annotations: $JACKSON_ANNOTATIONS"
+echo "  Runtime source: $RUNTIME_DIR"
 
 echo ""
 
@@ -111,15 +100,17 @@ echo ""
 
 echo "=== Running Java round-trip test ==="
 
-JAVA_CP="$WORK_DIR/java-gen:$JACKSON_DATABIND:$JACKSON_CORE:$JACKSON_ANNOTATIONS"
+JAVA_CP="$WORK_DIR/java-gen:$RUNTIME_DIR"
 
 # Copy the Java test into the work directory
 cp "$SCRIPT_DIR/java/UserRoundTripTest.java" "$WORK_DIR/java-gen/UserRoundTripTest.java"
 
-# Compile
+# Compile (generated code + runtime sources + test)
 echo "  Compiling Java code..."
 javac -cp "$JAVA_CP" \
     -d "$WORK_DIR/java-classes" \
+    "$RUNTIME_DIR/dev/protocgen/textcodecs/jsonarray/runtime/JsonArrayWriter.java" \
+    "$RUNTIME_DIR/dev/protocgen/textcodecs/jsonarray/runtime/JsonArrayReader.java" \
     "$WORK_DIR/java-gen/com/example/Address.java" \
     "$WORK_DIR/java-gen/com/example/User.java" \
     "$WORK_DIR/java-gen/UserRoundTripTest.java"
@@ -127,7 +118,7 @@ echo "  Compilation successful."
 
 # Run
 echo "  Running Java test..."
-JAVA_OUTPUT=$(java -cp "$WORK_DIR/java-classes:$JACKSON_DATABIND:$JACKSON_CORE:$JACKSON_ANNOTATIONS" UserRoundTripTest 2>&1) || true
+JAVA_OUTPUT=$(java -cp "$WORK_DIR/java-classes" UserRoundTripTest 2>&1) || true
 echo "$JAVA_OUTPUT"
 
 # Extract the serialized JSON from Java output

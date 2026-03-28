@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        java: [17]
+        java: [17, 21]
 
     steps:
       - name: Checkout
@@ -26,19 +26,19 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Spotless check, build, and test
-        run: ./gradlew spotlessCheck :plugin:shadowJar :plugin:test
+        run: ./gradlew spotlessCheck :plugin:shadowJar :plugin:pbtkShadowJar :plugin:test
 
       - name: Install protoc
         run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
 
-      - name: Integration tests - generate code for all languages
+      - name: Integration tests - generate jsonarray code for all languages
         run: |
           PROTO_DIR=test-protos/src/main/proto
           PROTOS=$(find "$PROTO_DIR" -name '*.proto')
           LANGUAGES=(java python javascript typescript c cpp rust zig go)
 
           for lang in "${LANGUAGES[@]}"; do
-            echo "--- Generating $lang ---"
+            echo "--- Generating jsonarray $lang ---"
             OUT_DIR=$(mktemp -d)
             protoc \
               --plugin=protoc-gen-jsonarray=./protoc-gen-jsonarray \
@@ -48,10 +48,35 @@ jobs:
             echo "  $lang: OK (exit $?)"
             rm -rf "$OUT_DIR"
           done
-          echo "All 9 languages generated successfully."
+          echo "All 9 jsonarray languages generated successfully."
 
-      - name: Upload shadow JAR
+      - name: Integration tests - generate pbtkurl code for all languages
+        run: |
+          PROTO_DIR=test-protos/src/main/proto
+          PROTOS=$(find "$PROTO_DIR" -name '*.proto')
+          LANGUAGES=(java python javascript typescript c cpp rust zig go)
+
+          for lang in "${LANGUAGES[@]}"; do
+            echo "--- Generating pbtkurl $lang ---"
+            OUT_DIR=$(mktemp -d)
+            protoc \
+              --plugin=protoc-gen-pbtkurl=./protoc-gen-pbtkurl \
+              --pbtkurl_out="lang=$lang:$OUT_DIR" \
+              --proto_path="$PROTO_DIR" \
+              $PROTOS
+            echo "  $lang: OK (exit $?)"
+            rm -rf "$OUT_DIR"
+          done
+          echo "All 9 pbtkurl languages generated successfully."
+
+      - name: Upload jsonarray JAR
         uses: actions/upload-artifact@v4
         with:
-          name: protoc-gen-jsonarray-jar
+          name: protoc-gen-jsonarray-jar-java${{ matrix.java }}
           path: plugin/build/libs/protoc-gen-jsonarray.jar
+
+      - name: Upload pbtkurl JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: protoc-gen-pbtkurl-jar-java${{ matrix.java }}
+          path: plugin/build/libs/protoc-gen-pbtkurl.jar

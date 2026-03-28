@@ -1,5 +1,13 @@
 # Bug Catalog: protoc-gen-jsonarray Code Generation Plugin
 
+> **Status: Historical audit artifact.** This catalog was produced during initial development
+> (v0.1.0) by a systematic audit of all 9 language generators. Many of the bugs listed here
+> have since been fixed, and some entries were retracted after further analysis showed they
+> were not actual bugs. The Jackson/ObjectMapper references in the performance section are
+> no longer applicable -- Jackson was removed in v0.2.0.
+>
+> For the current state of known issues, see the [GitHub Issues](https://github.com/coffeeandwork/protobuf-text-codecs/issues) page.
+
 Systematic audit of all 9 language generators (Java, Python, JavaScript, TypeScript, C, C++, Rust, Zig, Go).
 
 ---
@@ -610,8 +618,11 @@ Systematic audit of all 9 language generators (Java, Python, JavaScript, TypeScr
 
 ## COMPLETE SUMMARY
 
-**Total findings: 36 unique bugs**
-- CRITICAL: 5 (int64 precision loss, name collisions)
-- HIGH: 18 (keyword collision, import bugs, type overflow, Go panic, ObjectMapper, API compat)
+**Total findings: 36 entries** (from initial v0.1.0 audit)
+- CRITICAL: 5 (int64 precision loss, name collisions) -- collision detection added in SEC-004
+- HIGH: 18 (keyword collision, import bugs, type overflow, Go panic, ObjectMapper, API compat) -- keyword escaping added in SEC-003; Jackson eliminated in v0.2.0
 - MEDIUM: 10 (C++ null semantics, Rust null drop, encoding diffs, TS enum type, perf)
 - LOW: 3 (cosmetic, capacity hints)
+- Retracted: 2 (BUG-TH-06, BUG-NE-01 -- confirmed not bugs after analysis)
+
+Many of these findings drove the safety/security requirements (SR-001 through SR-004, SEC-001 through SEC-004) and their corresponding test coverage in `SafetySecurityTest.java` and `PbtkSafetySecurityTest.java`.

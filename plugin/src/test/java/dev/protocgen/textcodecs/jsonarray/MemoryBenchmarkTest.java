@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024 protobuf-text-codecs contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package dev.protocgen.textcodecs.jsonarray;
 
 import com.google.protobuf.DescriptorProtos.DescriptorProto;
@@ -113,12 +128,13 @@ class MemoryBenchmarkTest {
     // Estimate object count: ~(bytes allocated / avg object size of 64 bytes)
     long medianAllocated = median(allocatedDuringGen);
     long estimatedObjects = medianAllocated / 64;
-    System.err.printf("  Estimated object count (median alloc / 64B): ~%,d objects%n",
-        estimatedObjects);
+    System.err.printf(
+        "  Estimated object count (median alloc / 64B): ~%,d objects%n", estimatedObjects);
     System.err.println();
 
     // Assertion: generation should not allocate more than 10MB for a single complex message
-    assertTrue(medianAllocated < 10_000_000L,
+    assertTrue(
+        medianAllocated < 10_000_000L,
         "JSON array generation allocated too much memory: " + medianAllocated + " bytes");
   }
 
@@ -179,11 +195,12 @@ class MemoryBenchmarkTest {
 
     long medianAllocated = median(allocatedDuringGen);
     long estimatedObjects = medianAllocated / 64;
-    System.err.printf("  Estimated object count (median alloc / 64B): ~%,d objects%n",
-        estimatedObjects);
+    System.err.printf(
+        "  Estimated object count (median alloc / 64B): ~%,d objects%n", estimatedObjects);
     System.err.println();
 
-    assertTrue(medianAllocated < 10_000_000L,
+    assertTrue(
+        medianAllocated < 10_000_000L,
         "pbtk URL generation allocated too much memory: " + medianAllocated + " bytes");
   }
 
@@ -278,8 +295,8 @@ class MemoryBenchmarkTest {
 
     // ProtoField should be under 32KB per field including all transient objects
     // (heap-diff measurements have significant noise due to GC timing)
-    assertTrue(perFieldEstimate < 32_768,
-        "Per-field memory too high: " + perFieldEstimate + " bytes");
+    assertTrue(
+        perFieldEstimate < 32_768, "Per-field memory too high: " + perFieldEstimate + " bytes");
   }
 
   // ======================================================================
@@ -326,7 +343,8 @@ class MemoryBenchmarkTest {
     double mean = 0;
     for (long v : sorted) mean += v;
     mean /= sorted.length;
-    System.err.printf("  %-40s  min=%,12d  median=%,12d  max=%,12d  mean=%,.0f bytes%n",
+    System.err.printf(
+        "  %-40s  min=%,12d  median=%,12d  max=%,12d  mean=%,.0f bytes%n",
         label, min, med, max, mean);
   }
 
@@ -338,12 +356,9 @@ class MemoryBenchmarkTest {
     EnumDescriptorProto statusEnum =
         EnumDescriptorProto.newBuilder()
             .setName("Status")
-            .addValue(
-                EnumValueDescriptorProto.newBuilder().setName("STATUS_UNKNOWN").setNumber(0))
-            .addValue(
-                EnumValueDescriptorProto.newBuilder().setName("STATUS_ACTIVE").setNumber(1))
-            .addValue(
-                EnumValueDescriptorProto.newBuilder().setName("STATUS_INACTIVE").setNumber(2))
+            .addValue(EnumValueDescriptorProto.newBuilder().setName("STATUS_UNKNOWN").setNumber(0))
+            .addValue(EnumValueDescriptorProto.newBuilder().setName("STATUS_ACTIVE").setNumber(1))
+            .addValue(EnumValueDescriptorProto.newBuilder().setName("STATUS_INACTIVE").setNumber(2))
             .build();
 
     DescriptorProto innerMsg =
@@ -412,89 +427,105 @@ class MemoryBenchmarkTest {
 
     kitchenSink.addField(
         FieldDescriptorProto.newBuilder()
-            .setName("str_field").setNumber(1)
+            .setName("str_field")
+            .setNumber(1)
             .setType(FieldDescriptorProto.Type.TYPE_STRING)
             .setLabel(FieldDescriptorProto.Label.LABEL_OPTIONAL));
     kitchenSink.addField(
         FieldDescriptorProto.newBuilder()
-            .setName("int_field").setNumber(2)
+            .setName("int_field")
+            .setNumber(2)
             .setType(FieldDescriptorProto.Type.TYPE_INT32)
             .setLabel(FieldDescriptorProto.Label.LABEL_OPTIONAL));
     kitchenSink.addField(
         FieldDescriptorProto.newBuilder()
-            .setName("long_field").setNumber(3)
+            .setName("long_field")
+            .setNumber(3)
             .setType(FieldDescriptorProto.Type.TYPE_INT64)
             .setLabel(FieldDescriptorProto.Label.LABEL_OPTIONAL));
     kitchenSink.addField(
         FieldDescriptorProto.newBuilder()
-            .setName("double_field").setNumber(4)
+            .setName("double_field")
+            .setNumber(4)
             .setType(FieldDescriptorProto.Type.TYPE_DOUBLE)
             .setLabel(FieldDescriptorProto.Label.LABEL_OPTIONAL));
     kitchenSink.addField(
         FieldDescriptorProto.newBuilder()
-            .setName("float_field").setNumber(5)
+            .setName("float_field")
+            .setNumber(5)
             .setType(FieldDescriptorProto.Type.TYPE_FLOAT)
             .setLabel(FieldDescriptorProto.Label.LABEL_OPTIONAL));
     kitchenSink.addField(
         FieldDescriptorProto.newBuilder()
-            .setName("bool_field").setNumber(6)
+            .setName("bool_field")
+            .setNumber(6)
             .setType(FieldDescriptorProto.Type.TYPE_BOOL)
             .setLabel(FieldDescriptorProto.Label.LABEL_OPTIONAL));
     kitchenSink.addField(
         FieldDescriptorProto.newBuilder()
-            .setName("bytes_field").setNumber(7)
+            .setName("bytes_field")
+            .setNumber(7)
             .setType(FieldDescriptorProto.Type.TYPE_BYTES)
             .setLabel(FieldDescriptorProto.Label.LABEL_OPTIONAL));
     kitchenSink.addField(
         FieldDescriptorProto.newBuilder()
-            .setName("status").setNumber(8)
+            .setName("status")
+            .setNumber(8)
             .setType(FieldDescriptorProto.Type.TYPE_ENUM)
             .setTypeName(".bench.KitchenSink.Status")
             .setLabel(FieldDescriptorProto.Label.LABEL_OPTIONAL));
     kitchenSink.addField(
         FieldDescriptorProto.newBuilder()
-            .setName("inner").setNumber(9)
+            .setName("inner")
+            .setNumber(9)
             .setType(FieldDescriptorProto.Type.TYPE_MESSAGE)
             .setTypeName(".bench.KitchenSink.Inner")
             .setLabel(FieldDescriptorProto.Label.LABEL_OPTIONAL));
     kitchenSink.addField(
         FieldDescriptorProto.newBuilder()
-            .setName("tags").setNumber(10)
+            .setName("tags")
+            .setNumber(10)
             .setType(FieldDescriptorProto.Type.TYPE_STRING)
             .setLabel(FieldDescriptorProto.Label.LABEL_REPEATED));
     kitchenSink.addField(
         FieldDescriptorProto.newBuilder()
-            .setName("items").setNumber(11)
+            .setName("items")
+            .setNumber(11)
             .setType(FieldDescriptorProto.Type.TYPE_MESSAGE)
             .setTypeName(".bench.KitchenSink.Inner")
             .setLabel(FieldDescriptorProto.Label.LABEL_REPEATED));
     kitchenSink.addField(
         FieldDescriptorProto.newBuilder()
-            .setName("metadata").setNumber(12)
+            .setName("metadata")
+            .setNumber(12)
             .setType(FieldDescriptorProto.Type.TYPE_MESSAGE)
             .setTypeName(".bench.KitchenSink.MetadataEntry")
             .setLabel(FieldDescriptorProto.Label.LABEL_REPEATED));
     kitchenSink.addField(
         FieldDescriptorProto.newBuilder()
-            .setName("lookup").setNumber(13)
+            .setName("lookup")
+            .setNumber(13)
             .setType(FieldDescriptorProto.Type.TYPE_MESSAGE)
             .setTypeName(".bench.KitchenSink.LookupEntry")
             .setLabel(FieldDescriptorProto.Label.LABEL_REPEATED));
     kitchenSink.addField(
         FieldDescriptorProto.newBuilder()
-            .setName("success_msg").setNumber(14)
+            .setName("success_msg")
+            .setNumber(14)
             .setType(FieldDescriptorProto.Type.TYPE_STRING)
             .setLabel(FieldDescriptorProto.Label.LABEL_OPTIONAL)
             .setOneofIndex(0));
     kitchenSink.addField(
         FieldDescriptorProto.newBuilder()
-            .setName("error_code").setNumber(15)
+            .setName("error_code")
+            .setNumber(15)
             .setType(FieldDescriptorProto.Type.TYPE_INT32)
             .setLabel(FieldDescriptorProto.Label.LABEL_OPTIONAL)
             .setOneofIndex(0));
     kitchenSink.addField(
         FieldDescriptorProto.newBuilder()
-            .setName("opt_tag").setNumber(16)
+            .setName("opt_tag")
+            .setNumber(16)
             .setType(FieldDescriptorProto.Type.TYPE_STRING)
             .setLabel(FieldDescriptorProto.Label.LABEL_OPTIONAL)
             .setProto3Optional(true)

@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Project renamed from `protoc-gen-jsonarray` to `protobuf-text-codecs` to reflect multi-format support
 - Several package-private methods made public to support cross-package reuse (`snakeToPascal`, `pascalToSnake`, `toSnakeCase`, `simpleTypeName`)
 
+### Removed
+- Jackson dependency eliminated from generated Java code; replaced with zero-dependency built-in `JsonArrayWriter` and `JsonArrayReader`
+- `serialize(ObjectMapper)` and `deserialize(ArrayNode, ObjectMapper)` API methods removed in favor of `toJsonString()`/`fromJsonString()`
+
 ## [0.1.0] - 2026-03-19
 
 ### Added

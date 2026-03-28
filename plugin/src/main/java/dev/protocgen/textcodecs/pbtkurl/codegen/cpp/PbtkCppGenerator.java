@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024 protobuf-text-codecs contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package dev.protocgen.textcodecs.pbtkurl.codegen.cpp;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
@@ -205,7 +220,8 @@ public class PbtkCppGenerator implements LanguageGenerator {
           break;
         case "optional":
           if (field.isProto3Optional()) return true;
-          if (!field.isRepeated() && !field.isMap()
+          if (!field.isRepeated()
+              && !field.isMap()
               && (field.getKind() == ProtoField.FieldKind.MESSAGE
                   || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE)) return true;
           break;
@@ -242,18 +258,18 @@ public class PbtkCppGenerator implements LanguageGenerator {
     }
   }
 
-  private void collectCrossFileIncludes(ProtoMessage message, ProtoFile file,
-      Set<String> includes) {
+  private void collectCrossFileIncludes(
+      ProtoMessage message, ProtoFile file, Set<String> includes) {
     String pkg = nameResolver.resolvePackage(file);
     String currentPrefix =
         file.getProtoPackage().isEmpty() ? "." : "." + file.getProtoPackage() + ".";
 
     for (ProtoField field : message.getFields()) {
-      collectCppTypeInclude(field.getTypeReference(), field, message, file, currentPrefix,
-          pkg, includes);
+      collectCppTypeInclude(
+          field.getTypeReference(), field, message, file, currentPrefix, pkg, includes);
       if (field.isMap() && field.getMapValueTypeReference() != null) {
-        collectCppTypeInclude(field.getMapValueTypeReference(), null, message, file,
-            currentPrefix, pkg, includes);
+        collectCppTypeInclude(
+            field.getMapValueTypeReference(), null, message, file, currentPrefix, pkg, includes);
       }
     }
 
@@ -262,8 +278,14 @@ public class PbtkCppGenerator implements LanguageGenerator {
     }
   }
 
-  private void collectCppTypeInclude(String typeRef, ProtoField field, ProtoMessage message,
-      ProtoFile file, String currentPrefix, String pkg, Set<String> includes) {
+  private void collectCppTypeInclude(
+      String typeRef,
+      ProtoField field,
+      ProtoMessage message,
+      ProtoFile file,
+      String currentPrefix,
+      String pkg,
+      Set<String> includes) {
     if (typeRef == null) return;
     if (field != null && field.isWellKnownType()) return;
 
@@ -279,8 +301,7 @@ public class PbtkCppGenerator implements LanguageGenerator {
     }
   }
 
-  private void emitExternalForwardDeclarations(CodeWriter w, ProtoMessage message,
-      ProtoFile file) {
+  private void emitExternalForwardDeclarations(CodeWriter w, ProtoMessage message, ProtoFile file) {
     Set<String> forwardDecls = new LinkedHashSet<>();
     collectExternalForwardDeclarations(message, file, forwardDecls);
     for (String decl : forwardDecls) {
@@ -291,17 +312,17 @@ public class PbtkCppGenerator implements LanguageGenerator {
     }
   }
 
-  private void collectExternalForwardDeclarations(ProtoMessage message, ProtoFile file,
-      Set<String> forwardDecls) {
+  private void collectExternalForwardDeclarations(
+      ProtoMessage message, ProtoFile file, Set<String> forwardDecls) {
     String currentPrefix =
         file.getProtoPackage().isEmpty() ? "." : "." + file.getProtoPackage() + ".";
 
     for (ProtoField field : message.getFields()) {
-      collectCppTypeForwardDecl(field.getTypeReference(), field, message, currentPrefix,
-          forwardDecls);
+      collectCppTypeForwardDecl(
+          field.getTypeReference(), field, message, currentPrefix, forwardDecls);
       if (field.isMap() && field.getMapValueTypeReference() != null) {
-        collectCppTypeForwardDecl(field.getMapValueTypeReference(), null, message,
-            currentPrefix, forwardDecls);
+        collectCppTypeForwardDecl(
+            field.getMapValueTypeReference(), null, message, currentPrefix, forwardDecls);
       }
     }
 
@@ -310,11 +331,16 @@ public class PbtkCppGenerator implements LanguageGenerator {
     }
   }
 
-  private void collectCppTypeForwardDecl(String typeRef, ProtoField field, ProtoMessage message,
-      String currentPrefix, Set<String> forwardDecls) {
+  private void collectCppTypeForwardDecl(
+      String typeRef,
+      ProtoField field,
+      ProtoMessage message,
+      String currentPrefix,
+      Set<String> forwardDecls) {
     if (typeRef == null) return;
     if (field != null && field.isWellKnownType()) return;
-    if (field != null && field.getKind() != ProtoField.FieldKind.MESSAGE
+    if (field != null
+        && field.getKind() != ProtoField.FieldKind.MESSAGE
         && field.getKind() != ProtoField.FieldKind.WELL_KNOWN_TYPE) return;
 
     for (ProtoMessage nested : message.getNestedMessages()) {
@@ -344,40 +370,42 @@ public class PbtkCppGenerator implements LanguageGenerator {
   private void emitClassDeclaration(CodeWriter w, ProtoMessage message) {
     String className = nameResolver.messageClassName(message.getName());
 
-    w.block("class " + className, () -> {
-      // Private fields
-      w.line("private:");
-      w.indent();
-      emitFields(w, message);
-      w.dedent();
+    w.block(
+        "class " + className,
+        () -> {
+          // Private fields
+          w.line("private:");
+          w.indent();
+          emitFields(w, message);
+          w.dedent();
 
-      w.blankLine();
-      w.line("public:");
-      w.indent();
+          w.blankLine();
+          w.line("public:");
+          w.indent();
 
-      // Default constructor
-      w.line("%s() = default;", className);
-      w.blankLine();
+          // Default constructor
+          w.line("%s() = default;", className);
+          w.blankLine();
 
-      // Move/copy constructors
-      w.line("%s(const %s&) = default;", className, className);
-      w.line("%s(%s&&) = default;", className, className);
-      w.line("%s& operator=(const %s&) = default;", className, className);
-      w.line("%s& operator=(%s&&) = default;", className, className);
+          // Move/copy constructors
+          w.line("%s(const %s&) = default;", className, className);
+          w.line("%s(%s&&) = default;", className, className);
+          w.line("%s& operator=(const %s&) = default;", className, className);
+          w.line("%s& operator=(%s&&) = default;", className, className);
 
-      // Getters and setters
-      emitGettersSetters(w, message);
+          // Getters and setters
+          emitGettersSetters(w, message);
 
-      // Oneof case accessors
-      emitOneofAccessors(w, message);
+          // Oneof case accessors
+          emitOneofAccessors(w, message);
 
-      // pbtk URL declarations
-      w.blankLine();
-      w.line("std::string to_pbtk_url() const;");
-      w.line("static %s from_pbtk_url(const std::string& input);", className);
+          // pbtk URL declarations
+          w.blankLine();
+          w.line("std::string to_pbtk_url() const;");
+          w.line("static %s from_pbtk_url(const std::string& input);", className);
 
-      w.dedent();
-    });
+          w.dedent();
+        });
     w.line(";");
   }
 
@@ -411,17 +439,21 @@ public class PbtkCppGenerator implements LanguageGenerator {
       }
 
       if (isComplexType(field)) {
-        w.line("void %s(const %s& value) { %s = value;%s }",
+        w.line(
+            "void %s(const %s& value) { %s = value;%s }",
             setterName, cppType, cppName, oneofSetSuffix(field));
-        w.line("void %s(%s&& value) { %s = std::move(value);%s }",
+        w.line(
+            "void %s(%s&& value) { %s = std::move(value);%s }",
             setterName, cppType, cppName, oneofSetSuffix(field));
       } else {
-        w.line("void %s(%s value) { %s = value;%s }",
+        w.line(
+            "void %s(%s value) { %s = value;%s }",
             setterName, cppType, cppName, oneofSetSuffix(field));
       }
 
       if (field.isProto3Optional()
-          || (!field.isRepeated() && !field.isMap()
+          || (!field.isRepeated()
+              && !field.isMap()
               && (field.getKind() == ProtoField.FieldKind.MESSAGE
                   || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE))) {
         String hasName = "has_" + nameResolver.fieldName(field.getName());
@@ -470,102 +502,130 @@ public class PbtkCppGenerator implements LanguageGenerator {
     w.blankLine();
 
     // URL encode
-    w.block("inline std::string url_encode(const std::string& input)", () -> {
-      w.line("std::ostringstream oss;");
-      w.line("oss << std::hex << std::uppercase;");
-      w.block("for (unsigned char c : input)", () -> {
-        w.block("if (std::isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~')", () -> {
-          w.line("oss << c;");
+    w.block(
+        "inline std::string url_encode(const std::string& input)",
+        () -> {
+          w.line("std::ostringstream oss;");
+          w.line("oss << std::hex << std::uppercase;");
+          w.block(
+              "for (unsigned char c : input)",
+              () -> {
+                w.block(
+                    "if (std::isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~')",
+                    () -> {
+                      w.line("oss << c;");
+                    });
+                w.block(
+                    "else",
+                    () -> {
+                      w.line(
+                          "oss << '%%' << std::setw(2) << std::setfill('0') << static_cast<int>(c);");
+                    });
+              });
+          w.line("return oss.str();");
         });
-        w.block("else", () -> {
-          w.line("oss << '%%' << std::setw(2) << std::setfill('0') << static_cast<int>(c);");
-        });
-      });
-      w.line("return oss.str();");
-    });
     w.blankLine();
 
     // URL decode
-    w.block("inline std::string url_decode(const std::string& input)", () -> {
-      w.line("std::string result;");
-      w.line("result.reserve(input.size());");
-      w.block("for (size_t i = 0; i < input.size(); i++)", () -> {
-        w.block("if (input[i] == '%' && i + 2 < input.size())", () -> {
-          w.line("char hi = input[i + 1], lo = input[i + 2];");
-          w.line("auto hex_val = [](char c) -> int {");
-          w.indent();
-          w.line("if (c >= '0' && c <= '9') return c - '0';");
-          w.line("if (c >= 'A' && c <= 'F') return c - 'A' + 10;");
-          w.line("if (c >= 'a' && c <= 'f') return c - 'a' + 10;");
-          w.line("return -1;");
-          w.dedent();
-          w.line("};");
-          w.line("int h = hex_val(hi), l = hex_val(lo);");
-          w.block("if (h >= 0 && l >= 0)", () -> {
-            w.line("result += static_cast<char>((h << 4) | l);");
-            w.line("i += 2;");
-            w.line("continue;");
-          });
+    w.block(
+        "inline std::string url_decode(const std::string& input)",
+        () -> {
+          w.line("std::string result;");
+          w.line("result.reserve(input.size());");
+          w.block(
+              "for (size_t i = 0; i < input.size(); i++)",
+              () -> {
+                w.block(
+                    "if (input[i] == '%' && i + 2 < input.size())",
+                    () -> {
+                      w.line("char hi = input[i + 1], lo = input[i + 2];");
+                      w.line("auto hex_val = [](char c) -> int {");
+                      w.indent();
+                      w.line("if (c >= '0' && c <= '9') return c - '0';");
+                      w.line("if (c >= 'A' && c <= 'F') return c - 'A' + 10;");
+                      w.line("if (c >= 'a' && c <= 'f') return c - 'a' + 10;");
+                      w.line("return -1;");
+                      w.dedent();
+                      w.line("};");
+                      w.line("int h = hex_val(hi), l = hex_val(lo);");
+                      w.block(
+                          "if (h >= 0 && l >= 0)",
+                          () -> {
+                            w.line("result += static_cast<char>((h << 4) | l);");
+                            w.line("i += 2;");
+                            w.line("continue;");
+                          });
+                    });
+                w.line("result += input[i];");
+              });
+          w.line("return result;");
         });
-        w.line("result += input[i];");
-      });
-      w.line("return result;");
-    });
     w.blankLine();
 
     // Base64 encode
-    w.block("inline std::string base64_encode(const std::vector<uint8_t>& data)", () -> {
-      w.line("static const char table[] = "
-          + "\"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/\";");
-      w.line("std::string result;");
-      w.line("size_t len = data.size();");
-      w.line("result.reserve(4 * ((len + 2) / 3));");
-      w.block("for (size_t i = 0; i < len; i += 3)", () -> {
-        w.line("uint32_t a = data[i];");
-        w.line("uint32_t b = (i + 1 < len) ? data[i + 1] : 0;");
-        w.line("uint32_t c = (i + 2 < len) ? data[i + 2] : 0;");
-        w.line("uint32_t triple = (a << 16) | (b << 8) | c;");
-        w.line("result += table[(triple >> 18) & 0x3F];");
-        w.line("result += table[(triple >> 12) & 0x3F];");
-        w.line("result += (i + 1 < len) ? table[(triple >> 6) & 0x3F] : '=';");
-        w.line("result += (i + 2 < len) ? table[triple & 0x3F] : '=';");
-      });
-      w.line("return result;");
-    });
+    w.block(
+        "inline std::string base64_encode(const std::vector<uint8_t>& data)",
+        () -> {
+          w.line(
+              "static const char table[] = "
+                  + "\"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/\";");
+          w.line("std::string result;");
+          w.line("size_t len = data.size();");
+          w.line("result.reserve(4 * ((len + 2) / 3));");
+          w.block(
+              "for (size_t i = 0; i < len; i += 3)",
+              () -> {
+                w.line("uint32_t a = data[i];");
+                w.line("uint32_t b = (i + 1 < len) ? data[i + 1] : 0;");
+                w.line("uint32_t c = (i + 2 < len) ? data[i + 2] : 0;");
+                w.line("uint32_t triple = (a << 16) | (b << 8) | c;");
+                w.line("result += table[(triple >> 18) & 0x3F];");
+                w.line("result += table[(triple >> 12) & 0x3F];");
+                w.line("result += (i + 1 < len) ? table[(triple >> 6) & 0x3F] : '=';");
+                w.line("result += (i + 2 < len) ? table[triple & 0x3F] : '=';");
+              });
+          w.line("return result;");
+        });
     w.blankLine();
 
     // Base64 decode
-    w.block("inline std::vector<uint8_t> base64_decode(const std::string& input)", () -> {
-      w.line("auto b64_val = [](char c) -> int {");
-      w.indent();
-      w.line("if (c >= 'A' && c <= 'Z') return c - 'A';");
-      w.line("if (c >= 'a' && c <= 'z') return c - 'a' + 26;");
-      w.line("if (c >= '0' && c <= '9') return c - '0' + 52;");
-      w.line("if (c == '+') return 62;");
-      w.line("if (c == '/') return 63;");
-      w.line("return -1;");
-      w.dedent();
-      w.line("};");
-      w.line("std::vector<uint8_t> result;");
-      w.line("size_t len = input.size();");
-      w.line("if (len == 0) return result;");
-      w.line("size_t padding = 0;");
-      w.line("if (input[len - 1] == '=') padding++;");
-      w.line("if (len > 1 && input[len - 2] == '=') padding++;");
-      w.line("result.reserve((len / 4) * 3 - padding);");
-      w.block("for (size_t i = 0; i < len; i += 4)", () -> {
-        w.line("int a = b64_val(input[i]);");
-        w.line("int b = (i + 1 < len) ? b64_val(input[i + 1]) : 0;");
-        w.line("int c = (i + 2 < len) ? b64_val(input[i + 2]) : 0;");
-        w.line("int d = (i + 3 < len) ? b64_val(input[i + 3]) : 0;");
-        w.line("if (a < 0) a = 0; if (b < 0) b = 0; if (c < 0) c = 0; if (d < 0) d = 0;");
-        w.line("uint32_t triple = ((uint32_t)a << 18) | ((uint32_t)b << 12) | ((uint32_t)c << 6) | (uint32_t)d;");
-        w.line("result.push_back((triple >> 16) & 0xFF);");
-        w.line("if (i + 2 < len && input[i + 2] != '=') result.push_back((triple >> 8) & 0xFF);");
-        w.line("if (i + 3 < len && input[i + 3] != '=') result.push_back(triple & 0xFF);");
-      });
-      w.line("return result;");
-    });
+    w.block(
+        "inline std::vector<uint8_t> base64_decode(const std::string& input)",
+        () -> {
+          w.line("auto b64_val = [](char c) -> int {");
+          w.indent();
+          w.line("if (c >= 'A' && c <= 'Z') return c - 'A';");
+          w.line("if (c >= 'a' && c <= 'z') return c - 'a' + 26;");
+          w.line("if (c >= '0' && c <= '9') return c - '0' + 52;");
+          w.line("if (c == '+') return 62;");
+          w.line("if (c == '/') return 63;");
+          w.line("return -1;");
+          w.dedent();
+          w.line("};");
+          w.line("std::vector<uint8_t> result;");
+          w.line("size_t len = input.size();");
+          w.line("if (len == 0) return result;");
+          w.line("size_t padding = 0;");
+          w.line("if (input[len - 1] == '=') padding++;");
+          w.line("if (len > 1 && input[len - 2] == '=') padding++;");
+          w.line("result.reserve((len / 4) * 3 - padding);");
+          w.block(
+              "for (size_t i = 0; i < len; i += 4)",
+              () -> {
+                w.line("int a = b64_val(input[i]);");
+                w.line("int b = (i + 1 < len) ? b64_val(input[i + 1]) : 0;");
+                w.line("int c = (i + 2 < len) ? b64_val(input[i + 2]) : 0;");
+                w.line("int d = (i + 3 < len) ? b64_val(input[i + 3]) : 0;");
+                w.line("if (a < 0) a = 0; if (b < 0) b = 0; if (c < 0) c = 0; if (d < 0) d = 0;");
+                w.line(
+                    "uint32_t triple = ((uint32_t)a << 18) | ((uint32_t)b << 12) | ((uint32_t)c << 6) | (uint32_t)d;");
+                w.line("result.push_back((triple >> 16) & 0xFF);");
+                w.line(
+                    "if (i + 2 < len && input[i + 2] != '=') result.push_back((triple >> 8) & 0xFF);");
+                w.line("if (i + 3 < len && input[i + 3] != '=') result.push_back(triple & 0xFF);");
+              });
+          w.line("return result;");
+        });
     w.blankLine();
 
     w.line("} // namespace pbtk_detail_%s", className);
@@ -573,13 +633,15 @@ public class PbtkCppGenerator implements LanguageGenerator {
 
   private void emitCountMethod(CodeWriter w, ProtoMessage message, String className) {
     w.blankLine();
-    w.block("inline int " + className + "_count_pbtk_fields(const " + className + "& msg)", () -> {
-      w.line("int count = 0;");
-      for (ProtoField field : message.getFields()) {
-        emitFieldCount(w, field);
-      }
-      w.line("return count;");
-    });
+    w.block(
+        "inline int " + className + "_count_pbtk_fields(const " + className + "& msg)",
+        () -> {
+          w.line("int count = 0;");
+          for (ProtoField field : message.getFields()) {
+            emitFieldCount(w, field);
+          }
+          w.line("return count;");
+        });
   }
 
   private void emitFieldCount(CodeWriter w, ProtoField field) {
@@ -607,12 +669,17 @@ public class PbtkCppGenerator implements LanguageGenerator {
 
   private void emitAppendFieldsMethod(CodeWriter w, ProtoMessage message, String className) {
     w.blankLine();
-    w.block("inline void " + className + "_append_pbtk_fields(std::ostringstream& oss, const "
-        + className + "& msg)", () -> {
-      for (ProtoField field : message.getFields()) {
-        emitFieldSerialize(w, field, className);
-      }
-    });
+    w.block(
+        "inline void "
+            + className
+            + "_append_pbtk_fields(std::ostringstream& oss, const "
+            + className
+            + "& msg)",
+        () -> {
+          for (ProtoField field : message.getFields()) {
+            emitFieldSerialize(w, field, className);
+          }
+        });
   }
 
   private void emitFieldSerialize(CodeWriter w, ProtoField field, String className) {
@@ -621,9 +688,11 @@ public class PbtkCppGenerator implements LanguageGenerator {
 
     if (field.isOneofMember()) {
       String caseGetter = "msg." + nameResolver.fieldName(field.getOneofName()) + "_case()";
-      w.block("if (" + caseGetter + " == " + field.getFieldNumber() + ")", () -> {
-        emitSingleFieldAppend(w, field, getter, fieldNum, className);
-      });
+      w.block(
+          "if (" + caseGetter + " == " + field.getFieldNumber() + ")",
+          () -> {
+            emitSingleFieldAppend(w, field, getter, fieldNum, className);
+          });
       return;
     }
 
@@ -641,8 +710,8 @@ public class PbtkCppGenerator implements LanguageGenerator {
     }
   }
 
-  private void emitSingleFieldAppend(CodeWriter w, ProtoField field, String getter,
-      int fieldNum, String className) {
+  private void emitSingleFieldAppend(
+      CodeWriter w, ProtoField field, String getter, int fieldNum, String className) {
     if (field.getKind() == ProtoField.FieldKind.MESSAGE
         || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
       emitMessageSerialize(w, field, getter, fieldNum, className);
@@ -658,56 +727,63 @@ public class PbtkCppGenerator implements LanguageGenerator {
     String typeChar = pbtkTypeChar(type);
     String className = "/* unused */"; // placeholder for detail namespace
 
-    Runnable appendCode = () -> {
-      switch (type) {
-        case TYPE_BOOL:
-          if (field.isProto3Optional()) {
-            w.line("oss << \"!%d%s\" << (%s.value() ? \"1\" : \"0\");", fieldNum, typeChar, getter);
-          } else {
-            w.line("oss << \"!%d%s\" << (%s ? \"1\" : \"0\");", fieldNum, typeChar, getter);
+    Runnable appendCode =
+        () -> {
+          switch (type) {
+            case TYPE_BOOL:
+              if (field.isProto3Optional()) {
+                w.line(
+                    "oss << \"!%d%s\" << (%s.value() ? \"1\" : \"0\");",
+                    fieldNum, typeChar, getter);
+              } else {
+                w.line("oss << \"!%d%s\" << (%s ? \"1\" : \"0\");", fieldNum, typeChar, getter);
+              }
+              break;
+            case TYPE_BYTES:
+              if (field.isProto3Optional()) {
+                w.line(
+                    "oss << \"!%d%s\" << pbtk_detail_%s::base64_encode(%s.value());",
+                    fieldNum, typeChar, resolveDetailNs(field), getter);
+              } else {
+                w.line(
+                    "oss << \"!%d%s\" << pbtk_detail_%s::base64_encode(%s);",
+                    fieldNum, typeChar, resolveDetailNs(field), getter);
+              }
+              break;
+            case TYPE_STRING:
+              if (field.isProto3Optional()) {
+                w.line(
+                    "oss << \"!%d%s\" << pbtk_detail_%s::url_encode(%s.value());",
+                    fieldNum, typeChar, resolveDetailNs(field), getter);
+              } else {
+                w.line(
+                    "oss << \"!%d%s\" << pbtk_detail_%s::url_encode(%s);",
+                    fieldNum, typeChar, resolveDetailNs(field), getter);
+              }
+              break;
+            case TYPE_DOUBLE:
+              if (field.isProto3Optional()) {
+                w.line("oss << \"!%d%s\" << %s.value();", fieldNum, typeChar, getter);
+              } else {
+                w.line("oss << \"!%d%s\" << %s;", fieldNum, typeChar, getter);
+              }
+              break;
+            case TYPE_FLOAT:
+              if (field.isProto3Optional()) {
+                w.line("oss << \"!%d%s\" << %s.value();", fieldNum, typeChar, getter);
+              } else {
+                w.line("oss << \"!%d%s\" << %s;", fieldNum, typeChar, getter);
+              }
+              break;
+            default:
+              if (field.isProto3Optional()) {
+                w.line("oss << \"!%d%s\" << %s.value();", fieldNum, typeChar, getter);
+              } else {
+                w.line("oss << \"!%d%s\" << %s;", fieldNum, typeChar, getter);
+              }
+              break;
           }
-          break;
-        case TYPE_BYTES:
-          if (field.isProto3Optional()) {
-            w.line("oss << \"!%d%s\" << pbtk_detail_%s::base64_encode(%s.value());",
-                fieldNum, typeChar, resolveDetailNs(field), getter);
-          } else {
-            w.line("oss << \"!%d%s\" << pbtk_detail_%s::base64_encode(%s);",
-                fieldNum, typeChar, resolveDetailNs(field), getter);
-          }
-          break;
-        case TYPE_STRING:
-          if (field.isProto3Optional()) {
-            w.line("oss << \"!%d%s\" << pbtk_detail_%s::url_encode(%s.value());",
-                fieldNum, typeChar, resolveDetailNs(field), getter);
-          } else {
-            w.line("oss << \"!%d%s\" << pbtk_detail_%s::url_encode(%s);",
-                fieldNum, typeChar, resolveDetailNs(field), getter);
-          }
-          break;
-        case TYPE_DOUBLE:
-          if (field.isProto3Optional()) {
-            w.line("oss << \"!%d%s\" << %s.value();", fieldNum, typeChar, getter);
-          } else {
-            w.line("oss << \"!%d%s\" << %s;", fieldNum, typeChar, getter);
-          }
-          break;
-        case TYPE_FLOAT:
-          if (field.isProto3Optional()) {
-            w.line("oss << \"!%d%s\" << %s.value();", fieldNum, typeChar, getter);
-          } else {
-            w.line("oss << \"!%d%s\" << %s;", fieldNum, typeChar, getter);
-          }
-          break;
-        default:
-          if (field.isProto3Optional()) {
-            w.line("oss << \"!%d%s\" << %s.value();", fieldNum, typeChar, getter);
-          } else {
-            w.line("oss << \"!%d%s\" << %s;", fieldNum, typeChar, getter);
-          }
-          break;
-      }
-    };
+        };
 
     if (field.isProto3Optional()) {
       w.block("if (" + getter + ".has_value())", appendCode);
@@ -718,38 +794,44 @@ public class PbtkCppGenerator implements LanguageGenerator {
 
   private void emitEnumSerialize(CodeWriter w, ProtoField field, String getter, int fieldNum) {
     if (field.isProto3Optional()) {
-      w.block("if (" + getter + ".has_value())", () -> {
-        w.line("oss << \"!%de\" << static_cast<int>(%s.value());", fieldNum, getter);
-      });
+      w.block(
+          "if (" + getter + ".has_value())",
+          () -> {
+            w.line("oss << \"!%de\" << static_cast<int>(%s.value());", fieldNum, getter);
+          });
     } else {
       w.line("oss << \"!%de\" << static_cast<int>(%s);", fieldNum, getter);
     }
   }
 
-  private void emitMessageSerialize(CodeWriter w, ProtoField field, String getter,
-      int fieldNum, String className) {
+  private void emitMessageSerialize(
+      CodeWriter w, ProtoField field, String getter, int fieldNum, String className) {
     String msgType = simpleTypeName(field.getTypeReference());
-    w.block("if (" + getter + ".has_value())", () -> {
-      w.line("oss << \"!%dm\" << %s_count_pbtk_fields(%s.value());", fieldNum, msgType, getter);
-      w.line("%s_append_pbtk_fields(oss, %s.value());", msgType, getter);
-    });
+    w.block(
+        "if (" + getter + ".has_value())",
+        () -> {
+          w.line("oss << \"!%dm\" << %s_count_pbtk_fields(%s.value());", fieldNum, msgType, getter);
+          w.line("%s_append_pbtk_fields(oss, %s.value());", msgType, getter);
+        });
   }
 
-  private void emitRepeatedSerialize(CodeWriter w, ProtoField field, String getter,
-      int fieldNum, String className) {
+  private void emitRepeatedSerialize(
+      CodeWriter w, ProtoField field, String getter, int fieldNum, String className) {
     String elemType = typeMapper.elementType(field);
-    w.block("for (const auto& __elem : " + getter + ")", () -> {
-      if (field.getKind() == ProtoField.FieldKind.MESSAGE
-          || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
-        String msgType = simpleTypeName(field.getTypeReference());
-        w.line("oss << \"!%dm\" << %s_count_pbtk_fields(__elem);", fieldNum, msgType);
-        w.line("%s_append_pbtk_fields(oss, __elem);", msgType);
-      } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
-        w.line("oss << \"!%de\" << static_cast<int>(__elem);", fieldNum);
-      } else {
-        emitScalarElemAppend(w, field, "__elem", fieldNum);
-      }
-    });
+    w.block(
+        "for (const auto& __elem : " + getter + ")",
+        () -> {
+          if (field.getKind() == ProtoField.FieldKind.MESSAGE
+              || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
+            String msgType = simpleTypeName(field.getTypeReference());
+            w.line("oss << \"!%dm\" << %s_count_pbtk_fields(__elem);", fieldNum, msgType);
+            w.line("%s_append_pbtk_fields(oss, __elem);", msgType);
+          } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
+            w.line("oss << \"!%de\" << static_cast<int>(__elem);", fieldNum);
+          } else {
+            emitScalarElemAppend(w, field, "__elem", fieldNum);
+          }
+        });
   }
 
   private void emitScalarElemAppend(CodeWriter w, ProtoField field, String elemVar, int fieldNum) {
@@ -761,11 +843,13 @@ public class PbtkCppGenerator implements LanguageGenerator {
         w.line("oss << \"!%d%s\" << (%s ? \"1\" : \"0\");", fieldNum, typeChar, elemVar);
         break;
       case TYPE_STRING:
-        w.line("oss << \"!%d%s\" << pbtk_detail_%s::url_encode(%s);",
+        w.line(
+            "oss << \"!%d%s\" << pbtk_detail_%s::url_encode(%s);",
             fieldNum, typeChar, resolveDetailNs(field), elemVar);
         break;
       case TYPE_BYTES:
-        w.line("oss << \"!%d%s\" << pbtk_detail_%s::base64_encode(%s);",
+        w.line(
+            "oss << \"!%d%s\" << pbtk_detail_%s::base64_encode(%s);",
             fieldNum, typeChar, resolveDetailNs(field), elemVar);
         break;
       default:
@@ -774,47 +858,52 @@ public class PbtkCppGenerator implements LanguageGenerator {
     }
   }
 
-  private void emitMapSerialize(CodeWriter w, ProtoField field, String getter,
-      int fieldNum, String className) {
-    w.block("for (const auto& [__k, __v] : " + getter + ")", () -> {
-      w.line("oss << \"!%dm2\";", fieldNum);
-      // Key (field 1)
-      String keyTypeChar = pbtkTypeChar(field.getMapKeyType());
-      if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_STRING) {
-        w.line("oss << \"!1%s\" << pbtk_detail_%s::url_encode(__k);",
-            keyTypeChar, resolveDetailNs(field));
-      } else if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_BOOL) {
-        w.line("oss << \"!1%s\" << (__k ? \"1\" : \"0\");", keyTypeChar);
-      } else {
-        w.line("oss << \"!1%s\" << __k;", keyTypeChar);
-      }
-      // Value (field 2)
-      if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE) {
-        String msgType = simpleTypeName(field.getMapValueTypeReference());
-        w.line("oss << \"!2m\" << %s_count_pbtk_fields(__v);", msgType);
-        w.line("%s_append_pbtk_fields(oss, __v);", msgType);
-      } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
-        w.line("oss << \"!2e\" << static_cast<int>(__v);");
-      } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_STRING) {
-        w.line("oss << \"!2s\" << pbtk_detail_%s::url_encode(__v);", resolveDetailNs(field));
-      } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
-        w.line("oss << \"!2z\" << pbtk_detail_%s::base64_encode(__v);", resolveDetailNs(field));
-      } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BOOL) {
-        w.line("oss << \"!2b\" << (__v ? \"1\" : \"0\");");
-      } else {
-        String valTypeChar = pbtkTypeChar(field.getMapValueType());
-        w.line("oss << \"!2%s\" << __v;", valTypeChar);
-      }
-    });
+  private void emitMapSerialize(
+      CodeWriter w, ProtoField field, String getter, int fieldNum, String className) {
+    w.block(
+        "for (const auto& [__k, __v] : " + getter + ")",
+        () -> {
+          w.line("oss << \"!%dm2\";", fieldNum);
+          // Key (field 1)
+          String keyTypeChar = pbtkTypeChar(field.getMapKeyType());
+          if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_STRING) {
+            w.line(
+                "oss << \"!1%s\" << pbtk_detail_%s::url_encode(__k);",
+                keyTypeChar, resolveDetailNs(field));
+          } else if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_BOOL) {
+            w.line("oss << \"!1%s\" << (__k ? \"1\" : \"0\");", keyTypeChar);
+          } else {
+            w.line("oss << \"!1%s\" << __k;", keyTypeChar);
+          }
+          // Value (field 2)
+          if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE) {
+            String msgType = simpleTypeName(field.getMapValueTypeReference());
+            w.line("oss << \"!2m\" << %s_count_pbtk_fields(__v);", msgType);
+            w.line("%s_append_pbtk_fields(oss, __v);", msgType);
+          } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
+            w.line("oss << \"!2e\" << static_cast<int>(__v);");
+          } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_STRING) {
+            w.line("oss << \"!2s\" << pbtk_detail_%s::url_encode(__v);", resolveDetailNs(field));
+          } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+            w.line("oss << \"!2z\" << pbtk_detail_%s::base64_encode(__v);", resolveDetailNs(field));
+          } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BOOL) {
+            w.line("oss << \"!2b\" << (__v ? \"1\" : \"0\");");
+          } else {
+            String valTypeChar = pbtkTypeChar(field.getMapValueType());
+            w.line("oss << \"!2%s\" << __v;", valTypeChar);
+          }
+        });
   }
 
   private void emitSerializeMethod(CodeWriter w, ProtoMessage message, String className) {
     w.blankLine();
-    w.block("inline std::string " + className + "::to_pbtk_url() const", () -> {
-      w.line("std::ostringstream oss;");
-      w.line("%s_append_pbtk_fields(oss, *this);", className);
-      w.line("return oss.str();");
-    });
+    w.block(
+        "inline std::string " + className + "::to_pbtk_url() const",
+        () -> {
+          w.line("std::ostringstream oss;");
+          w.line("%s_append_pbtk_fields(oss, *this);", className);
+          w.line("return oss.str();");
+        });
   }
 
   // ========================================================================
@@ -823,48 +912,63 @@ public class PbtkCppGenerator implements LanguageGenerator {
 
   private void emitTokenizerMethod(CodeWriter w, String className) {
     w.blankLine();
-    w.block("inline std::vector<std::string> " + className
-        + "_tokenize_pbtk(const std::string& input)", () -> {
-      w.line("std::vector<std::string> tokens;");
-      w.line("size_t i = 0;");
-      w.line("if (!input.empty() && input[0] == '!') i = 1;");
-      w.block("while (i < input.size())", () -> {
-        w.line("size_t next = input.find('!', i);");
-        w.block("if (next == std::string::npos)", () -> {
-          w.line("tokens.push_back(input.substr(i));");
-          w.line("break;");
+    w.block(
+        "inline std::vector<std::string> " + className + "_tokenize_pbtk(const std::string& input)",
+        () -> {
+          w.line("std::vector<std::string> tokens;");
+          w.line("size_t i = 0;");
+          w.line("if (!input.empty() && input[0] == '!') i = 1;");
+          w.block(
+              "while (i < input.size())",
+              () -> {
+                w.line("size_t next = input.find('!', i);");
+                w.block(
+                    "if (next == std::string::npos)",
+                    () -> {
+                      w.line("tokens.push_back(input.substr(i));");
+                      w.line("break;");
+                    });
+                w.line("tokens.push_back(input.substr(i, next - i));");
+                w.line("i = next + 1;");
+              });
+          w.line("return tokens;");
         });
-        w.line("tokens.push_back(input.substr(i, next - i));");
-        w.line("i = next + 1;");
-      });
-      w.line("return tokens;");
-    });
   }
 
   private void emitParseTokensMethod(CodeWriter w, ProtoMessage message, String className) {
     w.blankLine();
-    w.block("inline " + className + " " + className
-        + "_parse_pbtk_tokens(const std::vector<std::string>& tokens, int field_count, "
-        + "size_t& offset)", () -> {
-      w.line("%s obj;", className);
-      w.line("int consumed = 0;");
-      w.block("while (consumed < field_count && offset < tokens.size())", () -> {
-        w.line("const std::string& token = tokens[offset];");
-        w.line("size_t num_end = 0;");
-        w.line("while (num_end < token.size() && std::isdigit(token[num_end])) num_end++;");
-        w.line("if (num_end == 0 || num_end >= token.size()) { offset++; consumed++; continue; }");
-        w.line("int field_num = std::stoi(token.substr(0, num_end));");
-        w.line("std::string value = token.substr(num_end + 1);");
-        w.blankLine();
-        w.block("switch (field_num)", () -> {
-          for (ProtoField field : message.getFields()) {
-            emitDeserializeFieldCase(w, field, className);
-          }
-          w.line("default: offset++; consumed++; break;");
+    w.block(
+        "inline "
+            + className
+            + " "
+            + className
+            + "_parse_pbtk_tokens(const std::vector<std::string>& tokens, int field_count, "
+            + "size_t& offset)",
+        () -> {
+          w.line("%s obj;", className);
+          w.line("int consumed = 0;");
+          w.block(
+              "while (consumed < field_count && offset < tokens.size())",
+              () -> {
+                w.line("const std::string& token = tokens[offset];");
+                w.line("size_t num_end = 0;");
+                w.line("while (num_end < token.size() && std::isdigit(token[num_end])) num_end++;");
+                w.line(
+                    "if (num_end == 0 || num_end >= token.size()) { offset++; consumed++; continue; }");
+                w.line("int field_num = std::stoi(token.substr(0, num_end));");
+                w.line("std::string value = token.substr(num_end + 1);");
+                w.blankLine();
+                w.block(
+                    "switch (field_num)",
+                    () -> {
+                      for (ProtoField field : message.getFields()) {
+                        emitDeserializeFieldCase(w, field, className);
+                      }
+                      w.line("default: offset++; consumed++; break;");
+                    });
+              });
+          w.line("return obj;");
         });
-      });
-      w.line("return obj;");
-    });
   }
 
   private void emitDeserializeFieldCase(CodeWriter w, ProtoField field, String className) {
@@ -872,23 +976,25 @@ public class PbtkCppGenerator implements LanguageGenerator {
     String setter = "obj." + nameResolver.setterName(field.getName());
     String getter = "obj." + nameResolver.getterName(field.getName()) + "()";
 
-    w.block("case " + fieldNum + ":", () -> {
-      if (field.isMap()) {
-        emitMapDeserialize(w, field, className);
-      } else if (field.isRepeated()) {
-        emitRepeatedDeserialize(w, field, className);
-      } else if (field.getKind() == ProtoField.FieldKind.MESSAGE
-          || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
-        emitMessageDeserialize(w, field, className);
-      } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
-        emitEnumDeserialize(w, field, className);
-      } else {
-        emitScalarDeserialize(w, field, className);
-      }
-      w.line("offset++;");
-      w.line("consumed++;");
-      w.line("break;");
-    });
+    w.block(
+        "case " + fieldNum + ":",
+        () -> {
+          if (field.isMap()) {
+            emitMapDeserialize(w, field, className);
+          } else if (field.isRepeated()) {
+            emitRepeatedDeserialize(w, field, className);
+          } else if (field.getKind() == ProtoField.FieldKind.MESSAGE
+              || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
+            emitMessageDeserialize(w, field, className);
+          } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
+            emitEnumDeserialize(w, field, className);
+          } else {
+            emitScalarDeserialize(w, field, className);
+          }
+          w.line("offset++;");
+          w.line("consumed++;");
+          w.line("break;");
+        });
   }
 
   private void emitScalarDeserialize(CodeWriter w, ProtoField field, String className) {
@@ -959,45 +1065,52 @@ public class PbtkCppGenerator implements LanguageGenerator {
     }
     w.line("%s __map_key{};", keyType);
     w.line("%s __map_val{};", valType);
-    w.block("for (int __mi = 0; __mi < entry_count && offset < tokens.size(); __mi++)", () -> {
-      w.line("const std::string& map_token = tokens[offset];");
-      w.line("size_t mne = 0;");
-      w.line("while (mne < map_token.size() && std::isdigit(map_token[mne])) mne++;");
-      w.line("if (mne == 0 || mne >= map_token.size()) { offset++; continue; }");
-      w.line("int mfn = std::stoi(map_token.substr(0, mne));");
-      w.line("std::string mval = map_token.substr(mne + 1);");
-      w.block("if (mfn == 1)", () -> {
-        // Key
-        if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_STRING) {
-          w.line("__map_key = pbtk_detail_%s::url_decode(mval);", className);
-        } else if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_BOOL) {
-          w.line("__map_key = (mval == \"1\");");
-        } else {
-          w.line("__map_key = std::stol(mval);");
-        }
-      });
-      w.block("if (mfn == 2)", () -> {
-        // Value
-        if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE) {
-          String msgType = simpleTypeName(field.getMapValueTypeReference());
-          w.line("int val_sub_count = std::stoi(mval);");
+    w.block(
+        "for (int __mi = 0; __mi < entry_count && offset < tokens.size(); __mi++)",
+        () -> {
+          w.line("const std::string& map_token = tokens[offset];");
+          w.line("size_t mne = 0;");
+          w.line("while (mne < map_token.size() && std::isdigit(map_token[mne])) mne++;");
+          w.line("if (mne == 0 || mne >= map_token.size()) { offset++; continue; }");
+          w.line("int mfn = std::stoi(map_token.substr(0, mne));");
+          w.line("std::string mval = map_token.substr(mne + 1);");
+          w.block(
+              "if (mfn == 1)",
+              () -> {
+                // Key
+                if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_STRING) {
+                  w.line("__map_key = pbtk_detail_%s::url_decode(mval);", className);
+                } else if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_BOOL) {
+                  w.line("__map_key = (mval == \"1\");");
+                } else {
+                  w.line("__map_key = std::stol(mval);");
+                }
+              });
+          w.block(
+              "if (mfn == 2)",
+              () -> {
+                // Value
+                if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE) {
+                  String msgType = simpleTypeName(field.getMapValueTypeReference());
+                  w.line("int val_sub_count = std::stoi(mval);");
+                  w.line("offset++;");
+                  w.line(
+                      "__map_val = %s_parse_pbtk_tokens(tokens, val_sub_count, offset);", msgType);
+                  w.line("offset--;");
+                } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
+                  w.line("__map_val = static_cast<%s>(std::stoi(mval));", valType);
+                } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_STRING) {
+                  w.line("__map_val = pbtk_detail_%s::url_decode(mval);", className);
+                } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+                  w.line("__map_val = pbtk_detail_%s::base64_decode(mval);", className);
+                } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BOOL) {
+                  w.line("__map_val = (mval == \"1\");");
+                } else {
+                  w.line("__map_val = std::stol(mval);");
+                }
+              });
           w.line("offset++;");
-          w.line("__map_val = %s_parse_pbtk_tokens(tokens, val_sub_count, offset);", msgType);
-          w.line("offset--;");
-        } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
-          w.line("__map_val = static_cast<%s>(std::stoi(mval));", valType);
-        } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_STRING) {
-          w.line("__map_val = pbtk_detail_%s::url_decode(mval);", className);
-        } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
-          w.line("__map_val = pbtk_detail_%s::base64_decode(mval);", className);
-        } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BOOL) {
-          w.line("__map_val = (mval == \"1\");");
-        } else {
-          w.line("__map_val = std::stol(mval);");
-        }
-      });
-      w.line("offset++;");
-    });
+        });
     w.line("offset--;"); // compensate for outer offset++
     w.line("auto __map = %s;", getter);
     w.line("__map[__map_key] = __map_val;");
@@ -1006,14 +1119,16 @@ public class PbtkCppGenerator implements LanguageGenerator {
 
   private void emitDeserializeMethod(CodeWriter w, ProtoMessage message, String className) {
     w.blankLine();
-    w.block("inline " + className + " " + className
-        + "::from_pbtk_url(const std::string& input)", () -> {
-      w.line("if (input.empty()) return %s{};", className);
-      w.line("auto tokens = %s_tokenize_pbtk(input);", className);
-      w.line("size_t offset = 0;");
-      w.line("return %s_parse_pbtk_tokens(tokens, static_cast<int>(tokens.size()), offset);",
-          className);
-    });
+    w.block(
+        "inline " + className + " " + className + "::from_pbtk_url(const std::string& input)",
+        () -> {
+          w.line("if (input.empty()) return %s{};", className);
+          w.line("auto tokens = %s_tokenize_pbtk(input);", className);
+          w.line("size_t offset = 0;");
+          w.line(
+              "return %s_parse_pbtk_tokens(tokens, static_cast<int>(tokens.size()), offset);",
+              className);
+        });
   }
 
   // ========================================================================
@@ -1022,24 +1137,30 @@ public class PbtkCppGenerator implements LanguageGenerator {
 
   private void emitEnum(CodeWriter w, ProtoEnum protoEnum) {
     String enumName = protoEnum.getName();
-    w.block("enum class " + enumName, () -> {
-      for (int i = 0; i < protoEnum.getValues().size(); i++) {
-        ProtoEnum.EnumValue val = protoEnum.getValues().get(i);
-        String suffix = i < protoEnum.getValues().size() - 1 ? "," : "";
-        w.line("%s = %d%s", nameResolver.enumConstantName(val.name()), val.number(), suffix);
-      }
-    });
+    w.block(
+        "enum class " + enumName,
+        () -> {
+          for (int i = 0; i < protoEnum.getValues().size(); i++) {
+            ProtoEnum.EnumValue val = protoEnum.getValues().get(i);
+            String suffix = i < protoEnum.getValues().size() - 1 ? "," : "";
+            w.line("%s = %d%s", nameResolver.enumConstantName(val.name()), val.number(), suffix);
+          }
+        });
     w.line(";");
 
     w.blankLine();
-    w.block("inline int " + enumName + "_to_number(" + enumName + " value)", () -> {
-      w.line("return static_cast<int>(value);");
-    });
+    w.block(
+        "inline int " + enumName + "_to_number(" + enumName + " value)",
+        () -> {
+          w.line("return static_cast<int>(value);");
+        });
 
     w.blankLine();
-    w.block("inline " + enumName + " " + enumName + "_from_number(int number)", () -> {
-      w.line("return static_cast<%s>(number);", enumName);
-    });
+    w.block(
+        "inline " + enumName + " " + enumName + "_from_number(int number)",
+        () -> {
+          w.line("return static_cast<%s>(number);", enumName);
+        });
   }
 
   // ========================================================================
@@ -1064,16 +1185,14 @@ public class PbtkCppGenerator implements LanguageGenerator {
     return "";
   }
 
-  private String scalarReadExpr(FieldDescriptorProto.Type type, String valueVar,
-      String className) {
+  private String scalarReadExpr(FieldDescriptorProto.Type type, String valueVar, String className) {
     return switch (type) {
       case TYPE_DOUBLE -> "std::stod(" + valueVar + ")";
       case TYPE_FLOAT -> "std::stof(" + valueVar + ")";
       case TYPE_INT64, TYPE_SINT64, TYPE_SFIXED64 -> "std::stoll(" + valueVar + ")";
       case TYPE_UINT64, TYPE_FIXED64 -> "std::stoull(" + valueVar + ")";
       case TYPE_INT32, TYPE_SINT32, TYPE_SFIXED32 -> "std::stoi(" + valueVar + ")";
-      case TYPE_UINT32, TYPE_FIXED32 ->
-          "static_cast<uint32_t>(std::stoul(" + valueVar + "))";
+      case TYPE_UINT32, TYPE_FIXED32 -> "static_cast<uint32_t>(std::stoul(" + valueVar + "))";
       case TYPE_BOOL -> "(" + valueVar + " == \"1\")";
       case TYPE_STRING -> "pbtk_detail_" + className + "::url_decode(" + valueVar + ")";
       case TYPE_BYTES -> "pbtk_detail_" + className + "::base64_decode(" + valueVar + ")";
@@ -1082,9 +1201,9 @@ public class PbtkCppGenerator implements LanguageGenerator {
   }
 
   /**
-   * Resolve which detail namespace to use for URL/base64 helpers. We use a per-class namespace
-   * to avoid ODR issues in header-only code. For fields that reference the current message,
-   * we need to know the enclosing class name -- we derive it from the context.
+   * Resolve which detail namespace to use for URL/base64 helpers. We use a per-class namespace to
+   * avoid ODR issues in header-only code. For fields that reference the current message, we need to
+   * know the enclosing class name -- we derive it from the context.
    */
   private String resolveDetailNs(ProtoField field) {
     // This is called during code emission where we have the class context from the caller.
@@ -1101,8 +1220,8 @@ public class PbtkCppGenerator implements LanguageGenerator {
   private String currentClassName = "";
 
   // Override emitInlineImplementations to set the context
-  private void emitInlineImplementationsWithContext(CodeWriter w, ProtoMessage message,
-      String className) {
+  private void emitInlineImplementationsWithContext(
+      CodeWriter w, ProtoMessage message, String className) {
     String saved = currentClassName;
     currentClassName = className;
     emitInlineImplementations(w, message, className);
@@ -1110,8 +1229,8 @@ public class PbtkCppGenerator implements LanguageGenerator {
   }
 
   /**
-   * Extract the simple type name from a fully-qualified proto type reference.
-   * E.g., ".example.sub.Address" -> "Address"
+   * Extract the simple type name from a fully-qualified proto type reference. E.g.,
+   * ".example.sub.Address" -> "Address"
    */
   private static String simpleTypeName(String protoFullName) {
     if (protoFullName == null) return "void*";
@@ -1122,8 +1241,16 @@ public class PbtkCppGenerator implements LanguageGenerator {
   static String pbtkTypeChar(FieldDescriptorProto.Type type) {
     return switch (type) {
       case TYPE_BOOL -> "b";
-      case TYPE_INT32, TYPE_SINT32, TYPE_SFIXED32, TYPE_UINT32, TYPE_FIXED32, TYPE_INT64,
-          TYPE_SINT64, TYPE_SFIXED64, TYPE_UINT64, TYPE_FIXED64 ->
+      case TYPE_INT32,
+          TYPE_SINT32,
+          TYPE_SFIXED32,
+          TYPE_UINT32,
+          TYPE_FIXED32,
+          TYPE_INT64,
+          TYPE_SINT64,
+          TYPE_SFIXED64,
+          TYPE_UINT64,
+          TYPE_FIXED64 ->
           "i";
       case TYPE_FLOAT -> "f";
       case TYPE_DOUBLE -> "d";

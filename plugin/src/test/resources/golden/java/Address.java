@@ -3,13 +3,22 @@
 package com.example;
 
 /** A physical mailing address. */
-public class Address {
-    private String street = "";
-    private String city = "";
-    private String state = "";
-    private int zip = 0;
+public final class Address {
+    public static final int STREET_FIELD_NUMBER = 1;
+    public static final int CITY_FIELD_NUMBER = 2;
+    public static final int STATE_FIELD_NUMBER = 3;
+    public static final int ZIP_FIELD_NUMBER = 4;
 
-    public Address() {
+    private final String street;
+    private final String city;
+    private final String state;
+    private final int zip;
+
+    private Address(Builder builder) {
+        this.street = builder.street;
+        this.city = builder.city;
+        this.state = builder.state;
+        this.zip = builder.zip;
     }
 
     /** The street address line. */
@@ -17,17 +26,9 @@ public class Address {
         return this.street;
     }
 
-    public void setStreet(String street) {
-        this.street = street;
-    }
-
     /** The city name. */
     public String getCity() {
         return this.city;
-    }
-
-    public void setCity(String city) {
-        this.city = city;
     }
 
     /** The state or province code. */
@@ -35,17 +36,27 @@ public class Address {
         return this.state;
     }
 
-    public void setState(String state) {
-        this.state = state;
-    }
-
     /** The postal/ZIP code. */
     public int getZip() {
         return this.zip;
     }
 
-    public void setZip(int zip) {
-        this.zip = zip;
+    private static final Address DEFAULT_INSTANCE = new Address(new Builder());
+
+    public static Address getDefaultInstance() {
+        return DEFAULT_INSTANCE;
+    }
+
+    public static Builder newBuilder() {
+        return new Builder();
+    }
+
+    public static Builder newBuilder(Address prototype) {
+        return new Builder(prototype);
+    }
+
+    public Builder toBuilder() {
+        return new Builder(this);
     }
 
     void appendJsonArray(StringBuilder sb) {
@@ -72,21 +83,21 @@ public class Address {
 
     @SuppressWarnings("unchecked")
     static Address fromJsonArray(java.util.List<Object> array) {
-        Address obj = new Address();
+        Address.Builder builder = Address.newBuilder();
         int size = array.size();
         if (size > 0 && array.get(0) != null) {
-            obj.setStreet((String) array.get(0));
+            builder.setStreet((String) array.get(0));
         }
         if (size > 1 && array.get(1) != null) {
-            obj.setCity((String) array.get(1));
+            builder.setCity((String) array.get(1));
         }
         if (size > 2 && array.get(2) != null) {
-            obj.setState((String) array.get(2));
+            builder.setState((String) array.get(2));
         }
         if (size > 3 && array.get(3) != null) {
-            obj.setZip(((Number) array.get(3)).intValue());
+            builder.setZip(((Number) array.get(3)).intValue());
         }
-        return obj;
+        return builder.build();
     }
 
     public static Address fromJsonString(String json) {
@@ -118,5 +129,90 @@ public class Address {
     @Override
     public int hashCode() {
         return java.util.Objects.hash(street, city, state, zip);
+    }
+
+    public static final class Builder {
+        private String street = "";
+        private String city = "";
+        private String state = "";
+        private int zip = 0;
+
+        private Builder() {
+        }
+
+        private Builder(Address from) {
+            this.street = from.street;
+            this.city = from.city;
+            this.state = from.state;
+            this.zip = from.zip;
+        }
+
+        public String getStreet() {
+            return this.street;
+        }
+
+        public Builder setStreet(String value) {
+            this.street = value;
+            return this;
+        }
+
+        public Builder clearStreet() {
+            this.street = "";
+            return this;
+        }
+
+        public String getCity() {
+            return this.city;
+        }
+
+        public Builder setCity(String value) {
+            this.city = value;
+            return this;
+        }
+
+        public Builder clearCity() {
+            this.city = "";
+            return this;
+        }
+
+        public String getState() {
+            return this.state;
+        }
+
+        public Builder setState(String value) {
+            this.state = value;
+            return this;
+        }
+
+        public Builder clearState() {
+            this.state = "";
+            return this;
+        }
+
+        public int getZip() {
+            return this.zip;
+        }
+
+        public Builder setZip(int value) {
+            this.zip = value;
+            return this;
+        }
+
+        public Builder clearZip() {
+            this.zip = 0;
+            return this;
+        }
+
+        public Address build() {
+            return new Address(this);
+        }
+
+        public Builder clear() {
+            this.street = "";
+            this.city = "";
+            this.state = "";
+            this.zip = 0;
+            return this;
+        }
     }
 }

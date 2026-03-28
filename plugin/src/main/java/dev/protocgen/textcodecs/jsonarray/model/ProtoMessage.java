@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024 protobuf-text-codecs contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package dev.protocgen.textcodecs.jsonarray.model;
 
 import java.util.List;
@@ -15,6 +30,10 @@ public class ProtoMessage {
   private final int maxFieldNumber;
   private final ProtoField[] fieldsByPosition; // array-indexed O(1) lookup, no boxing
   private final String comment; // leading comment from the proto source, null if none
+
+  // Field numbers above this limit use a HashMap fallback instead of a position array,
+  // preventing excessive memory allocation from sparse or malicious field numbering.
+  private static final int MAX_POSITION_ARRAY_SIZE = 10_000;
 
   public ProtoMessage(
       String name,
@@ -46,12 +65,17 @@ public class ProtoMessage {
       if (f.getFieldNumber() > max) max = f.getFieldNumber();
     }
     this.maxFieldNumber = max;
-    // Array-indexed position lookup: no boxing, no HashMap overhead
-    ProtoField[] posArr = new ProtoField[max];
-    for (ProtoField field : fields) {
-      posArr[field.getArrayPosition()] = field;
+    // Array-indexed position lookup: no boxing, no HashMap overhead.
+    // Cap array size to prevent OOM from extreme field numbers (protobuf allows up to 2^29 - 1).
+    if (max <= MAX_POSITION_ARRAY_SIZE) {
+      ProtoField[] posArr = new ProtoField[max];
+      for (ProtoField field : fields) {
+        posArr[field.getArrayPosition()] = field;
+      }
+      this.fieldsByPosition = posArr;
+    } else {
+      this.fieldsByPosition = null;
     }
-    this.fieldsByPosition = posArr;
     this.comment = comment;
   }
 
@@ -89,8 +113,16 @@ public class ProtoMessage {
 
   /** Returns the field at a given array position, or null if that position is a gap. O(1). */
   public ProtoField fieldAtPosition(int position) {
-    if (position < 0 || position >= fieldsByPosition.length) return null;
-    return fieldsByPosition[position];
+    if (position < 0) return null;
+    if (fieldsByPosition != null) {
+      if (position >= fieldsByPosition.length) return null;
+      return fieldsByPosition[position];
+    }
+    // Fallback for large field numbers: linear scan
+    for (ProtoField f : fields) {
+      if (f.getArrayPosition() == position) return f;
+    }
+    return null;
   }
 
   /**
@@ -99,9 +131,15 @@ public class ProtoMessage {
    * prefer {@link #fieldAtPosition(int)} for hot paths.
    */
   public Map<Integer, ProtoField> getFieldsByPosition() {
-    java.util.Map<Integer, ProtoField> map = new java.util.HashMap<>();
-    for (int i = 0; i < fieldsByPosition.length; i++) {
-      if (fieldsByPosition[i] != null) map.put(i, fieldsByPosition[i]);
+    Map<Integer, ProtoField> map = new java.util.HashMap<>();
+    if (fieldsByPosition != null) {
+      for (int i = 0; i < fieldsByPosition.length; i++) {
+        if (fieldsByPosition[i] != null) map.put(i, fieldsByPosition[i]);
+      }
+    } else {
+      for (ProtoField f : fields) {
+        map.put(f.getArrayPosition(), f);
+      }
     }
     return java.util.Collections.unmodifiableMap(map);
   }

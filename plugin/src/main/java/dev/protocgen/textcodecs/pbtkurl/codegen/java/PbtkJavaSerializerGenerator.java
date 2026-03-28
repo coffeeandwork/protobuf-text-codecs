@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024 protobuf-text-codecs contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package dev.protocgen.textcodecs.pbtkurl.codegen.java;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
@@ -8,6 +23,8 @@ import dev.protocgen.textcodecs.jsonarray.model.ProtoMessage;
 /**
  * Generates the toPbtkUrl() method body for Java classes. Produces pbtk URL-encoded strings using
  * the Google Maps protobuf text format: {@code !<fieldNumber><typeChar><value>}.
+ *
+ * <p>Works with immutable message classes: reads fields via getters on the message instance.
  */
 public class PbtkJavaSerializerGenerator {
 
@@ -22,7 +39,7 @@ public class PbtkJavaSerializerGenerator {
     // Inner method that produces the field tokens without leading context
     w.blankLine();
     w.block(
-        "private void appendPbtkFields(StringBuilder sb)",
+        "void appendPbtkFields(StringBuilder sb)",
         () -> {
           for (ProtoField field : message.getFields()) {
             emitFieldSerialize(w, field);
@@ -32,7 +49,7 @@ public class PbtkJavaSerializerGenerator {
     // Count how many top-level fields this message serializes (for m<count> prefix)
     w.blankLine();
     w.block(
-        "private int countPbtkFields()",
+        "int countPbtkFields()",
         () -> {
           w.line("int count = 0;");
           for (ProtoField field : message.getFields()) {
@@ -91,8 +108,7 @@ public class PbtkJavaSerializerGenerator {
     }
   }
 
-  private void emitScalarSerialize(
-      CodeWriter w, ProtoField field, String javaField, int fieldNum) {
+  private void emitScalarSerialize(CodeWriter w, ProtoField field, String javaField, int fieldNum) {
     if (field.hasExplicitPresence() && !field.isRequired()) {
       String bitCheck = "presentFields_.get(" + field.getArrayPosition() + ")";
       w.block("if (" + bitCheck + ")", () -> emitScalarAppend(w, field, javaField, fieldNum));
@@ -145,8 +161,7 @@ public class PbtkJavaSerializerGenerator {
     }
   }
 
-  private void emitEnumSerialize(
-      CodeWriter w, ProtoField field, String javaField, int fieldNum) {
+  private void emitEnumSerialize(CodeWriter w, ProtoField field, String javaField, int fieldNum) {
     if (field.hasExplicitPresence() && !field.isRequired()) {
       String bitCheck = "presentFields_.get(" + field.getArrayPosition() + ")";
       w.block(
@@ -167,8 +182,7 @@ public class PbtkJavaSerializerGenerator {
     w.block(
         "if (" + javaField + " != null)",
         () -> {
-          w.line(
-              "sb.append(\"!%dm\").append(%s.countPbtkFields());", fieldNum, javaField);
+          w.line("sb.append(\"!%dm\").append(%s.countPbtkFields());", fieldNum, javaField);
           w.line("%s.appendPbtkFields(sb);", javaField);
         });
   }
@@ -184,9 +198,7 @@ public class PbtkJavaSerializerGenerator {
             w.block(
                 "if (" + elementVar + " != null)",
                 () -> {
-                  w.line(
-                      "sb.append(\"!%dm\").append(%s.countPbtkFields());",
-                      fieldNum, elementVar);
+                  w.line("sb.append(\"!%dm\").append(%s.countPbtkFields());", fieldNum, elementVar);
                   w.line("%s.appendPbtkFields(sb);", elementVar);
                 });
           } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
@@ -199,9 +211,9 @@ public class PbtkJavaSerializerGenerator {
         });
   }
 
-  private void emitMapSerialize(
-      CodeWriter w, ProtoField field, String javaField, int fieldNum) {
-    // Maps are serialized as repeated message entries: !<fieldNum>m2!1<keyType><key>!2<valType><val>
+  private void emitMapSerialize(CodeWriter w, ProtoField field, String javaField, int fieldNum) {
+    // Maps are serialized as repeated message entries:
+    // !<fieldNum>m2!1<keyType><key>!2<valType><val>
     String entryVar = "__" + nameResolver.fieldName(field.getName()) + "Entry";
     w.block(
         "for (java.util.Map.Entry<?, ?> " + entryVar + " : " + javaField + ".entrySet())",
@@ -244,8 +256,7 @@ public class PbtkJavaSerializerGenerator {
                 entryVar);
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BOOL) {
             w.line(
-                "sb.append(\"!2b\").append(((Boolean) %s.getValue()) ? \"1\" : \"0\");",
-                entryVar);
+                "sb.append(\"!2b\").append(((Boolean) %s.getValue()) ? \"1\" : \"0\");", entryVar);
           } else {
             String valTypeChar = pbtkTypeChar(field.getMapValueType());
             w.line("sb.append(\"!2%s\").append(%s.getValue());", valTypeChar, entryVar);
@@ -268,8 +279,7 @@ public class PbtkJavaSerializerGenerator {
     } else if (field.isRepeated()) {
       if (field.getKind() == ProtoField.FieldKind.MESSAGE) {
         // Filter null elements — serializer skips them, so count must match
-        w.line(
-            "count += (int) %s.stream().filter(java.util.Objects::nonNull).count();", javaField);
+        w.line("count += (int) %s.stream().filter(java.util.Objects::nonNull).count();", javaField);
       } else {
         w.line("count += %s.size();", javaField);
       }
@@ -298,8 +308,16 @@ public class PbtkJavaSerializerGenerator {
   static String pbtkTypeChar(FieldDescriptorProto.Type type) {
     return switch (type) {
       case TYPE_BOOL -> "b";
-      case TYPE_INT32, TYPE_SINT32, TYPE_SFIXED32, TYPE_UINT32, TYPE_FIXED32, TYPE_INT64,
-          TYPE_SINT64, TYPE_SFIXED64, TYPE_UINT64, TYPE_FIXED64 ->
+      case TYPE_INT32,
+          TYPE_SINT32,
+          TYPE_SFIXED32,
+          TYPE_UINT32,
+          TYPE_FIXED32,
+          TYPE_INT64,
+          TYPE_SINT64,
+          TYPE_SFIXED64,
+          TYPE_UINT64,
+          TYPE_FIXED64 ->
           "i";
       case TYPE_FLOAT -> "f";
       case TYPE_DOUBLE -> "d";

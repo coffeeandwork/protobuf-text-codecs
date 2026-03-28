@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024 protobuf-text-codecs contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package dev.protocgen.textcodecs.jsonarray.codegen.java;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
@@ -27,7 +42,7 @@ public class JavaDeserializerGenerator {
     w.block(
         "static " + className + " fromJsonArray(java.util.List<Object> array)",
         () -> {
-          w.line("%s obj = new %s();", className, className);
+          w.line("%s.Builder builder = %s.newBuilder();", className, className);
           w.line("int size = array.size();");
 
           int maxPos = message.getMaxFieldNumber();
@@ -41,7 +56,7 @@ public class JavaDeserializerGenerator {
             emitFieldDeserialize(w, field, pos);
           }
 
-          w.line("return obj;");
+          w.line("return builder.build();");
         });
 
     // Public: deserialize from JSON string
@@ -65,7 +80,7 @@ public class JavaDeserializerGenerator {
   }
 
   private void emitFieldDeserialize(CodeWriter w, ProtoField field, int pos) {
-    String setter = "obj." + nameResolver.setterName(field.getName());
+    String setter = "builder." + nameResolver.setterName(field.getName());
 
     w.block(
         "if (size > " + pos + " && array.get(" + pos + ") != null)",
@@ -86,10 +101,6 @@ public class JavaDeserializerGenerator {
           } else {
             emitScalarDeserialize(w, field, setter, elemExpr);
           }
-
-          if (field.hasExplicitPresence()) {
-            w.line("obj.presentFields_.set(%d);", pos);
-          }
         });
 
     // Apply schema-specified default for proto2 fields when absent/null
@@ -109,8 +120,7 @@ public class JavaDeserializerGenerator {
     w.line("%s(%s);", setter, readExpr);
   }
 
-  private void emitEnumDeserialize(
-      CodeWriter w, ProtoField field, String setter, String elemExpr) {
+  private void emitEnumDeserialize(CodeWriter w, ProtoField field, String setter, String elemExpr) {
     String enumType = simpleTypeName(field.getTypeReference());
     w.line("%s(%s.forNumber(((Number) %s).intValue()));", setter, enumType, elemExpr);
   }
@@ -118,17 +128,14 @@ public class JavaDeserializerGenerator {
   private void emitMessageDeserialize(
       CodeWriter w, ProtoField field, String setter, String elemExpr) {
     String msgType = simpleTypeName(field.getTypeReference());
-    w.line(
-        "%s(%s.fromJsonArray((java.util.List<Object>) %s));",
-        setter, msgType, elemExpr);
+    w.line("%s(%s.fromJsonArray((java.util.List<Object>) %s));", setter, msgType, elemExpr);
   }
 
   private void emitRepeatedDeserialize(
       CodeWriter w, ProtoField field, String setter, String elemExpr, int pos) {
     String listType = typeMapper.languageType(field);
     w.line("java.util.List<Object> __listObj%d = (java.util.List<Object>) %s;", pos, elemExpr);
-    w.line(
-        "%s list%d = new java.util.ArrayList<>(__listObj%d.size());", listType, pos, pos);
+    w.line("%s list%d = new java.util.ArrayList<>(__listObj%d.size());", listType, pos, pos);
     w.block(
         "for (Object __elem" + pos + " : __listObj" + pos + ")",
         () -> {
@@ -142,8 +149,7 @@ public class JavaDeserializerGenerator {
                 listVar, elemVar, msgType, elemVar);
           } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
             String enumType = simpleTypeName(field.getTypeReference());
-            w.line(
-                "%s.add(%s.forNumber(((Number) %s).intValue()));", listVar, enumType, elemVar);
+            w.line("%s.add(%s.forNumber(((Number) %s).intValue()));", listVar, enumType, elemVar);
           } else {
             String readExpr = scalarReadExpr(field.getProtoType(), elemVar);
             w.line("%s.add(%s);", listVar, readExpr);
@@ -164,7 +170,10 @@ public class JavaDeserializerGenerator {
           "java.util.Map<String, Object> __mapObj%d = (java.util.Map<String, Object>) %s;",
           pos, elemExpr);
       w.block(
-          "for (java.util.Map.Entry<String, Object> __entry" + pos + " : __mapObj" + pos
+          "for (java.util.Map.Entry<String, Object> __entry"
+              + pos
+              + " : __mapObj"
+              + pos
               + ".entrySet())",
           () -> {
             String entryVar = "__entry" + pos;
@@ -174,8 +183,7 @@ public class JavaDeserializerGenerator {
           });
     } else {
       // Non-string-keyed maps are serialized as arrays of [key, value] pairs
-      w.line(
-          "java.util.List<Object> __pairs%d = (java.util.List<Object>) %s;", pos, elemExpr);
+      w.line("java.util.List<Object> __pairs%d = (java.util.List<Object>) %s;", pos, elemExpr);
       w.block(
           "for (Object __pair" + pos + " : __pairs" + pos + ")",
           () -> {
@@ -215,8 +223,7 @@ public class JavaDeserializerGenerator {
           "((Number) " + elemExpr + ").intValue()";
       case TYPE_BOOL -> "(Boolean) " + elemExpr;
       case TYPE_STRING -> "(String) " + elemExpr;
-      case TYPE_BYTES ->
-          "java.util.Base64.getDecoder().decode((String) " + elemExpr + ")";
+      case TYPE_BYTES -> "java.util.Base64.getDecoder().decode((String) " + elemExpr + ")";
       default -> "(String) " + elemExpr;
     };
   }

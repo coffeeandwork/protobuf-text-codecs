@@ -119,11 +119,11 @@ LIMITATIONS:
 - **Additional Mitigation:** Audit and fix proto2 default escaping in all 8 non-Java generators.
 
 #### HAZ-010: Schema evolution breaks positional encoding
-- **Description:** A user adds a new field with a field number between two existing fields, causing the positional array to shift for existing data.
-- **Causal Chain:** User adds `string middle_name = 2` between field 1 and field 3 → new array position for field 3 changes → old serialized data has field 3's value at the wrong position
+- **Description:** A user removes a field and later reuses the same field number for a different type, causing old serialized data to be misinterpreted at that position.
+- **Causal Chain:** User removes `string name = 2` and later adds `int32 age = 2` → position 1 now expects an integer → old serialized data has a string at position 1 → deserialization fails or produces wrong data
 - **Affected Components:** Encoding design (not a code bug)
-- **Current Safeguards:** Encoding uses field_number-1 as position (not declaration order), so adding a field number between existing numbers does shift positions. However, following the standard protobuf convention of always assigning new fields the next highest number avoids this.
-- **Additional Mitigation:** Document clearly: "always assign new fields a field number higher than all existing fields." The schema evolution test suite verifies forward/backward compat for append-only changes.
+- **Current Safeguards:** Encoding uses `field_number - 1` as position (not declaration order), so adding a new field number between existing ones does NOT shift any existing positions. Field 3 is always at index 2 regardless of whether field 2 exists. The real risk is field number reuse with a different type, which violates standard protobuf schema evolution rules.
+- **Additional Mitigation:** Document clearly: "never reuse a field number for a different type; use `reserved` to retire old numbers." The schema evolution test suite verifies forward/backward compat for append-only changes.
 
 ## 4. Risk Matrix
 

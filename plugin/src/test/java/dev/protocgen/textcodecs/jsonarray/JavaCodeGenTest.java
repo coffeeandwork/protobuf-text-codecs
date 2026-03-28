@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024 protobuf-text-codecs contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package dev.protocgen.textcodecs.jsonarray;
 
 import com.google.protobuf.DescriptorProtos.DescriptorProto;
@@ -355,7 +370,9 @@ class JavaCodeGenTest {
     String code = generateSingleMessage(msg);
 
     // Nested message as static inner class
-    assertTrue(code.contains("public static class Inner"), "Nested message is static inner class");
+    assertTrue(
+        code.contains("public static final class Inner"),
+        "Nested message is static final inner class");
 
     // Message field serializes with .appendJsonArray(sb)
     assertTrue(
@@ -656,9 +673,9 @@ class JavaCodeGenTest {
             .build();
     String code = generateSingleMessage(msg);
 
-    // Setter should update the case field
+    // Builder setter should update the case field (uses field number literal)
     assertTrue(
-        code.contains("this.contactCase_ = EMAILCase_"), "Setter must update oneof case field");
+        code.contains("this.contactCase_ = 1"), "Builder setter must update oneof case field");
   }
 
   // ======================================================================
@@ -719,7 +736,9 @@ class JavaCodeGenTest {
     assertTrue(code.contains("hasName"), "Proto2 required field has has method");
     // Required field still serializes directly (not a null-wrapped conditional)
     // The presence tracking only gates the "else { sb.append("null") }" branch
-    assertTrue(code.contains("appendQuotedString(sb, this.name)"), "Required string field serializes directly");
+    assertTrue(
+        code.contains("appendQuotedString(sb, this.name)"),
+        "Required string field serializes directly");
   }
 
   @Test
@@ -798,12 +817,9 @@ class JavaCodeGenTest {
 
     // Well-known types are serialized as nested messages via appendJsonArray
     assertTrue(
-        code.contains("appendJsonArray(sb)"),
-        "Timestamp uses appendJsonArray for serialization");
+        code.contains("appendJsonArray(sb)"), "Timestamp uses appendJsonArray for serialization");
     // Well-known types are deserialized via fromJsonArray
-    assertTrue(
-        code.contains("fromJsonArray("),
-        "Timestamp uses fromJsonArray for deserialization");
+    assertTrue(code.contains("fromJsonArray("), "Timestamp uses fromJsonArray for deserialization");
   }
 
   @Test
@@ -1015,7 +1031,8 @@ class JavaCodeGenTest {
     String code = generateSingleMessage(msg);
 
     // Deserializer should handle string and numeric formats
-    assertTrue(code.contains("instanceof String"), "Deserializer checks instanceof String for int64");
+    assertTrue(
+        code.contains("instanceof String"), "Deserializer checks instanceof String for int64");
     assertTrue(code.contains("Long.parseLong("), "Deserializer parses string as long");
     assertTrue(code.contains("longValue()"), "Deserializer falls back to longValue()");
   }
@@ -1029,7 +1046,8 @@ class JavaCodeGenTest {
             .build();
     String code = generateSingleMessage(msg);
 
-    assertTrue(code.contains("instanceof String"), "Deserializer checks instanceof String for uint64");
+    assertTrue(
+        code.contains("instanceof String"), "Deserializer checks instanceof String for uint64");
     assertTrue(
         code.contains("Long.parseUnsignedLong("), "Deserializer uses parseUnsignedLong for uint64");
   }
@@ -1084,7 +1102,8 @@ class JavaCodeGenTest {
     assertFalse(code.contains("jackson"), "No Jackson reference");
     assertFalse(code.contains("ArrayNode"), "No ArrayNode reference");
     // Uses StringBuilder-based serialization instead
-    assertTrue(code.contains("appendJsonArray(StringBuilder sb)"), "appendJsonArray method present");
+    assertTrue(
+        code.contains("appendJsonArray(StringBuilder sb)"), "appendJsonArray method present");
     assertTrue(code.contains("JsonArrayReader.parseArray("), "fromJsonString uses JsonArrayReader");
   }
 
@@ -1159,7 +1178,8 @@ class JavaCodeGenTest {
     String serializeBody = extractMethodBody(code, "appendJsonArray");
     // Only expect the '[' and ']' appends, no field value appends
     int fieldAppends = countOccurrences(serializeBody, "sb.append(this.");
-    assertTrue(fieldAppends == 0, "Empty message should have zero field appends in appendJsonArray");
+    assertTrue(
+        fieldAppends == 0, "Empty message should have zero field appends in appendJsonArray");
   }
 
   // ======================================================================
@@ -1430,8 +1450,10 @@ class JavaCodeGenTest {
             .build();
     String code = generateSingleMessage(msg);
 
-    assertTrue(code.contains("public static class Level2"), "Level2 static inner class");
-    assertTrue(code.contains("public static class Level3"), "Level3 static inner class");
+    assertTrue(
+        code.contains("public static final class Level2"), "Level2 static final inner class");
+    assertTrue(
+        code.contains("public static final class Level3"), "Level3 static final inner class");
   }
 
   // ======================================================================
@@ -1689,7 +1711,10 @@ class JavaCodeGenTest {
             .build();
     String code = generateSingleMessage(msg);
 
-    assertTrue(code.contains("public Msg()"), "Default no-arg constructor present");
+    assertTrue(
+        code.contains("private Msg(Builder builder)"), "Private Builder constructor present");
+    assertTrue(
+        code.contains("public static Builder newBuilder()"), "newBuilder() factory method present");
   }
 
   // ======================================================================
@@ -1735,8 +1760,8 @@ class JavaCodeGenTest {
     boolean hasBeta = false;
     for (int i = 0; i < response.getFileCount(); i++) {
       String content = response.getFile(i).getContent();
-      if (content.contains("public class Alpha")) hasAlpha = true;
-      if (content.contains("public class Beta")) hasBeta = true;
+      if (content.contains("public final class Alpha")) hasAlpha = true;
+      if (content.contains("public final class Beta")) hasBeta = true;
     }
     assertTrue(hasAlpha, "Alpha class should be generated");
     assertTrue(hasBeta, "Beta class should be generated");
@@ -1790,7 +1815,9 @@ class JavaCodeGenTest {
     String code = response.getFile(0).getContent();
 
     // String-keyed map deserialization uses Map<String, Object>
-    assertTrue(code.contains("Map<String, Object>"), "String-keyed map deserializes from Map<String, Object>");
+    assertTrue(
+        code.contains("Map<String, Object>"),
+        "String-keyed map deserializes from Map<String, Object>");
     assertTrue(code.contains("entrySet()"), "String map iterates entrySet()");
     assertTrue(code.contains("LinkedHashMap"), "Map initialized as LinkedHashMap");
   }
@@ -1811,7 +1838,8 @@ class JavaCodeGenTest {
 
     assertTrue(code.contains("private TreeNode parent"), "Self-reference field type is TreeNode");
     assertTrue(
-        code.contains("TreeNode.fromJsonArray("), "Self-referential deserialize call uses TreeNode");
+        code.contains("TreeNode.fromJsonArray("),
+        "Self-referential deserialize call uses TreeNode");
   }
 
   // ======================================================================
@@ -1828,7 +1856,8 @@ class JavaCodeGenTest {
     String code = generateSingleMessage(msg);
 
     // Sfixed64 should also handle string format
-    assertTrue(code.contains("instanceof String"), "sfixed64 deserializer checks instanceof String");
+    assertTrue(
+        code.contains("instanceof String"), "sfixed64 deserializer checks instanceof String");
     assertTrue(code.contains("Long.parseLong("), "sfixed64 deserializer uses Long.parseLong");
   }
 

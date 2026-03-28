@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024 protobuf-text-codecs contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package dev.protocgen.textcodecs.jsonarray;
 
 import com.google.protobuf.DescriptorProtos.DescriptorProto;
@@ -11,12 +26,12 @@ import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse;
 import dev.protocgen.textcodecs.jsonarray.model.TypeRegistry;
 import dev.protocgen.textcodecs.pbtkurl.PbtkPluginRunner;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.util.Arrays;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Performance benchmark tests for the protoc-gen-jsonarray and protoc-gen-pbtkurl code generators.
@@ -65,24 +80,30 @@ class PerformanceBenchmarkTest {
   @Test
   void benchmarkJsonArraySimpleMessageJava() {
     PluginRunner runner = new PluginRunner();
-    long[] timings = benchmarkRunner(
-        "jsonarray/simple/java", WARMUP_ITERATIONS, MEASUREMENT_ITERATIONS,
-        () -> {
-          CodeGeneratorResponse resp = runner.run(simpleJavaRequest);
-          return resp.getFileCount();
-        });
+    long[] timings =
+        benchmarkRunner(
+            "jsonarray/simple/java",
+            WARMUP_ITERATIONS,
+            MEASUREMENT_ITERATIONS,
+            () -> {
+              CodeGeneratorResponse resp = runner.run(simpleJavaRequest);
+              return resp.getFileCount();
+            });
     reportAndAssert(timings, "jsonarray: simple msg (Java)", 1_000, 5_000);
   }
 
   @Test
   void benchmarkJsonArrayComplexMessageJava() {
     PluginRunner runner = new PluginRunner();
-    long[] timings = benchmarkRunner(
-        "jsonarray/complex/java", WARMUP_ITERATIONS, MEASUREMENT_ITERATIONS,
-        () -> {
-          CodeGeneratorResponse resp = runner.run(complexJavaRequest);
-          return resp.getFileCount();
-        });
+    long[] timings =
+        benchmarkRunner(
+            "jsonarray/complex/java",
+            WARMUP_ITERATIONS,
+            MEASUREMENT_ITERATIONS,
+            () -> {
+              CodeGeneratorResponse resp = runner.run(complexJavaRequest);
+              return resp.getFileCount();
+            });
     reportAndAssert(timings, "jsonarray: complex msg (Java)", 5_000, 25_000);
   }
 
@@ -91,12 +112,15 @@ class PerformanceBenchmarkTest {
     PluginRunner runner = new PluginRunner();
     for (String lang : ALL_LANGUAGES) {
       CodeGeneratorRequest req = buildRequest(simpleProto, "lang=" + lang);
-      long[] timings = benchmarkRunner(
-          "jsonarray/simple/" + lang, WARMUP_ITERATIONS, MEASUREMENT_ITERATIONS,
-          () -> {
-            CodeGeneratorResponse resp = runner.run(req);
-            return resp.getFileCount();
-          });
+      long[] timings =
+          benchmarkRunner(
+              "jsonarray/simple/" + lang,
+              WARMUP_ITERATIONS,
+              MEASUREMENT_ITERATIONS,
+              () -> {
+                CodeGeneratorResponse resp = runner.run(req);
+                return resp.getFileCount();
+              });
       reportAndAssert(timings, "jsonarray: simple msg (" + lang + ")", 1_000, 5_000);
     }
   }
@@ -108,24 +132,30 @@ class PerformanceBenchmarkTest {
   @Test
   void benchmarkPbtkUrlSimpleMessageJava() {
     PbtkPluginRunner runner = new PbtkPluginRunner();
-    long[] timings = benchmarkRunner(
-        "pbtkurl/simple/java", WARMUP_ITERATIONS, MEASUREMENT_ITERATIONS,
-        () -> {
-          CodeGeneratorResponse resp = runner.run(simplePbtkJavaRequest);
-          return resp.getFileCount();
-        });
+    long[] timings =
+        benchmarkRunner(
+            "pbtkurl/simple/java",
+            WARMUP_ITERATIONS,
+            MEASUREMENT_ITERATIONS,
+            () -> {
+              CodeGeneratorResponse resp = runner.run(simplePbtkJavaRequest);
+              return resp.getFileCount();
+            });
     reportAndAssert(timings, "pbtkurl: simple msg (Java)", 1_000, 5_000);
   }
 
   @Test
   void benchmarkPbtkUrlComplexMessageJava() {
     PbtkPluginRunner runner = new PbtkPluginRunner();
-    long[] timings = benchmarkRunner(
-        "pbtkurl/complex/java", WARMUP_ITERATIONS, MEASUREMENT_ITERATIONS,
-        () -> {
-          CodeGeneratorResponse resp = runner.run(complexPbtkJavaRequest);
-          return resp.getFileCount();
-        });
+    long[] timings =
+        benchmarkRunner(
+            "pbtkurl/complex/java",
+            WARMUP_ITERATIONS,
+            MEASUREMENT_ITERATIONS,
+            () -> {
+              CodeGeneratorResponse resp = runner.run(complexPbtkJavaRequest);
+              return resp.getFileCount();
+            });
     reportAndAssert(timings, "pbtkurl: complex msg (Java)", 5_000, 25_000);
   }
 
@@ -140,12 +170,15 @@ class PerformanceBenchmarkTest {
     MessageAnalyzer analyzer = new MessageAnalyzer(registry);
     DescriptorProto descriptor = simpleProto.getMessageType(0);
 
-    long[] timings = benchmarkRunner(
-        "analyzer/simple", WARMUP_ITERATIONS, MEASUREMENT_ITERATIONS,
-        () -> {
-          var msg = analyzer.analyze(descriptor, ".bench.");
-          return msg.getFields().size();
-        });
+    long[] timings =
+        benchmarkRunner(
+            "analyzer/simple",
+            WARMUP_ITERATIONS,
+            MEASUREMENT_ITERATIONS,
+            () -> {
+              var msg = analyzer.analyze(descriptor, ".bench.");
+              return msg.getFields().size();
+            });
     reportAndAssert(timings, "MessageAnalyzer.analyze (simple)", 100, 1_000);
   }
 
@@ -156,24 +189,30 @@ class PerformanceBenchmarkTest {
     MessageAnalyzer analyzer = new MessageAnalyzer(registry);
     DescriptorProto descriptor = complexProto.getMessageType(0);
 
-    long[] timings = benchmarkRunner(
-        "analyzer/complex", WARMUP_ITERATIONS, MEASUREMENT_ITERATIONS,
-        () -> {
-          var msg = analyzer.analyze(descriptor, ".bench.");
-          return msg.getFields().size();
-        });
+    long[] timings =
+        benchmarkRunner(
+            "analyzer/complex",
+            WARMUP_ITERATIONS,
+            MEASUREMENT_ITERATIONS,
+            () -> {
+              var msg = analyzer.analyze(descriptor, ".bench.");
+              return msg.getFields().size();
+            });
     reportAndAssert(timings, "MessageAnalyzer.analyze (complex)", 500, 2_000);
   }
 
   @Test
   void benchmarkTypeRegistryRegisterFile() {
-    long[] timings = benchmarkRunner(
-        "registry/registerFile", WARMUP_ITERATIONS, MEASUREMENT_ITERATIONS,
-        () -> {
-          TypeRegistry registry = new TypeRegistry();
-          registry.registerFile(complexProto);
-          return 1;
-        });
+    long[] timings =
+        benchmarkRunner(
+            "registry/registerFile",
+            WARMUP_ITERATIONS,
+            MEASUREMENT_ITERATIONS,
+            () -> {
+              TypeRegistry registry = new TypeRegistry();
+              registry.registerFile(complexProto);
+              return 1;
+            });
     reportAndAssert(timings, "TypeRegistry.registerFile (complex)", 50, 500);
   }
 
@@ -234,8 +273,7 @@ class PerformanceBenchmarkTest {
    * @param softBoundUs soft bound in microseconds (warn only)
    * @param hardBoundUs hard bound in microseconds (test fails if p95 exceeds this)
    */
-  private void reportAndAssert(
-      long[] timingsNs, String name, long softBoundUs, long hardBoundUs) {
+  private void reportAndAssert(long[] timingsNs, String name, long softBoundUs, long hardBoundUs) {
     Arrays.sort(timingsNs);
     long minNs = timingsNs[0];
     long maxNs = timingsNs[timingsNs.length - 1];
@@ -306,12 +344,9 @@ class PerformanceBenchmarkTest {
     EnumDescriptorProto statusEnum =
         EnumDescriptorProto.newBuilder()
             .setName("Status")
-            .addValue(
-                EnumValueDescriptorProto.newBuilder().setName("STATUS_UNKNOWN").setNumber(0))
-            .addValue(
-                EnumValueDescriptorProto.newBuilder().setName("STATUS_ACTIVE").setNumber(1))
-            .addValue(
-                EnumValueDescriptorProto.newBuilder().setName("STATUS_INACTIVE").setNumber(2))
+            .addValue(EnumValueDescriptorProto.newBuilder().setName("STATUS_UNKNOWN").setNumber(0))
+            .addValue(EnumValueDescriptorProto.newBuilder().setName("STATUS_ACTIVE").setNumber(1))
+            .addValue(EnumValueDescriptorProto.newBuilder().setName("STATUS_INACTIVE").setNumber(2))
             .build();
 
     // Nested message: Inner

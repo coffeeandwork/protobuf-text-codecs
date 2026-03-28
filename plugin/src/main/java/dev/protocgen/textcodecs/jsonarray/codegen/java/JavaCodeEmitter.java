@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024 protobuf-text-codecs contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package dev.protocgen.textcodecs.jsonarray.codegen.java;
 
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
@@ -43,57 +58,11 @@ public class JavaCodeEmitter {
     // Doc comment for the message
     emitDocComment(w, message.getComment());
 
-    // Class declaration
+    // Class declaration -- public final class
     w.block(
-        "public class " + className,
+        "public final class " + className,
         () -> {
-          // Fields
-          emitFields(w, message);
-
-          // Presence tracking for fields with explicit presence (proto2 all fields,
-          // proto3 optional)
-          if (hasPresenceTrackedFields(message)) {
-            w.blankLine();
-            w.line("final java.util.BitSet presentFields_ = new java.util.BitSet();");
-          }
-
-          // Oneof case tracking
-          emitOneofCaseTracking(w, message);
-
-          // Default constructor
-          w.blankLine();
-          w.block(
-              "public " + className + "()",
-              () -> {
-                // fields are initialized at declaration
-              });
-
-          // Getters and setters
-          emitGettersSetters(w, message);
-
-          // Nested enums
-          for (ProtoEnum protoEnum : message.getEnums()) {
-            emitEnum(w, protoEnum);
-          }
-
-          // Nested message classes
-          for (ProtoMessage nested : message.getNestedMessages()) {
-            w.blankLine();
-            emitNestedMessage(w, nested, file);
-          }
-
-          // Serialize method
-          serializerGen.generate(w, message);
-
-          // Deserialize method
-          deserializerGen.generate(w, message, className);
-
-          // toString
-          emitToString(w, message, className);
-
-          // equals and hashCode
-          emitEquals(w, message, className);
-          emitHashCode(w, message);
+          emitMessageBody(w, message, className, false);
         });
 
     return w.toString();
@@ -117,70 +86,132 @@ public class JavaCodeEmitter {
     return w.toString();
   }
 
+  // ---------------------------------------------------------------------------
+  // Message body (shared between top-level and nested messages)
+  // ---------------------------------------------------------------------------
+
+  private void emitMessageBody(
+      CodeWriter w, ProtoMessage message, String className, boolean isNested) {
+    // Field number constants
+    emitFieldNumberConstants(w, message);
+
+    // Private final fields
+    emitFields(w, message);
+
+    // Presence tracking bitset for fields with explicit presence (proto2 all fields,
+    // proto3 optional)
+    if (hasPresenceTrackedFields(message)) {
+      w.blankLine();
+      w.line("private final java.util.BitSet presentFields_;");
+    }
+
+    // Oneof case tracking fields
+    emitOneofCaseFields(w, message);
+
+    // Private constructor from Builder
+    emitPrivateConstructor(w, message, className);
+
+    // Getters on the message class (no setters -- immutable)
+    emitMessageGetters(w, message);
+
+    // Default instance
+    w.blankLine();
+    w.line(
+        "private static final %s DEFAULT_INSTANCE = new %s(new Builder());", className, className);
+    w.blankLine();
+    w.block(
+        "public static " + className + " getDefaultInstance()",
+        () -> {
+          w.line("return DEFAULT_INSTANCE;");
+        });
+
+    // Builder factory methods
+    w.blankLine();
+    w.block(
+        "public static Builder newBuilder()",
+        () -> {
+          w.line("return new Builder();");
+        });
+    w.blankLine();
+    w.block(
+        "public static Builder newBuilder(" + className + " prototype)",
+        () -> {
+          w.line("return new Builder(prototype);");
+        });
+    w.blankLine();
+    w.block(
+        "public Builder toBuilder()",
+        () -> {
+          w.line("return new Builder(this);");
+        });
+
+    // Nested enums
+    for (ProtoEnum protoEnum : message.getEnums()) {
+      emitEnum(w, protoEnum);
+    }
+
+    // Oneof case enums
+    emitOneofCaseEnums(w, message);
+
+    // Nested message classes
+    for (ProtoMessage nested : message.getNestedMessages()) {
+      w.blankLine();
+      emitNestedMessage(w, nested);
+    }
+
+    // Serialize method
+    serializerGen.generate(w, message);
+
+    // Deserialize method
+    deserializerGen.generate(w, message, className);
+
+    // toString
+    emitToString(w, message, className);
+
+    // equals and hashCode
+    emitEquals(w, message, className);
+    emitHashCode(w, message);
+
+    // Builder inner class
+    emitBuilder(w, message, className);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Field number constants
+  // ---------------------------------------------------------------------------
+
+  private void emitFieldNumberConstants(CodeWriter w, ProtoMessage message) {
+    for (ProtoField field : message.getFields()) {
+      String constName = snakeToUpperSnake(field.getName()) + "_FIELD_NUMBER";
+      w.line("public static final int %s = %d;", constName, field.getFieldNumber());
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Private final fields on the message class
+  // ---------------------------------------------------------------------------
+
   private void emitFields(CodeWriter w, ProtoMessage message) {
+    if (!message.getFields().isEmpty()) {
+      w.blankLine();
+    }
     for (ProtoField field : message.getFields()) {
       String javaType = typeMapper.languageType(field);
       String javaName = nameResolver.fieldName(field.getName());
-      String defaultVal = typeMapper.defaultValue(field);
-      w.line("private %s %s = %s;", javaType, javaName, defaultVal);
+      w.line("private final %s %s;", javaType, javaName);
     }
   }
 
-  private void emitGettersSetters(CodeWriter w, ProtoMessage message) {
-    for (ProtoField field : message.getFields()) {
-      String javaType = typeMapper.languageType(field);
-      String javaName = nameResolver.fieldName(field.getName());
-      String getterName = nameResolver.getterName(field.getName());
-      String setterName = nameResolver.setterName(field.getName());
+  // ---------------------------------------------------------------------------
+  // Oneof case tracking fields (private final int per oneof group)
+  // ---------------------------------------------------------------------------
 
-      // Getter with doc comment
-      w.blankLine();
-      emitDocComment(w, field.getComment());
-      w.block(
-          "public " + javaType + " " + getterName + "()",
-          () -> {
-            w.line("return this.%s;", javaName);
-          });
-
-      // Setter
-      w.blankLine();
-      w.block(
-          "public void " + setterName + "(" + javaType + " " + javaName + ")",
-          () -> {
-            w.line("this.%s = %s;", javaName, javaName);
-            if (field.hasExplicitPresence()) {
-              w.line("this.presentFields_.set(%d);", field.getArrayPosition());
-            }
-            if (field.isOneofMember()) {
-              w.line(
-                  "this.%sCase_ = %sCase_;",
-                  nameResolver.fieldName(field.getOneofName()), field.getName().toUpperCase());
-            }
-          });
-
-      // has* method for fields with presence tracking
-      if (field.hasExplicitPresence() || field.getKind() == ProtoField.FieldKind.MESSAGE) {
-        w.blankLine();
-        String hasName = "has" + JavaNameResolver.snakeToPascal(field.getName());
-        w.block(
-            "public boolean " + hasName + "()",
-            () -> {
-              if (field.hasExplicitPresence()) {
-                w.line("return this.presentFields_.get(%d);", field.getArrayPosition());
-              } else {
-                w.line("return this.%s != null;", javaName);
-              }
-            });
-      }
-    }
-  }
-
-  private void emitOneofCaseTracking(CodeWriter w, ProtoMessage message) {
+  private void emitOneofCaseFields(CodeWriter w, ProtoMessage message) {
     for (ProtoMessage.OneofGroup group : message.getOneofGroups()) {
       w.blankLine();
       String caseName = nameResolver.fieldName(group.name()) + "Case_";
-      // Enum for oneof case
-      w.line("private int %s = 0; // 0 = not set", caseName);
+      w.line("private final int %s;", caseName);
+      // Static constants for each oneof member (used by serializer)
       for (ProtoField member : group.members()) {
         w.line(
             "private static final int %sCase_ = %d;",
@@ -189,89 +220,673 @@ public class JavaCodeEmitter {
     }
   }
 
-  private void emitEnum(CodeWriter w, ProtoEnum protoEnum) {
+  // ---------------------------------------------------------------------------
+  // Oneof case enums
+  // ---------------------------------------------------------------------------
+
+  private void emitOneofCaseEnums(CodeWriter w, ProtoMessage message) {
+    for (ProtoMessage.OneofGroup group : message.getOneofGroups()) {
+      w.blankLine();
+      String enumName = JavaNameResolver.snakeToPascal(group.name()) + "Case";
+      w.block(
+          "public enum " + enumName,
+          () -> {
+            // NOT_SET(0) first
+            w.line("%s_NOT_SET(0),", snakeToUpperSnake(group.name()));
+            for (int i = 0; i < group.members().size(); i++) {
+              ProtoField member = group.members().get(i);
+              String suffix = i < group.members().size() - 1 ? "," : ";";
+              w.line(
+                  "%s(%d)%s", snakeToUpperSnake(member.getName()), member.getFieldNumber(), suffix);
+            }
+
+            w.blankLine();
+            w.line("private final int number;");
+            w.blankLine();
+            w.block(
+                enumName + "(int number)",
+                () -> {
+                  w.line("this.number = number;");
+                });
+            w.blankLine();
+            w.block(
+                "public int getNumber()",
+                () -> {
+                  w.line("return number;");
+                });
+            w.blankLine();
+            w.block(
+                "public static " + enumName + " forNumber(int number)",
+                () -> {
+                  w.block(
+                      "for (" + enumName + " v : values())",
+                      () -> {
+                        w.block(
+                            "if (v.number == number)",
+                            () -> {
+                              w.line("return v;");
+                            });
+                      });
+                  w.line("return %s_NOT_SET;", snakeToUpperSnake(group.name()));
+                });
+          });
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Private constructor (from Builder)
+  // ---------------------------------------------------------------------------
+
+  private void emitPrivateConstructor(CodeWriter w, ProtoMessage message, String className) {
     w.blankLine();
     w.block(
-        "public enum " + protoEnum.getName(),
+        "private " + className + "(Builder builder)",
         () -> {
-          // Enum constants
-          for (int i = 0; i < protoEnum.getValues().size(); i++) {
-            ProtoEnum.EnumValue val = protoEnum.getValues().get(i);
-            String suffix = i < protoEnum.getValues().size() - 1 ? "," : ";";
-            w.line("%s(%d)%s", val.name(), val.number(), suffix);
+          for (ProtoField field : message.getFields()) {
+            String javaName = nameResolver.fieldName(field.getName());
+            if (field.isRepeated()) {
+              w.line(
+                  "this.%s = java.util.Collections.unmodifiableList(new java.util.ArrayList<>(builder.%s));",
+                  javaName, javaName);
+            } else if (field.isMap()) {
+              w.line(
+                  "this.%s = java.util.Collections.unmodifiableMap(new java.util.LinkedHashMap<>(builder.%s));",
+                  javaName, javaName);
+            } else {
+              w.line("this.%s = builder.%s;", javaName, javaName);
+            }
+          }
+          if (hasPresenceTrackedFields(message)) {
+            w.line("this.presentFields_ = (java.util.BitSet) builder.presentFields_.clone();");
+          }
+          for (ProtoMessage.OneofGroup group : message.getOneofGroups()) {
+            String caseName = nameResolver.fieldName(group.name()) + "Case_";
+            w.line("this.%s = builder.%s;", caseName, caseName);
+          }
+        });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Getters on the message class (immutable -- no setters)
+  // ---------------------------------------------------------------------------
+
+  private void emitMessageGetters(CodeWriter w, ProtoMessage message) {
+    for (ProtoField field : message.getFields()) {
+      String javaType = typeMapper.languageType(field);
+      String javaName = nameResolver.fieldName(field.getName());
+      String pascalName = JavaNameResolver.snakeToPascal(field.getName());
+
+      if (field.isRepeated()) {
+        emitRepeatedGetters(w, field, javaType, javaName, pascalName);
+      } else if (field.isMap()) {
+        emitMapGetters(w, field, javaType, javaName, pascalName);
+      } else if (field.getKind() == ProtoField.FieldKind.MESSAGE
+          || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
+        emitMessageFieldGetters(w, field, javaType, javaName, pascalName);
+      } else {
+        emitScalarGetter(w, field, javaType, javaName, pascalName);
+      }
+    }
+
+    // Oneof getXxxCase() methods
+    for (ProtoMessage.OneofGroup group : message.getOneofGroups()) {
+      String pascalOneof = JavaNameResolver.snakeToPascal(group.name());
+      String enumName = pascalOneof + "Case";
+      String caseName = nameResolver.fieldName(group.name()) + "Case_";
+      w.blankLine();
+      w.block(
+          "public " + enumName + " get" + pascalOneof + "Case()",
+          () -> {
+            w.line("return %s.forNumber(%s);", enumName, caseName);
+          });
+    }
+  }
+
+  private void emitScalarGetter(
+      CodeWriter w, ProtoField field, String javaType, String javaName, String pascalName) {
+    // Getter with doc comment
+    w.blankLine();
+    emitDocComment(w, field.getComment());
+    w.block(
+        "public " + javaType + " get" + pascalName + "()",
+        () -> {
+          w.line("return this.%s;", javaName);
+        });
+
+    // has* method for fields with explicit presence or enum fields
+    if (field.hasExplicitPresence()) {
+      w.blankLine();
+      w.block(
+          "public boolean has" + pascalName + "()",
+          () -> {
+            w.line("return this.presentFields_.get(%d);", field.getArrayPosition());
+          });
+    }
+  }
+
+  private void emitRepeatedGetters(
+      CodeWriter w, ProtoField field, String javaType, String javaName, String pascalName) {
+    String elementType = elementBoxedType(field);
+
+    // getXxxList()
+    w.blankLine();
+    emitDocComment(w, field.getComment());
+    w.block(
+        "public " + javaType + " get" + pascalName + "List()",
+        () -> {
+          w.line("return this.%s;", javaName);
+        });
+
+    // getXxxCount()
+    w.blankLine();
+    w.block(
+        "public int get" + pascalName + "Count()",
+        () -> {
+          w.line("return this.%s.size();", javaName);
+        });
+
+    // getXxx(int index)
+    w.blankLine();
+    w.block(
+        "public " + elementType + " get" + pascalName + "(int index)",
+        () -> {
+          w.line("return this.%s.get(index);", javaName);
+        });
+  }
+
+  private void emitMapGetters(
+      CodeWriter w, ProtoField field, String javaType, String javaName, String pascalName) {
+    String keyType = mapKeyBoxedType(field);
+    String valueType = mapValueBoxedType(field);
+
+    // getXxxMap()
+    w.blankLine();
+    emitDocComment(w, field.getComment());
+    w.block(
+        "public " + javaType + " get" + pascalName + "Map()",
+        () -> {
+          w.line("return this.%s;", javaName);
+        });
+
+    // getXxxCount()
+    w.blankLine();
+    w.block(
+        "public int get" + pascalName + "Count()",
+        () -> {
+          w.line("return this.%s.size();", javaName);
+        });
+
+    // containsXxx(key)
+    w.blankLine();
+    w.block(
+        "public boolean contains" + pascalName + "(" + keyType + " key)",
+        () -> {
+          w.line("return this.%s.containsKey(key);", javaName);
+        });
+
+    // getXxxOrDefault(key, defaultValue)
+    w.blankLine();
+    w.block(
+        "public "
+            + valueType
+            + " get"
+            + pascalName
+            + "OrDefault("
+            + keyType
+            + " key, "
+            + valueType
+            + " defaultValue)",
+        () -> {
+          w.line("return this.%s.getOrDefault(key, defaultValue);", javaName);
+        });
+
+    // getXxxOrThrow(key)
+    w.blankLine();
+    w.block(
+        "public " + valueType + " get" + pascalName + "OrThrow(" + keyType + " key)",
+        () -> {
+          w.block(
+              "if (!this." + javaName + ".containsKey(key))",
+              () -> {
+                w.line("throw new IllegalArgumentException(\"Key not found: \" + key);");
+              });
+          w.line("return this.%s.get(key);", javaName);
+        });
+  }
+
+  private void emitMessageFieldGetters(
+      CodeWriter w, ProtoField field, String javaType, String javaName, String pascalName) {
+    // has*
+    w.blankLine();
+    w.block(
+        "public boolean has" + pascalName + "()",
+        () -> {
+          if (field.hasExplicitPresence()) {
+            w.line("return this.presentFields_.get(%d);", field.getArrayPosition());
+          } else {
+            w.line("return this.%s != null;", javaName);
+          }
+        });
+
+    // get* -- returns default instance if null
+    w.blankLine();
+    emitDocComment(w, field.getComment());
+    w.block(
+        "public " + javaType + " get" + pascalName + "()",
+        () -> {
+          w.line(
+              "return this.%s != null ? this.%s : %s.getDefaultInstance();",
+              javaName, javaName, javaType);
+        });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Builder inner class
+  // ---------------------------------------------------------------------------
+
+  private void emitBuilder(CodeWriter w, ProtoMessage message, String className) {
+    w.blankLine();
+    w.block(
+        "public static final class Builder",
+        () -> {
+          // Builder fields (mutable, with defaults)
+          for (ProtoField field : message.getFields()) {
+            String javaType = typeMapper.languageType(field);
+            String javaName = nameResolver.fieldName(field.getName());
+            String defaultVal = typeMapper.defaultValue(field);
+            w.line("private %s %s = %s;", javaType, javaName, defaultVal);
           }
 
+          // Presence tracking for builder
+          if (hasPresenceTrackedFields(message)) {
+            w.blankLine();
+            w.line("final java.util.BitSet presentFields_ = new java.util.BitSet();");
+          }
+
+          // Oneof case tracking in builder
+          for (ProtoMessage.OneofGroup group : message.getOneofGroups()) {
+            w.blankLine();
+            String caseName = nameResolver.fieldName(group.name()) + "Case_";
+            w.line("private int %s = 0;", caseName);
+          }
+
+          // Private no-arg constructor
           w.blankLine();
-          w.line("private final int number;");
+          w.block("private Builder()", () -> {});
+
+          // Private copy constructor from message
           w.blankLine();
           w.block(
-              protoEnum.getName() + "(int number)",
+              "private Builder(" + className + " from)",
               () -> {
-                w.line("this.number = number;");
+                for (ProtoField field : message.getFields()) {
+                  String javaName = nameResolver.fieldName(field.getName());
+                  if (field.isRepeated()) {
+                    w.line("this.%s = new java.util.ArrayList<>(from.%s);", javaName, javaName);
+                  } else if (field.isMap()) {
+                    w.line("this.%s = new java.util.LinkedHashMap<>(from.%s);", javaName, javaName);
+                  } else {
+                    w.line("this.%s = from.%s;", javaName, javaName);
+                  }
+                }
+                if (hasPresenceTrackedFields(message)) {
+                  w.line("this.presentFields_.or(from.presentFields_);");
+                }
+                for (ProtoMessage.OneofGroup group : message.getOneofGroups()) {
+                  String caseName = nameResolver.fieldName(group.name()) + "Case_";
+                  w.line("this.%s = from.%s;", caseName, caseName);
+                }
               });
+
+          // Builder getters and setters for each field
+          for (ProtoField field : message.getFields()) {
+            String javaType = typeMapper.languageType(field);
+            String javaName = nameResolver.fieldName(field.getName());
+            String pascalName = JavaNameResolver.snakeToPascal(field.getName());
+
+            if (field.isRepeated()) {
+              emitBuilderRepeatedMethods(w, field, javaType, javaName, pascalName);
+            } else if (field.isMap()) {
+              emitBuilderMapMethods(w, field, javaType, javaName, pascalName);
+            } else if (field.getKind() == ProtoField.FieldKind.MESSAGE
+                || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
+              emitBuilderMessageMethods(w, field, javaType, javaName, pascalName);
+            } else {
+              emitBuilderScalarMethods(w, field, javaType, javaName, pascalName);
+            }
+          }
+
+          // Oneof getXxxCase() on builder
+          for (ProtoMessage.OneofGroup group : message.getOneofGroups()) {
+            String pascalOneof = JavaNameResolver.snakeToPascal(group.name());
+            String enumName = pascalOneof + "Case";
+            String caseName = nameResolver.fieldName(group.name()) + "Case_";
+            w.blankLine();
+            w.block(
+                "public " + enumName + " get" + pascalOneof + "Case()",
+                () -> {
+                  w.line("return %s.forNumber(%s);", enumName, caseName);
+                });
+          }
+
+          // build()
           w.blankLine();
           w.block(
-              "public int getNumber()",
+              "public " + className + " build()",
               () -> {
-                w.line("return number;");
+                w.line("return new %s(this);", className);
               });
+
+          // clear() -- resets all fields to defaults
           w.blankLine();
           w.block(
-              "public static " + protoEnum.getName() + " forNumber(int number)",
+              "public Builder clear()",
               () -> {
-                w.block(
-                    "for (" + protoEnum.getName() + " v : values())",
-                    () -> {
-                      w.block(
-                          "if (v.number == number)",
-                          () -> {
-                            w.line("return v;");
-                          });
-                    });
-                w.line("return null;");
+                for (ProtoField field : message.getFields()) {
+                  String javaName = nameResolver.fieldName(field.getName());
+                  String defaultVal = typeMapper.defaultValue(field);
+                  w.line("this.%s = %s;", javaName, defaultVal);
+                }
+                if (hasPresenceTrackedFields(message)) {
+                  w.line("this.presentFields_.clear();");
+                }
+                for (ProtoMessage.OneofGroup group : message.getOneofGroups()) {
+                  String caseName = nameResolver.fieldName(group.name()) + "Case_";
+                  w.line("this.%s = 0;", caseName);
+                }
+                w.line("return this;");
               });
         });
   }
 
-  private void emitNestedMessage(CodeWriter w, ProtoMessage nested, ProtoFile file) {
-    // For nested messages, we generate a static inner class
+  // ---------------------------------------------------------------------------
+  // Builder: scalar field methods
+  // ---------------------------------------------------------------------------
+
+  private void emitBuilderScalarMethods(
+      CodeWriter w, ProtoField field, String javaType, String javaName, String pascalName) {
+    // Getter
+    w.blankLine();
+    w.block(
+        "public " + javaType + " get" + pascalName + "()",
+        () -> {
+          w.line("return this.%s;", javaName);
+        });
+
+    // Setter
+    w.blankLine();
+    w.block(
+        "public Builder set" + pascalName + "(" + javaType + " value)",
+        () -> {
+          w.line("this.%s = value;", javaName);
+          if (field.hasExplicitPresence()) {
+            w.line("this.presentFields_.set(%d);", field.getArrayPosition());
+          }
+          emitOneofCaseSet(w, field);
+          w.line("return this;");
+        });
+
+    // Clear
+    w.blankLine();
+    String defaultVal = typeMapper.defaultValue(field);
+    w.block(
+        "public Builder clear" + pascalName + "()",
+        () -> {
+          w.line("this.%s = %s;", javaName, defaultVal);
+          if (field.hasExplicitPresence()) {
+            w.line("this.presentFields_.clear(%d);", field.getArrayPosition());
+          }
+          emitOneofCaseClear(w, field);
+          w.line("return this;");
+        });
+
+    // has* for presence-tracked fields
+    if (field.hasExplicitPresence()) {
+      w.blankLine();
+      w.block(
+          "public boolean has" + pascalName + "()",
+          () -> {
+            w.line("return this.presentFields_.get(%d);", field.getArrayPosition());
+          });
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Builder: repeated field methods
+  // ---------------------------------------------------------------------------
+
+  private void emitBuilderRepeatedMethods(
+      CodeWriter w, ProtoField field, String javaType, String javaName, String pascalName) {
+    String elementType = elementBoxedType(field);
+
+    // getXxxList() -- unmodifiable view
+    w.blankLine();
+    w.block(
+        "public " + javaType + " get" + pascalName + "List()",
+        () -> {
+          w.line("return java.util.Collections.unmodifiableList(this.%s);", javaName);
+        });
+
+    // getXxxCount()
+    w.blankLine();
+    w.block(
+        "public int get" + pascalName + "Count()",
+        () -> {
+          w.line("return this.%s.size();", javaName);
+        });
+
+    // getXxx(int index)
+    w.blankLine();
+    w.block(
+        "public " + elementType + " get" + pascalName + "(int index)",
+        () -> {
+          w.line("return this.%s.get(index);", javaName);
+        });
+
+    // addXxx(value)
+    w.blankLine();
+    w.block(
+        "public Builder add" + pascalName + "(" + elementType + " value)",
+        () -> {
+          w.line("this.%s.add(value);", javaName);
+          w.line("return this;");
+        });
+
+    // addAllXxx(Iterable)
+    w.blankLine();
+    w.block(
+        "public Builder addAll" + pascalName + "(Iterable<? extends " + elementType + "> values)",
+        () -> {
+          w.block(
+              "for (" + elementType + " v : values)",
+              () -> {
+                w.line("this.%s.add(v);", javaName);
+              });
+          w.line("return this;");
+        });
+
+    // setXxx(int index, value)
+    w.blankLine();
+    w.block(
+        "public Builder set" + pascalName + "(int index, " + elementType + " value)",
+        () -> {
+          w.line("this.%s.set(index, value);", javaName);
+          w.line("return this;");
+        });
+
+    // clearXxx()
+    w.blankLine();
+    w.block(
+        "public Builder clear" + pascalName + "()",
+        () -> {
+          w.line("this.%s.clear();", javaName);
+          w.line("return this;");
+        });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Builder: map field methods
+  // ---------------------------------------------------------------------------
+
+  private void emitBuilderMapMethods(
+      CodeWriter w, ProtoField field, String javaType, String javaName, String pascalName) {
+    String keyType = mapKeyBoxedType(field);
+    String valueType = mapValueBoxedType(field);
+
+    // getXxxMap()
+    w.blankLine();
+    w.block(
+        "public " + javaType + " get" + pascalName + "Map()",
+        () -> {
+          w.line("return java.util.Collections.unmodifiableMap(this.%s);", javaName);
+        });
+
+    // getXxxCount()
+    w.blankLine();
+    w.block(
+        "public int get" + pascalName + "Count()",
+        () -> {
+          w.line("return this.%s.size();", javaName);
+        });
+
+    // containsXxx(key)
+    w.blankLine();
+    w.block(
+        "public boolean contains" + pascalName + "(" + keyType + " key)",
+        () -> {
+          w.line("return this.%s.containsKey(key);", javaName);
+        });
+
+    // putXxx(key, value)
+    w.blankLine();
+    w.block(
+        "public Builder put" + pascalName + "(" + keyType + " key, " + valueType + " value)",
+        () -> {
+          w.line("this.%s.put(key, value);", javaName);
+          w.line("return this;");
+        });
+
+    // putAllXxx(Map)
+    w.blankLine();
+    w.block(
+        "public Builder putAll" + pascalName + "(" + javaType + " values)",
+        () -> {
+          w.line("this.%s.putAll(values);", javaName);
+          w.line("return this;");
+        });
+
+    // removeXxx(key)
+    w.blankLine();
+    w.block(
+        "public Builder remove" + pascalName + "(" + keyType + " key)",
+        () -> {
+          w.line("this.%s.remove(key);", javaName);
+          w.line("return this;");
+        });
+
+    // clearXxx()
+    w.blankLine();
+    w.block(
+        "public Builder clear" + pascalName + "()",
+        () -> {
+          w.line("this.%s.clear();", javaName);
+          w.line("return this;");
+        });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Builder: message field methods
+  // ---------------------------------------------------------------------------
+
+  private void emitBuilderMessageMethods(
+      CodeWriter w, ProtoField field, String javaType, String javaName, String pascalName) {
+    // Getter
+    w.blankLine();
+    w.block(
+        "public " + javaType + " get" + pascalName + "()",
+        () -> {
+          w.line(
+              "return this.%s != null ? this.%s : %s.getDefaultInstance();",
+              javaName, javaName, javaType);
+        });
+
+    // has*
+    w.blankLine();
+    w.block(
+        "public boolean has" + pascalName + "()",
+        () -> {
+          if (field.hasExplicitPresence()) {
+            w.line("return this.presentFields_.get(%d);", field.getArrayPosition());
+          } else {
+            w.line("return this.%s != null;", javaName);
+          }
+        });
+
+    // Setter
+    w.blankLine();
+    w.block(
+        "public Builder set" + pascalName + "(" + javaType + " value)",
+        () -> {
+          w.line("this.%s = value;", javaName);
+          if (field.hasExplicitPresence()) {
+            w.line("this.presentFields_.set(%d);", field.getArrayPosition());
+          }
+          emitOneofCaseSet(w, field);
+          w.line("return this;");
+        });
+
+    // Clear
+    w.blankLine();
+    w.block(
+        "public Builder clear" + pascalName + "()",
+        () -> {
+          w.line("this.%s = null;", javaName);
+          if (field.hasExplicitPresence()) {
+            w.line("this.presentFields_.clear(%d);", field.getArrayPosition());
+          }
+          emitOneofCaseClear(w, field);
+          w.line("return this;");
+        });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Oneof helpers for Builder setters
+  // ---------------------------------------------------------------------------
+
+  private void emitOneofCaseSet(CodeWriter w, ProtoField field) {
+    if (field.isOneofMember()) {
+      String caseName = nameResolver.fieldName(field.getOneofName()) + "Case_";
+      w.line("this.%s = %d;", caseName, field.getFieldNumber());
+    }
+  }
+
+  private void emitOneofCaseClear(CodeWriter w, ProtoField field) {
+    if (field.isOneofMember()) {
+      String caseName = nameResolver.fieldName(field.getOneofName()) + "Case_";
+      w.line("this.%s = 0;", caseName);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Nested messages
+  // ---------------------------------------------------------------------------
+
+  private void emitNestedMessage(CodeWriter w, ProtoMessage nested) {
     String className = nameResolver.messageClassName(nested.getName());
 
     // Doc comment for nested message
     emitDocComment(w, nested.getComment());
 
     w.block(
-        "public static class " + className,
+        "public static final class " + className,
         () -> {
-          emitFields(w, nested);
-
-          if (hasPresenceTrackedFields(nested)) {
-            w.blankLine();
-            w.line("final java.util.BitSet presentFields_ = new java.util.BitSet();");
-          }
-
-          emitOneofCaseTracking(w, nested);
-
-          w.blankLine();
-          w.block("public " + className + "()", () -> {});
-
-          emitGettersSetters(w, nested);
-
-          for (ProtoEnum protoEnum : nested.getEnums()) {
-            emitEnum(w, protoEnum);
-          }
-          for (ProtoMessage deepNested : nested.getNestedMessages()) {
-            w.blankLine();
-            emitNestedMessage(w, deepNested, file);
-          }
-
-          serializerGen.generate(w, nested);
-          deserializerGen.generate(w, nested, className);
-          emitToString(w, nested, className);
-          emitEquals(w, nested, className);
-          emitHashCode(w, nested);
+          emitMessageBody(w, nested, className, true);
         });
   }
+
+  // ---------------------------------------------------------------------------
+  // toString, equals, hashCode
+  // ---------------------------------------------------------------------------
 
   private void emitToString(CodeWriter w, ProtoMessage message, String className) {
     w.blankLine();
@@ -344,6 +959,10 @@ public class JavaCodeEmitter {
             if (isByteArrayField(field)) {
               sb.append(
                   String.format("java.util.Arrays.equals(this.%s, that.%s)", javaName, javaName));
+            } else if (isFloatField(field)) {
+              sb.append(String.format("Float.compare(this.%s, that.%s) == 0", javaName, javaName));
+            } else if (isDoubleField(field)) {
+              sb.append(String.format("Double.compare(this.%s, that.%s) == 0", javaName, javaName));
             } else if (isPrimitiveField(field)) {
               sb.append(String.format("this.%s == that.%s", javaName, javaName));
             } else {
@@ -376,6 +995,10 @@ public class JavaCodeEmitter {
             }
             if (isByteArrayField(field)) {
               args.append(String.format("java.util.Arrays.hashCode(%s)", javaName));
+            } else if (isDoubleField(field)) {
+              args.append(String.format("Double.doubleToLongBits(%s)", javaName));
+            } else if (isFloatField(field)) {
+              args.append(String.format("Float.floatToIntBits(%s)", javaName));
             } else {
               args.append(javaName);
             }
@@ -383,6 +1006,58 @@ public class JavaCodeEmitter {
           w.line("return java.util.Objects.hash(%s);", args);
         });
   }
+
+  // ---------------------------------------------------------------------------
+  // Enum generation (unchanged)
+  // ---------------------------------------------------------------------------
+
+  private void emitEnum(CodeWriter w, ProtoEnum protoEnum) {
+    w.blankLine();
+    w.block(
+        "public enum " + protoEnum.getName(),
+        () -> {
+          // Enum constants
+          for (int i = 0; i < protoEnum.getValues().size(); i++) {
+            ProtoEnum.EnumValue val = protoEnum.getValues().get(i);
+            String suffix = i < protoEnum.getValues().size() - 1 ? "," : ";";
+            w.line("%s(%d)%s", val.name(), val.number(), suffix);
+          }
+
+          w.blankLine();
+          w.line("private final int number;");
+          w.blankLine();
+          w.block(
+              protoEnum.getName() + "(int number)",
+              () -> {
+                w.line("this.number = number;");
+              });
+          w.blankLine();
+          w.block(
+              "public int getNumber()",
+              () -> {
+                w.line("return number;");
+              });
+          w.blankLine();
+          w.block(
+              "public static " + protoEnum.getName() + " forNumber(int number)",
+              () -> {
+                w.block(
+                    "for (" + protoEnum.getName() + " v : values())",
+                    () -> {
+                      w.block(
+                          "if (v.number == number)",
+                          () -> {
+                            w.line("return v;");
+                          });
+                    });
+                w.line("return null;");
+              });
+        });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Doc comments
+  // ---------------------------------------------------------------------------
 
   /** Emit a Javadoc comment if the comment text is non-null and non-empty. */
   private void emitDocComment(CodeWriter w, String comment) {
@@ -409,11 +1084,29 @@ public class JavaCodeEmitter {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Utility methods
+  // ---------------------------------------------------------------------------
+
   /** Returns true if the field is a byte[] type (TYPE_BYTES, singular). */
   private boolean isByteArrayField(ProtoField field) {
     return field.getProtoType()
             == com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type.TYPE_BYTES
         && field.isSingular();
+  }
+
+  private boolean isFloatField(ProtoField field) {
+    return field.isSingular()
+        && field.getKind() == ProtoField.FieldKind.SCALAR
+        && field.getProtoType()
+            == com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type.TYPE_FLOAT;
+  }
+
+  private boolean isDoubleField(ProtoField field) {
+    return field.isSingular()
+        && field.getKind() == ProtoField.FieldKind.SCALAR
+        && field.getProtoType()
+            == com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type.TYPE_DOUBLE;
   }
 
   /** Returns true if the field maps to a Java primitive (not a reference type). */
@@ -441,5 +1134,52 @@ public class JavaCodeEmitter {
 
   private boolean hasPresenceTrackedFields(ProtoMessage message) {
     return message.getFields().stream().anyMatch(ProtoField::hasExplicitPresence);
+  }
+
+  /** Convert snake_case proto field name to UPPER_SNAKE_CASE for constants. */
+  private String snakeToUpperSnake(String name) {
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < name.length(); i++) {
+      char c = name.charAt(i);
+      if (Character.isUpperCase(c) && i > 0 && name.charAt(i - 1) != '_') {
+        sb.append('_');
+      }
+      sb.append(Character.toUpperCase(c));
+    }
+    return sb.toString();
+  }
+
+  /** Get the boxed element type for a repeated field. */
+  private String elementBoxedType(ProtoField field) {
+    if (field.getKind() == ProtoField.FieldKind.MESSAGE
+        || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
+      return simpleTypeName(field.getTypeReference());
+    }
+    if (field.getKind() == ProtoField.FieldKind.ENUM) {
+      return simpleTypeName(field.getTypeReference());
+    }
+    return typeMapper.boxedScalarType(field.getProtoType());
+  }
+
+  /** Get the boxed key type for a map field. */
+  private String mapKeyBoxedType(ProtoField field) {
+    return typeMapper.boxedScalarType(field.getMapKeyType());
+  }
+
+  /** Get the boxed value type for a map field. */
+  private String mapValueBoxedType(ProtoField field) {
+    if (field.getMapValueType()
+            == com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type.TYPE_MESSAGE
+        || field.getMapValueType()
+            == com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type.TYPE_ENUM) {
+      return simpleTypeName(field.getMapValueTypeReference());
+    }
+    return typeMapper.boxedScalarType(field.getMapValueType());
+  }
+
+  private String simpleTypeName(String protoFullName) {
+    if (protoFullName == null) return "Object";
+    int lastDot = protoFullName.lastIndexOf('.');
+    return lastDot >= 0 ? protoFullName.substring(lastDot + 1) : protoFullName;
   }
 }

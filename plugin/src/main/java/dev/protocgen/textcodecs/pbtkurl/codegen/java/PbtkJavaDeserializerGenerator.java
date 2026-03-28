@@ -1,14 +1,31 @@
+/*
+ * Copyright 2024 protobuf-text-codecs contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package dev.protocgen.textcodecs.pbtkurl.codegen.java;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoMessage;
-import java.nio.charset.StandardCharsets;
 
 /**
  * Generates the fromPbtkUrl() method body for Java classes. Parses pbtk URL-encoded strings using
  * the {@code !<fieldNumber><typeChar><value>} format.
+ *
+ * <p>Uses Builder pattern: constructs a Builder, calls setters on it, then calls build() to produce
+ * an immutable message instance.
  */
 public class PbtkJavaDeserializerGenerator {
 
@@ -31,7 +48,8 @@ public class PbtkJavaDeserializerGenerator {
     w.block(
         "public static " + className + " fromPbtkUrl(String input)",
         () -> {
-          w.line("if (input == null || input.isEmpty()) return new %s();", className);
+          w.line(
+              "if (input == null || input.isEmpty()) return %s.getDefaultInstance();", className);
           w.line("java.util.List<String> tokens = tokenizePbtk(input);");
           w.line("int[] offset = {0};");
           w.line("return parsePbtkTokens(tokens, tokens.size(), offset);");
@@ -65,11 +83,11 @@ public class PbtkJavaDeserializerGenerator {
   private void emitParseFromTokens(CodeWriter w, ProtoMessage message, String className) {
     w.blankLine();
     w.block(
-        "private static "
+        "static "
             + className
             + " parsePbtkTokens(java.util.List<String> tokens, int fieldCount, int[] offset)",
         () -> {
-          w.line("%s obj = new %s();", className, className);
+          w.line("%s.Builder builder = %s.newBuilder();", className, className);
           w.line("int consumed = 0;");
           w.block(
               "while (consumed < fieldCount && offset[0] < tokens.size())",
@@ -79,7 +97,8 @@ public class PbtkJavaDeserializerGenerator {
                 w.line("int numEnd = 0;");
                 w.line(
                     "while (numEnd < token.length() && Character.isDigit(token.charAt(numEnd))) numEnd++;");
-                w.line("if (numEnd == 0 || numEnd >= token.length()) { offset[0]++; consumed++; continue; }");
+                w.line(
+                    "if (numEnd == 0 || numEnd >= token.length()) { offset[0]++; consumed++; continue; }");
                 w.line("int fieldNum = Integer.parseInt(token.substring(0, numEnd));");
                 w.line("char typeChar = token.charAt(numEnd);");
                 w.line("String value = token.substring(numEnd + 1);");
@@ -94,29 +113,27 @@ public class PbtkJavaDeserializerGenerator {
                       w.line("default: offset[0]++; consumed++; break;");
                     });
               });
-          w.line("return obj;");
+          w.line("return builder.build();");
         });
   }
 
   private void emitFieldCase(CodeWriter w, ProtoField field) {
     int fieldNum = field.getFieldNumber();
-    String setter = "obj." + nameResolver.setterName(field.getName());
-    String getter = "obj." + nameResolver.getterName(field.getName()) + "()";
-    String javaField = "obj." + nameResolver.fieldName(field.getName());
+    String setterCall = "builder." + nameResolver.setterName(field.getName());
 
     w.block(
         "case " + fieldNum + ":",
         () -> {
           if (field.isMap()) {
-            emitMapDeserialize(w, field, javaField);
+            emitMapDeserialize(w, field);
           } else if (field.isRepeated()) {
-            emitRepeatedDeserialize(w, field, getter);
+            emitRepeatedDeserialize(w, field);
           } else if (field.getKind() == ProtoField.FieldKind.MESSAGE) {
-            emitMessageDeserialize(w, field, setter);
+            emitMessageDeserialize(w, field, setterCall);
           } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
-            emitEnumDeserialize(w, field, setter);
+            emitEnumDeserialize(w, field, setterCall);
           } else {
-            emitScalarDeserialize(w, field, setter);
+            emitScalarDeserialize(w, field, setterCall);
           }
           w.line("offset[0]++;");
           w.line("consumed++;");
@@ -124,54 +141,56 @@ public class PbtkJavaDeserializerGenerator {
         });
   }
 
-  private void emitScalarDeserialize(CodeWriter w, ProtoField field, String setter) {
+  private void emitScalarDeserialize(CodeWriter w, ProtoField field, String setterCall) {
     String readExpr = scalarReadExpr(field.getProtoType(), "value");
-    w.line("%s(%s);", setter, readExpr);
-    if (field.hasExplicitPresence()) {
-      w.line("obj.presentFields_.set(%d);", field.getArrayPosition());
-    }
+    w.line("%s(%s);", setterCall, readExpr);
   }
 
-  private void emitEnumDeserialize(CodeWriter w, ProtoField field, String setter) {
+  private void emitEnumDeserialize(CodeWriter w, ProtoField field, String setterCall) {
     String enumType = simpleTypeName(field.getTypeReference());
-    w.line("%s(%s.forNumber(Integer.parseInt(value)));", setter, enumType);
-    if (field.hasExplicitPresence()) {
-      w.line("obj.presentFields_.set(%d);", field.getArrayPosition());
-    }
+    w.line("%s(%s.forNumber(Integer.parseInt(value)));", setterCall, enumType);
   }
 
-  private void emitMessageDeserialize(CodeWriter w, ProtoField field, String setter) {
+  private void emitMessageDeserialize(CodeWriter w, ProtoField field, String setterCall) {
     String msgType = simpleTypeName(field.getTypeReference());
     w.line("int subCount = Integer.parseInt(value);");
     w.line("offset[0]++;");
-    w.line("%s(%s.parsePbtkTokens(tokens, subCount, offset));", setter, msgType);
-    // Don't increment offset again — the recursive call consumed the sub-tokens,
+    w.line("%s(%s.parsePbtkTokens(tokens, subCount, offset));", setterCall, msgType);
+    // Don't increment offset again -- the recursive call consumed the sub-tokens,
     // and the outer loop will increment once more, but we need to adjust:
     w.line("offset[0]--;"); // compensate for the outer offset[0]++ after break
   }
 
-  private void emitRepeatedDeserialize(CodeWriter w, ProtoField field, String getter) {
+  private void emitRepeatedDeserialize(CodeWriter w, ProtoField field) {
+    String addCall =
+        "builder.add"
+            + dev.protocgen.textcodecs.jsonarray.codegen.java.JavaNameResolver.snakeToPascal(
+                field.getName());
     if (field.getKind() == ProtoField.FieldKind.MESSAGE) {
       String msgType = simpleTypeName(field.getTypeReference());
       w.line("int subCount = Integer.parseInt(value);");
       w.line("offset[0]++;");
-      w.line("%s.add(%s.parsePbtkTokens(tokens, subCount, offset));", getter, msgType);
+      w.line("%s(%s.parsePbtkTokens(tokens, subCount, offset));", addCall, msgType);
       w.line("offset[0]--;");
     } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
       String enumType = simpleTypeName(field.getTypeReference());
-      w.line("%s.add(%s.forNumber(Integer.parseInt(value)));", getter, enumType);
+      w.line("%s(%s.forNumber(Integer.parseInt(value)));", addCall, enumType);
     } else {
       String readExpr = scalarReadExpr(field.getProtoType(), "value");
-      w.line("%s.add(%s);", getter, readExpr);
+      w.line("%s(%s);", addCall, readExpr);
     }
   }
 
-  private void emitMapDeserialize(CodeWriter w, ProtoField field, String javaField) {
+  private void emitMapDeserialize(CodeWriter w, ProtoField field) {
+    String putCall =
+        "builder.put"
+            + dev.protocgen.textcodecs.jsonarray.codegen.java.JavaNameResolver.snakeToPascal(
+                field.getName());
     // Map entries are serialized as !<num>m2!1<keyType><key>!2<valType><val>
     w.line("int entryCount = Integer.parseInt(value);");
     w.line("offset[0]++;");
     // Parse key (field 1) and value (field 2) from the next entryCount tokens
-    w.line("String entryKey = null;");
+    w.line("Object entryKey = null;");
     w.line("Object entryVal = null;");
     w.block(
         "for (int __mi = 0; __mi < entryCount && offset[0] < tokens.size(); __mi++)",
@@ -187,45 +206,80 @@ public class PbtkJavaDeserializerGenerator {
               "if (mfn == 1)",
               () -> {
                 // Key
-                String keyRead = scalarReadExpr(field.getMapKeyType(), "mval");
-                w.line("entryKey = String.valueOf(%s);", keyRead);
+                emitMapKeyRead(w, field);
               });
           w.block(
               "if (mfn == 2)",
               () -> {
                 // Value
-                if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE) {
-                  String msgType = simpleTypeName(field.getMapValueTypeReference());
-                  w.line("int valSubCount = Integer.parseInt(mval);");
-                  w.line("offset[0]++;");
-                  w.line("entryVal = %s.parsePbtkTokens(tokens, valSubCount, offset);", msgType);
-                  w.line("offset[0]--;");
-                } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
-                  String enumType = simpleTypeName(field.getMapValueTypeReference());
-                  w.line("entryVal = %s.forNumber(Integer.parseInt(mval));", enumType);
-                } else {
-                  String valRead = scalarReadExpr(field.getMapValueType(), "mval");
-                  w.line("entryVal = %s;", valRead);
-                }
+                emitMapValueRead(w, field);
               });
           w.line("offset[0]++;");
         });
     w.line("offset[0]--;"); // compensate for outer offset[0]++
-    // Put the entry into the map
-    boolean stringKey = field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_STRING;
-    if (stringKey) {
-      w.line("if (entryKey != null) %s.put(entryKey, entryVal);", javaField);
+    // Put the entry into the map via builder
+    emitMapPut(w, field, putCall);
+  }
+
+  private void emitMapKeyRead(CodeWriter w, ProtoField field) {
+    String keyRead = scalarReadExpr(field.getMapKeyType(), "mval");
+    w.line("entryKey = %s;", keyRead);
+  }
+
+  private void emitMapValueRead(CodeWriter w, ProtoField field) {
+    if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE) {
+      String msgType = simpleTypeName(field.getMapValueTypeReference());
+      w.line("int valSubCount = Integer.parseInt(mval);");
+      w.line("offset[0]++;");
+      w.line("entryVal = %s.parsePbtkTokens(tokens, valSubCount, offset);", msgType);
+      w.line("offset[0]--;");
+    } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
+      String enumType = simpleTypeName(field.getMapValueTypeReference());
+      w.line("entryVal = %s.forNumber(Integer.parseInt(mval));", enumType);
     } else {
-      String keyType =
-          switch (field.getMapKeyType()) {
-            case TYPE_INT32, TYPE_SINT32, TYPE_SFIXED32, TYPE_UINT32, TYPE_FIXED32 -> "Integer";
-            case TYPE_INT64, TYPE_SINT64, TYPE_SFIXED64, TYPE_UINT64, TYPE_FIXED64 -> "Long";
-            case TYPE_BOOL -> "Boolean";
-            default -> "Object";
-          };
-      w.line(
-          "if (entryKey != null) %s.put(%s.valueOf(entryKey), entryVal);", javaField, keyType);
+      String valRead = scalarReadExpr(field.getMapValueType(), "mval");
+      w.line("entryVal = %s;", valRead);
     }
+  }
+
+  private void emitMapPut(CodeWriter w, ProtoField field, String putCall) {
+    // Cast the key and value to appropriate types and call builder.putXxx(key, value)
+    String keyCast = mapKeyCast(field.getMapKeyType());
+    String valCast = mapValueCast(field);
+    w.line("if (entryKey != null) %s(%s, %s);", putCall, keyCast, valCast);
+  }
+
+  private String mapKeyCast(FieldDescriptorProto.Type keyType) {
+    return switch (keyType) {
+      case TYPE_STRING -> "(String) entryKey";
+      case TYPE_INT32, TYPE_SINT32, TYPE_SFIXED32, TYPE_UINT32, TYPE_FIXED32 ->
+          "(Integer) entryKey";
+      case TYPE_INT64, TYPE_SINT64, TYPE_SFIXED64, TYPE_UINT64, TYPE_FIXED64 -> "(Long) entryKey";
+      case TYPE_BOOL -> "(Boolean) entryKey";
+      default -> "entryKey";
+    };
+  }
+
+  private String mapValueCast(ProtoField field) {
+    if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE) {
+      String msgType = simpleTypeName(field.getMapValueTypeReference());
+      return "(" + msgType + ") entryVal";
+    }
+    if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
+      String enumType = simpleTypeName(field.getMapValueTypeReference());
+      return "(" + enumType + ") entryVal";
+    }
+    return switch (field.getMapValueType()) {
+      case TYPE_STRING -> "(String) entryVal";
+      case TYPE_INT32, TYPE_SINT32, TYPE_SFIXED32, TYPE_UINT32, TYPE_FIXED32 ->
+          "(Integer) entryVal";
+      case TYPE_INT64, TYPE_SINT64, TYPE_SFIXED64, TYPE_UINT64, TYPE_FIXED64 -> "(Long) entryVal";
+      case TYPE_DOUBLE -> "(Double) entryVal";
+      case TYPE_FLOAT -> "(Float) entryVal";
+      case TYPE_BOOL -> "(Boolean) entryVal";
+      case TYPE_BYTES -> "(byte[]) entryVal";
+      default -> "entryVal";
+    };
   }
 
   private String scalarReadExpr(FieldDescriptorProto.Type type, String valueVar) {
@@ -238,9 +292,7 @@ public class PbtkJavaDeserializerGenerator {
       case TYPE_UINT32, TYPE_FIXED32 -> "Integer.parseUnsignedInt(" + valueVar + ")";
       case TYPE_BOOL -> "\"1\".equals(" + valueVar + ")";
       case TYPE_STRING ->
-          "java.net.URLDecoder.decode("
-              + valueVar
-              + ", java.nio.charset.StandardCharsets.UTF_8)";
+          "java.net.URLDecoder.decode(" + valueVar + ", java.nio.charset.StandardCharsets.UTF_8)";
       case TYPE_BYTES -> "java.util.Base64.getDecoder().decode(" + valueVar + ")";
       default -> valueVar;
     };

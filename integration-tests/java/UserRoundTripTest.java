@@ -3,13 +3,15 @@ import com.example.Address;
 
 /**
  * Standalone round-trip test for User/Address JSON array serialization.
- * Creates a User, serializes to JSON, verifies the output, deserializes back,
- * and verifies all fields match.
+ * Creates a User via Builder, serializes to JSON, verifies the output,
+ * deserializes back, and verifies all fields match.
+ *
+ * No external dependencies required -- uses the built-in JsonArrayWriter/Reader.
  */
 public class UserRoundTripTest {
 
     private static final String EXPECTED_JSON =
-            "[\"Alice\",\"Smith\",30,[\"123 Main Street\",\"Springfield\",\"CA\",62704]]";
+            "[\"Alice\",\"Smith\",30,[\"123 Main Street\",\"Springfield\",\"IL\",62704]]";
 
     private static int passed = 0;
     private static int failed = 0;
@@ -36,17 +38,19 @@ public class UserRoundTripTest {
     private static void testSerialize() {
         System.out.println("--- Test: Serialize User to JSON ---");
 
-        Address address = new Address();
-        address.setStreet("123 Main Street");
-        address.setCity("Springfield");
-        address.setState("IL");
-        address.setZip(62704);
+        Address address = Address.newBuilder()
+                .setStreet("123 Main Street")
+                .setCity("Springfield")
+                .setState("IL")
+                .setZip(62704)
+                .build();
 
-        User user = new User();
-        user.setFirstname("Alice");
-        user.setLastname("Smith");
-        user.setAge(30);
-        user.setAddress(address);
+        User user = User.newBuilder()
+                .setFirstname("Alice")
+                .setLastname("Smith")
+                .setAge(30)
+                .setAddress(address)
+                .build();
 
         String json = user.toJsonString();
         System.out.println("  Serialized: " + json);
@@ -81,17 +85,19 @@ public class UserRoundTripTest {
     private static void testRoundTrip() {
         System.out.println("--- Test: Full round-trip (serialize -> deserialize -> serialize) ---");
 
-        Address address = new Address();
-        address.setStreet("123 Main Street");
-        address.setCity("Springfield");
-        address.setState("IL");
-        address.setZip(62704);
+        Address address = Address.newBuilder()
+                .setStreet("123 Main Street")
+                .setCity("Springfield")
+                .setState("IL")
+                .setZip(62704)
+                .build();
 
-        User original = new User();
-        original.setFirstname("Alice");
-        original.setLastname("Smith");
-        original.setAge(30);
-        original.setAddress(address);
+        User original = User.newBuilder()
+                .setFirstname("Alice")
+                .setLastname("Smith")
+                .setAge(30)
+                .setAddress(address)
+                .build();
 
         String json1 = original.toJsonString();
         User deserialized = User.fromJsonString(json1);
