@@ -1,0 +1,78 @@
+package dev.protocgen.textcodecs.jsonarray.model;
+
+import com.google.protobuf.DescriptorProtos.DescriptorProto;
+import com.google.protobuf.DescriptorProtos.EnumDescriptorProto;
+import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Global registry mapping fully-qualified proto type names to their descriptors. Built from all
+ * FileDescriptorProto entries in the CodeGeneratorRequest.
+ */
+public class TypeRegistry {
+
+  private final Map<String, DescriptorProto> messageTypes = new HashMap<>();
+  private final Map<String, EnumDescriptorProto> enumTypes = new HashMap<>();
+  private final Map<String, FileDescriptorProto> filesByName = new HashMap<>();
+
+  /** Register all types from a FileDescriptorProto. */
+  public void registerFile(FileDescriptorProto file) {
+    filesByName.put(file.getName(), file);
+    String prefix = file.getPackage().isEmpty() ? "." : "." + file.getPackage() + ".";
+
+    for (DescriptorProto message : file.getMessageTypeList()) {
+      registerMessage(prefix, message);
+    }
+    for (EnumDescriptorProto enumType : file.getEnumTypeList()) {
+      enumTypes.put(prefix + enumType.getName(), enumType);
+    }
+  }
+
+  private static final java.util.regex.Pattern SAFE_IDENTIFIER =
+      java.util.regex.Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*");
+
+  private void registerMessage(String prefix, DescriptorProto message) {
+    // Validate message name at registration time (defense-in-depth, VULN-002)
+    validateIdentifier(message.getName(), "message");
+    String fullName = prefix + message.getName();
+    messageTypes.put(fullName, message);
+
+    // Register nested types
+    for (DescriptorProto nested : message.getNestedTypeList()) {
+      registerMessage(fullName + ".", nested);
+    }
+    for (EnumDescriptorProto enumType : message.getEnumTypeList()) {
+      validateIdentifier(enumType.getName(), "enum");
+      enumTypes.put(fullName + "." + enumType.getName(), enumType);
+    }
+  }
+
+  private void validateIdentifier(String name, String kind) {
+    if (name != null && !SAFE_IDENTIFIER.matcher(name).matches()) {
+      throw new IllegalArgumentException(
+          kind
+              + " name '"
+              + name
+              + "' contains invalid characters. Names must match [a-zA-Z_][a-zA-Z0-9_]*.");
+    }
+  }
+
+  public DescriptorProto getMessage(String fullName) {
+    return messageTypes.get(fullName);
+  }
+
+  public EnumDescriptorProto getEnum(String fullName) {
+    return enumTypes.get(fullName);
+  }
+
+  public FileDescriptorProto getFile(String fileName) {
+    return filesByName.get(fileName);
+  }
+
+  /** Check if a message type is a synthetic map-entry message. */
+  public boolean isMapEntry(String fullName) {
+    DescriptorProto msg = messageTypes.get(fullName);
+    return msg != null && msg.getOptions().getMapEntry();
+  }
+}

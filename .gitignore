@@ -1,0 +1,37 @@
+# Gradle
+.gradle/
+**/build/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.project
+.classpath
+.settings/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code
+.claude/
+
+# Generated output (protoc invocations)
+/generated-sources/
+/out*/
+/gen-*/
+
+# Java
+*.class
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+
+# Credentials / secrets
+.env
+*.key
+*.pem
+credentials.json

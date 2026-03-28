@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package example;
+
+option java_package = "com.example";
+
+// A physical mailing address.
+message Address {
+  // The street address line.
+  string street = 1;
+  // The city name.
+  string city = 2;
+  // The state or province code.
+  string state = 3;
+  // The postal/ZIP code.
+  int32 zip = 4;
+}

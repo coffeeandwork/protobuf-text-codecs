@@ -1,0 +1,223 @@
+syntax = "proto3";
+
+package edgecases;
+
+option java_package = "com.example.edgecases";
+
+import "address.proto";
+
+// ============================================================
+// 1. Enum with allow_alias
+// ============================================================
+enum AliasedStatus {
+  option allow_alias = true;
+  ALIAS_UNKNOWN = 0;
+  ALIAS_STARTED = 1;
+  ALIAS_RUNNING = 1;  // alias for STARTED
+  ALIAS_DONE = 2;
+}
+
+// ============================================================
+// 2. Enum with non-contiguous values (proto3 forbids negative
+//    enum values, so we test gaps instead)
+// ============================================================
+enum GappyPriority {
+  GAPPY_PRIORITY_UNSPECIFIED = 0;
+  GAPPY_LOW = 1;
+  GAPPY_MEDIUM = 5;
+  GAPPY_HIGH = 10;
+  GAPPY_CRITICAL = 100;
+}
+
+// ============================================================
+// 3. Empty message
+// ============================================================
+message EmptyMessage {
+}
+
+// ============================================================
+// 4. Self-referential / recursive message (tree node)
+// ============================================================
+message TreeNode {
+  string label = 1;
+  repeated TreeNode children = 2;
+  TreeNode parent = 3;  // singular self-reference
+}
+
+// ============================================================
+// 5. Deeply nested messages (3+ levels)
+// ============================================================
+message Level1 {
+  string l1_name = 1;
+
+  message Level2 {
+    string l2_name = 1;
+
+    message Level3 {
+      string l3_name = 1;
+
+      message Level4 {
+        string l4_name = 1;
+        int32 l4_value = 2;
+      }
+
+      Level4 deep = 2;
+    }
+
+    Level3 nested = 2;
+  }
+
+  Level2 child = 2;
+}
+
+// ============================================================
+// 6. All map key types (proto3 allows: int32, int64, uint32,
+//    uint64, sint32, sint64, fixed32, fixed64, sfixed32,
+//    sfixed64, bool, string — NOT float/double/bytes)
+// ============================================================
+message AllMapKeyTypes {
+  map<string, string>   string_key_map   = 1;
+  map<int32, string>    int32_key_map    = 2;
+  map<int64, string>    int64_key_map    = 3;
+  map<uint32, string>   uint32_key_map   = 4;
+  map<uint64, string>   uint64_key_map   = 5;
+  map<sint32, string>   sint32_key_map   = 6;
+  map<sint64, string>   sint64_key_map   = 7;
+  map<fixed32, string>  fixed32_key_map  = 8;
+  map<fixed64, string>  fixed64_key_map  = 9;
+  map<sfixed32, string> sfixed32_key_map = 10;
+  map<sfixed64, string> sfixed64_key_map = 11;
+  map<bool, string>     bool_key_map     = 12;
+}
+
+// ============================================================
+// 7. Map value types: message, enum, all scalar types
+// ============================================================
+message AllMapValueTypes {
+  map<string, example.Address> msg_val_map  = 1;
+  map<string, AliasedStatus>   enum_val_map = 2;
+  map<string, int32>           int_val_map  = 3;
+  map<string, double>          dbl_val_map  = 4;
+  map<string, bool>            bool_val_map = 5;
+  map<string, bytes>           bytes_val_map = 6;
+}
+
+// ============================================================
+// 8. Oneof with all field kinds: scalar, message, enum,
+//    and multiple oneofs in one message
+// ============================================================
+message MultiOneof {
+  string id = 1;
+
+  oneof value_oneof {
+    string str_val = 2;
+    int32 int_val = 3;
+    example.Address addr_val = 4;
+    AliasedStatus status_val = 5;
+  }
+
+  oneof identifier {
+    string username = 6;
+    int64 user_id = 7;
+    bytes token = 8;
+  }
+}
+
+// ============================================================
+// 9. Proto3 optional for all kinds: scalar, message, enum
+// ============================================================
+message AllOptionals {
+  optional string opt_string = 1;
+  optional int32 opt_int32 = 2;
+  optional int64 opt_int64 = 3;
+  optional double opt_double = 4;
+  optional float opt_float = 5;
+  optional bool opt_bool = 6;
+  optional bytes opt_bytes = 7;
+  optional example.Address opt_message = 8;
+  optional AliasedStatus opt_enum = 9;
+}
+
+// ============================================================
+// 10. Repeated fields of all kinds
+// ============================================================
+message AllRepeated {
+  repeated string rep_strings = 1;
+  repeated int32 rep_int32s = 2;
+  repeated int64 rep_int64s = 3;
+  repeated double rep_doubles = 4;
+  repeated float rep_floats = 5;
+  repeated bool rep_bools = 6;
+  repeated bytes rep_bytes = 7;
+  repeated example.Address rep_messages = 8;
+  repeated AliasedStatus rep_enums = 9;
+}
+
+// ============================================================
+// 11. Large/sparse field numbers
+// ============================================================
+message LargeFieldNumbers {
+  string first = 1;
+  string mid = 100;
+  // NOTE: field number 536870911 (2^29 - 1, the max proto field number)
+  // is NOT tested here because the plugin's positional array encoding
+  // would attempt to generate ~500M null slots. See audit for details.
+  // This uses a moderately sparse layout to test gap handling.
+  string last = 200;
+}
+
+// ============================================================
+// 12. Multiple messages in one file (already implicit, but
+//     this tests that all are generated correctly together)
+// ============================================================
+message SiblingA {
+  string a_name = 1;
+  SiblingB b_ref = 2;
+}
+
+message SiblingB {
+  string b_name = 1;
+  int32 b_value = 2;
+}
+
+// ============================================================
+// 13. Service definition (should be silently ignored)
+// ============================================================
+service EdgeCaseService {
+  rpc GetTree(TreeNode) returns (TreeNode);
+  rpc ListNodes(EmptyMessage) returns (TreeNode);
+}
+
+// ============================================================
+// 14. Enum with reserved values and names
+// ============================================================
+enum ReservedEnum {
+  RESERVED_UNSPECIFIED = 0;
+  RESERVED_VALUE_A = 1;
+  // 2 is reserved
+  RESERVED_VALUE_C = 3;
+  reserved 2, 10 to 20;
+  reserved "RESERVED_VALUE_B";
+}
+
+// ============================================================
+// 15. Message with reserved fields
+// ============================================================
+message ReservedFields {
+  string name = 1;
+  // field 2 is reserved (was 'old_field')
+  int32 value = 3;
+  reserved 2, 10 to 20;
+  reserved "old_field";
+}
+
+// ============================================================
+// 16. Cross-reference between messages in this file
+//     and imported messages
+// ============================================================
+message CrossRef {
+  TreeNode tree = 1;
+  example.Address address = 2;
+  EmptyMessage empty = 3;
+  AllOptionals opts = 4;
+}

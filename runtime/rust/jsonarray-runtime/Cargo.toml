@@ -1,0 +1,10 @@
+[package]
+name = "jsonarray-runtime"
+version = "0.1.0"
+edition = "2021"
+description = "Runtime support library for protoc-gen-jsonarray generated Rust code"
+license = "MIT"
+
+[dependencies]
+serde_json = "1"
+base64 = "0.22"

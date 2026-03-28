@@ -1,0 +1,113 @@
+#pragma once
+
+#include <cstdint>
+#include <string>
+#include <vector>
+#include <stdexcept>
+
+namespace jsonarray {
+
+namespace detail {
+
+// Base64 encoding table
+inline constexpr char base64_chars[] =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    "abcdefghijklmnopqrstuvwxyz"
+    "0123456789+/";
+
+// Base64 decoding table (maps ASCII value to 6-bit value, 0xFF = invalid)
+inline constexpr uint8_t base64_decode_table[] = {
+    0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF, // 0-15
+    0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF, // 16-31
+    0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,  62,0xFF,0xFF,0xFF,  63, // 32-47 (+, /)
+      52,  53,  54,  55,  56,  57,  58,  59,  60,  61,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF, // 48-63 (0-9)
+    0xFF,   0,   1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,  12,  13,  14, // 64-79 (A-O)
+      15,  16,  17,  18,  19,  20,  21,  22,  23,  24,  25,0xFF,0xFF,0xFF,0xFF,0xFF, // 80-95 (P-Z)
+    0xFF,  26,  27,  28,  29,  30,  31,  32,  33,  34,  35,  36,  37,  38,  39,  40, // 96-111 (a-o)
+      41,  42,  43,  44,  45,  46,  47,  48,  49,  50,  51,0xFF,0xFF,0xFF,0xFF,0xFF, // 112-127 (p-z)
+    0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,
+    0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,
+    0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,
+    0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,
+    0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,
+    0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,
+    0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,
+    0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF
+};
+
+} // namespace detail
+
+/**
+ * Encode binary data to a base64 string.
+ */
+inline std::string base64_encode(const std::vector<uint8_t>& data) {
+    std::string result;
+    const size_t len = data.size();
+    result.reserve(((len + 2) / 3) * 4);
+
+    size_t i = 0;
+    while (i + 2 < len) {
+        uint32_t triple = (static_cast<uint32_t>(data[i]) << 16)
+                        | (static_cast<uint32_t>(data[i + 1]) << 8)
+                        |  static_cast<uint32_t>(data[i + 2]);
+        result += detail::base64_chars[(triple >> 18) & 0x3F];
+        result += detail::base64_chars[(triple >> 12) & 0x3F];
+        result += detail::base64_chars[(triple >>  6) & 0x3F];
+        result += detail::base64_chars[ triple        & 0x3F];
+        i += 3;
+    }
+
+    if (i < len) {
+        uint32_t triple = static_cast<uint32_t>(data[i]) << 16;
+        if (i + 1 < len) {
+            triple |= static_cast<uint32_t>(data[i + 1]) << 8;
+        }
+
+        result += detail::base64_chars[(triple >> 18) & 0x3F];
+        result += detail::base64_chars[(triple >> 12) & 0x3F];
+
+        if (i + 1 < len) {
+            result += detail::base64_chars[(triple >> 6) & 0x3F];
+        } else {
+            result += '=';
+        }
+        result += '=';
+    }
+
+    return result;
+}
+
+/**
+ * Decode a base64 string to binary data.
+ * Ignores whitespace and padding characters gracefully.
+ */
+inline std::vector<uint8_t> base64_decode(const std::string& encoded) {
+    std::vector<uint8_t> result;
+    result.reserve((encoded.size() * 3) / 4);
+
+    uint32_t accum = 0;
+    int bits = 0;
+
+    for (char c : encoded) {
+        if (c == '=' || c == '\n' || c == '\r' || c == ' ' || c == '\t') {
+            continue;
+        }
+
+        uint8_t value = detail::base64_decode_table[static_cast<uint8_t>(c)];
+        if (value == 0xFF) {
+            throw std::invalid_argument("Invalid base64 character");
+        }
+
+        accum = (accum << 6) | value;
+        bits += 6;
+
+        if (bits >= 8) {
+            bits -= 8;
+            result.push_back(static_cast<uint8_t>((accum >> bits) & 0xFF));
+        }
+    }
+
+    return result;
+}
+
+} // namespace jsonarray

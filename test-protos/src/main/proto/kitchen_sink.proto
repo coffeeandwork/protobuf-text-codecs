@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package example;
+
+option java_package = "com.example";
+
+import "address.proto";
+
+// Exercises every proto3 field type for integration testing.
+message KitchenSink {
+  // Scalar types
+  double double_field = 1;
+  float float_field = 2;
+  int32 int32_field = 3;
+  int64 int64_field = 4;
+  uint32 uint32_field = 5;
+  uint64 uint64_field = 6;
+  sint32 sint32_field = 7;
+  sint64 sint64_field = 8;
+  fixed32 fixed32_field = 9;
+  fixed64 fixed64_field = 10;
+  sfixed32 sfixed32_field = 11;
+  sfixed64 sfixed64_field = 12;
+  bool bool_field = 13;
+  string string_field = 14;
+  bytes bytes_field = 15;
+
+  // Enum
+  Status status = 16;
+
+  // Nested message
+  Address address = 17;
+
+  // Repeated fields
+  repeated string tags = 18;
+  repeated int32 scores = 19;
+  repeated Address addresses = 20;
+
+  // Map fields
+  map<string, string> metadata = 21;
+  map<int32, string> int_key_map = 22;
+  map<string, Address> address_map = 23;
+
+  // Oneof
+  oneof contact {
+    string email = 24;
+    string phone = 25;
+  }
+
+  // Proto3 optional (explicit presence)
+  optional string nickname = 26;
+  optional int32 lucky_number = 27;
+
+  // Nested message definition
+  InnerMessage inner = 28;
+
+  // Enum with non-zero default possibility
+  repeated Status status_list = 29;
+
+  enum Status {
+    UNKNOWN = 0;
+    ACTIVE = 1;
+    INACTIVE = 2;
+    SUSPENDED = 3;
+  }
+
+  message InnerMessage {
+    string value = 1;
+    int32 count = 2;
+  }
+}

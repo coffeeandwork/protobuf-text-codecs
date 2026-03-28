@@ -1,0 +1,7 @@
+dependencies {
+    // Zero runtime dependencies — Jackson has been eliminated in favor of
+    // built-in JsonArrayWriter/JsonArrayReader utilities.
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

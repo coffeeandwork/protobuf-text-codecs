@@ -1,0 +1,81 @@
+syntax = "proto2";
+
+package proto2test;
+
+option java_package = "com.example.proto2test";
+
+// Enum with non-zero default
+enum Priority {
+  PRIORITY_UNSPECIFIED = 0;
+  LOW = 1;
+  MEDIUM = 2;
+  HIGH = 3;
+  CRITICAL = 4;
+}
+
+// Nested message for reuse
+message Address {
+  required string street = 1;
+  required string city = 2;
+  optional string state = 3;
+  optional string zip_code = 4 [default = "00000"];
+  optional string country = 5 [default = "US"];
+}
+
+// Main test message exercising all proto2 features
+message Proto2Person {
+  // Required fields
+  required string name = 1;
+  required int32 id = 2;
+
+  // Optional fields without defaults
+  optional string email = 3;
+  optional int64 phone_number = 4;
+
+  // Optional fields with explicit defaults
+  optional string nickname = 5 [default = "anonymous"];
+  optional int32 age = 6 [default = 25];
+  optional bool active = 7 [default = true];
+  optional double score = 8 [default = 99.5];
+  optional float rating = 9 [default = 4.5];
+  optional Priority priority = 10 [default = MEDIUM];
+
+  // Nested message field
+  optional Address home_address = 11;
+  optional Address work_address = 12;
+
+  // Repeated fields
+  repeated string tags = 13;
+  repeated int32 scores = 14;
+  repeated Address addresses = 15;
+  repeated Priority priorities = 16;
+
+  // Enum field without default
+  optional Priority main_priority = 17;
+
+  // Various scalar types with defaults
+  optional int64 big_number = 18 [default = 9999999999];
+  optional sint32 signed_val = 19 [default = -42];
+  optional fixed64 fixed_val = 20 [default = 12345];
+  optional bytes data = 21;
+}
+
+// Message with extension ranges (should trigger a warning)
+message ExtendableMessage {
+  optional string name = 1;
+  optional int32 value = 2;
+  extensions 100 to 199;
+}
+
+// Simple nested message test
+message Wrapper {
+  optional Proto2Person person = 1;
+  optional int32 version = 2 [default = 1];
+
+  message InnerData {
+    optional string key = 1;
+    optional string value = 2 [default = "default_value"];
+  }
+
+  optional InnerData metadata = 3;
+}

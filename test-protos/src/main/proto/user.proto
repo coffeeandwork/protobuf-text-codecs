@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package example;
+
+option java_package = "com.example";
+
+import "address.proto";
+
+// Represents a user in the system.
+message User {
+  // The user's first name.
+  string firstname = 1;
+  // The user's last name.
+  string lastname = 2;
+  // The user's age in years.
+  int32 age = 3;
+  // The user's mailing address.
+  Address address = 4;
+}
