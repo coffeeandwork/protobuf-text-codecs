@@ -22,7 +22,12 @@ import java.util.List;
 
 /**
  * Interface for language-specific code generators. Each target language implements this to produce
- * source files from analyzed proto definitions.
+ * {@link CodeGeneratorResponse.File} entries from analyzed proto definitions. The returned files
+ * are assembled into the {@link CodeGeneratorResponse} that protoc writes to disk.
+ *
+ * <p>See the <a
+ * href="https://protobuf.dev/reference/cpp/api-docs/google.protobuf.compiler.plugin.pb/#CodeGeneratorResponse.File">CodeGeneratorResponse.File
+ * docs</a> for the file name and content fields (links verified 2026-03-30).
  */
 public interface LanguageGenerator {
 

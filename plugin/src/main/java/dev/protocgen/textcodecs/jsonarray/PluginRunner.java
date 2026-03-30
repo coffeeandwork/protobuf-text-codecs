@@ -22,11 +22,19 @@ import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse;
 import dev.protocgen.textcodecs.jsonarray.codegen.LanguageGenerator;
 import dev.protocgen.textcodecs.jsonarray.codegen.c.CGenerator;
 import dev.protocgen.textcodecs.jsonarray.codegen.cpp.CppGenerator;
+import dev.protocgen.textcodecs.jsonarray.codegen.csharp.CSharpGenerator;
+import dev.protocgen.textcodecs.jsonarray.codegen.dart.DartGenerator;
 import dev.protocgen.textcodecs.jsonarray.codegen.go.GoGenerator;
 import dev.protocgen.textcodecs.jsonarray.codegen.java.JavaGenerator;
 import dev.protocgen.textcodecs.jsonarray.codegen.javascript.JavaScriptGenerator;
+import dev.protocgen.textcodecs.jsonarray.codegen.kotlin.KotlinGenerator;
+import dev.protocgen.textcodecs.jsonarray.codegen.objc.ObjCGenerator;
+import dev.protocgen.textcodecs.jsonarray.codegen.perl.PerlGenerator;
+import dev.protocgen.textcodecs.jsonarray.codegen.php.PhpGenerator;
 import dev.protocgen.textcodecs.jsonarray.codegen.python.PythonGenerator;
+import dev.protocgen.textcodecs.jsonarray.codegen.ruby.RubyGenerator;
 import dev.protocgen.textcodecs.jsonarray.codegen.rust.RustGenerator;
+import dev.protocgen.textcodecs.jsonarray.codegen.swift.SwiftGenerator;
 import dev.protocgen.textcodecs.jsonarray.codegen.typescript.TypeScriptGenerator;
 import dev.protocgen.textcodecs.jsonarray.codegen.zig.ZigGenerator;
 import dev.protocgen.textcodecs.jsonarray.model.TypeRegistry;
@@ -37,8 +45,17 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Core orchestrator for the protoc plugin. Parses parameters, builds the type registry, and
- * delegates to the appropriate language generator.
+ * Core orchestrator for the protoc plugin. Parses the {@code lang=} parameter from the {@link
+ * com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest#getParameter() request parameter},
+ * builds the {@link dev.protocgen.textcodecs.jsonarray.model.TypeRegistry TypeRegistry} from the
+ * request's {@link com.google.protobuf.DescriptorProtos.FileDescriptorProto FileDescriptorProto}
+ * list, and delegates to the appropriate {@link LanguageGenerator}.
+ *
+ * <p>The request/response types are defined in <a
+ * href="https://github.com/protocolbuffers/protobuf/blob/main/src/google/protobuf/compiler/plugin.proto">plugin.proto</a>;
+ * the file descriptors that describe each .proto file are defined in <a
+ * href="https://github.com/protocolbuffers/protobuf/blob/main/src/google/protobuf/descriptor.proto">descriptor.proto</a>
+ * (links verified 2026-03-30).
  */
 public class PluginRunner {
 
@@ -55,9 +72,21 @@ public class PluginRunner {
     GENERATORS.put("c", CGenerator::new);
     GENERATORS.put("cpp", CppGenerator::new);
     GENERATORS.put("c++", CppGenerator::new);
-    GENERATORS.put("rust", RustGenerator::new);
-    GENERATORS.put("zig", ZigGenerator::new);
+    GENERATORS.put("csharp", CSharpGenerator::new);
+    GENERATORS.put("c#", CSharpGenerator::new);
+    GENERATORS.put("dart", DartGenerator::new);
     GENERATORS.put("go", GoGenerator::new);
+    GENERATORS.put("kotlin", KotlinGenerator::new);
+    GENERATORS.put("kt", KotlinGenerator::new);
+    GENERATORS.put("objc", ObjCGenerator::new);
+    GENERATORS.put("objective-c", ObjCGenerator::new);
+    GENERATORS.put("perl", PerlGenerator::new);
+    GENERATORS.put("php", PhpGenerator::new);
+    GENERATORS.put("ruby", RubyGenerator::new);
+    GENERATORS.put("rb", RubyGenerator::new);
+    GENERATORS.put("rust", RustGenerator::new);
+    GENERATORS.put("swift", SwiftGenerator::new);
+    GENERATORS.put("zig", ZigGenerator::new);
   }
 
   /** Process a CodeGeneratorRequest and produce a CodeGeneratorResponse. */

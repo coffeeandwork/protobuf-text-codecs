@@ -427,7 +427,26 @@ No JSON library dependency — pure string manipulation. Generated classes have 
 
 ## How It Works
 
-Both plugins implement the standard [protoc plugin protocol](https://protobuf.dev/reference/other/): they read a [`CodeGeneratorRequest`](https://github.com/protocolbuffers/protobuf/blob/main/src/google/protobuf/compiler/plugin.proto) from stdin and write a `CodeGeneratorResponse` to stdout. The proto file descriptors in the request are converted to a language-neutral internal model, then passed to the appropriate language generator which emits source code.
+Both plugins implement the standard [protoc plugin protocol](https://protobuf.dev/reference/other/) (links verified 2026-03-30). The protocol is defined in [`plugin.proto`](https://github.com/protocolbuffers/protobuf/blob/main/src/google/protobuf/compiler/plugin.proto) and [`descriptor.proto`](https://github.com/protocolbuffers/protobuf/blob/main/src/google/protobuf/descriptor.proto).
+
+**Plugin lifecycle:**
+
+1. **`protoc` invokes the plugin** as a subprocess, sending a binary [`CodeGeneratorRequest`](https://protobuf.dev/reference/cpp/api-docs/google.protobuf.compiler.plugin.pb/#CodeGeneratorRequest) on stdin. The request contains the parsed [`FileDescriptorProto`](https://protobuf.dev/reference/cpp/api-docs/google.protobuf.descriptor.pb/#FileDescriptorProto) for each `.proto` file plus the `lang=` parameter string.
+   - **Our entry points:** `Main.java` (jsonarray) / `PbtkMain.java` (pbtkurl) read the binary request from stdin.
+
+2. **Parameter parsing and dispatch.** The `lang=` parameter selects which language generator to instantiate from a registry of 17 generators.
+   - **Our orchestrators:** `PluginRunner.java` / `PbtkPluginRunner.java` parse parameters, build the `TypeRegistry`, and dispatch to the selected `LanguageGenerator`.
+
+3. **Proto descriptors are converted to an internal model.** The raw protobuf [`DescriptorProto`](https://protobuf.dev/reference/cpp/api-docs/google.protobuf.descriptor.pb/#DescriptorProto) and [`FieldDescriptorProto`](https://protobuf.dev/reference/cpp/api-docs/google.protobuf.descriptor.pb/#FieldDescriptorProto) messages are analyzed and converted to a language-neutral model with validation.
+   - **Our analyzer:** `MessageAnalyzer.java` converts descriptors to `ProtoMessage`, `ProtoField`, `ProtoEnum`, and `ProtoFile` model objects. `TypeRegistry.java` resolves cross-file type references.
+
+4. **Code generation.** Each language generator implements `LanguageGenerator.generate()` which receives the model and emits source code using `CodeWriter`.
+   - **Per-language generators:** `codegen/<lang>/` (6 classes each: Generator, NameResolver, TypeMapper, CodeEmitter, SerializerGenerator, DeserializerGenerator).
+   - **Keyword escaping:** `KeywordUtil.java` prevents generated identifiers from colliding with reserved words in 17 languages.
+
+5. **Response.** The plugin writes a binary [`CodeGeneratorResponse`](https://protobuf.dev/reference/cpp/api-docs/google.protobuf.compiler.plugin.pb/#CodeGeneratorResponse) to stdout containing the generated source files.
+
+For the full C++ API reference of the plugin protocol types, see the [plugin.pb.h docs](https://protobuf.dev/reference/cpp/api-docs/google.protobuf.compiler.plugin.pb/) and [descriptor.pb.h docs](https://protobuf.dev/reference/cpp/api-docs/google.protobuf.descriptor.pb/) (links verified 2026-03-30).
 
 ## Contributing
 

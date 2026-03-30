@@ -31,8 +31,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Analyzes a DescriptorProto and converts it into the language-neutral ProtoMessage model. Fields
- * are sorted by field number for positional array encoding.
+ * Analyzes a {@link com.google.protobuf.DescriptorProtos.DescriptorProto DescriptorProto} (the
+ * protobuf representation of a message definition, see <a
+ * href="https://github.com/protocolbuffers/protobuf/blob/main/src/google/protobuf/descriptor.proto">descriptor.proto</a>)
+ * and converts it into the language-neutral {@link ProtoMessage} model. Fields are sorted by field
+ * number for positional array encoding (links verified 2026-03-30).
  */
 public class MessageAnalyzer {
 

@@ -21,6 +21,11 @@ import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse;
 /**
  * Entry point for the protoc-gen-pbtkurl plugin. Reads a CodeGeneratorRequest from stdin, processes
  * it, and writes a CodeGeneratorResponse to stdout.
+ *
+ * <p>This implements the standard protoc plugin protocol defined in <a
+ * href="https://github.com/protocolbuffers/protobuf/blob/main/src/google/protobuf/compiler/plugin.proto">plugin.proto</a>.
+ * See also <a href="https://protobuf.dev/reference/other/">protobuf.dev plugin reference</a> (links
+ * verified 2026-03-30).
  */
 public class PbtkMain {
 
