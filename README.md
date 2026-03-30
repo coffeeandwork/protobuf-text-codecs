@@ -119,6 +119,8 @@ User parsed = User.fromPbtkUrl(url);
 
 Languages with "+ runtime" ship a small runtime library under `runtime/`. All others produce fully self-contained code.
 
+New to Protocol Buffers? See the official tutorials for [Java](https://protobuf.dev/getting-started/javatutorial/), [C++](https://protobuf.dev/getting-started/cpptutorial/), [Python](https://protobuf.dev/getting-started/pythontutorial/), [Go](https://protobuf.dev/getting-started/gotutorial/), [C#](https://protobuf.dev/getting-started/csharptutorial/), [Dart](https://protobuf.dev/getting-started/darttutorial/), [Kotlin](https://protobuf.dev/getting-started/kotlintutorial/), or the reference pages for [Rust](https://protobuf.dev/reference/rust/), [PHP](https://protobuf.dev/reference/php/), [Ruby](https://protobuf.dev/reference/ruby/), and [Objective-C](https://protobuf.dev/reference/objective-c/).
+
 ---
 
 ## Installation
@@ -422,6 +424,10 @@ No JSON library dependency — pure string manipulation. Generated classes have 
 - **Single language per invocation.** Each `protoc` run produces output for one target language. To generate multiple languages, invoke `protoc` multiple times with different `lang=` values.
 
 ---
+
+## How It Works
+
+Both plugins implement the standard [protoc plugin protocol](https://protobuf.dev/reference/other/): they read a [`CodeGeneratorRequest`](https://github.com/protocolbuffers/protobuf/blob/main/src/google/protobuf/compiler/plugin.proto) from stdin and write a `CodeGeneratorResponse` to stdout. The proto file descriptors in the request are converted to a language-neutral internal model, then passed to the appropriate language generator which emits source code.
 
 ## Contributing
 
