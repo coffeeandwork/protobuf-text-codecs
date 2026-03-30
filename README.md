@@ -109,13 +109,21 @@ User parsed = User.fromPbtkUrl(url);
 |---|---|---|
 | Java | `java` | None (zero-dependency) |
 | Python | `python` | `json` (stdlib) |
-| JavaScript | `javascript` | None |
-| TypeScript | `typescript` | None |
+| JavaScript | `javascript` (`js`) | None |
+| TypeScript | `typescript` (`ts`) | None |
 | C | `c` | cJSON + runtime |
-| C++ | `cpp` | nlohmann/json + runtime |
+| C++ | `cpp` (`c++`) | nlohmann/json + runtime |
 | Rust | `rust` | `serde_json` + runtime |
 | Zig | `zig` | `std.json` |
 | Go | `go` | `encoding/json` |
+| C# | `csharp` (`c#`) | `System.Text.Json` |
+| Kotlin | `kotlin` (`kt`) | `kotlinx.serialization.json` |
+| Swift | `swift` | Foundation (`JSONSerialization`) |
+| Dart | `dart` | `dart:convert` |
+| PHP | `php` | `json_encode`/`json_decode` (built-in) |
+| Ruby | `ruby` (`rb`) | `json` (stdlib) |
+| Objective-C | `objc` (`objective-c`) | Foundation (`NSJSONSerialization`) |
+| Perl | `perl` | `JSON` (CPAN) |
 
 Languages with "+ runtime" ship a small runtime library under `runtime/`. All others produce fully self-contained code.
 
