@@ -807,7 +807,7 @@ class JavaCodeGenTest {
   // ======================================================================
 
   @Test
-  void testTimestampUsesFieldCodecs() {
+  void testTimestampSerializesAsNestedMessage() {
     DescriptorProto msg =
         DescriptorProto.newBuilder()
             .setName("Msg")

@@ -34,10 +34,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * End-to-end parameterized code generation tests for all non-Java language targets of the pbtk URL
- * encoding plugin. Runs the same proto constructs through each of the 8 language generators
- * (Python, JavaScript, TypeScript, C, C++, Rust, Zig, Go) and verifies the generated source
- * contains expected language-specific pbtk URL encoding patterns.
+ * End-to-end parameterized code generation tests for all 16 non-Java language targets of the pbtk
+ * URL encoding plugin. Verifies the generated source contains expected language-specific pbtk URL
+ * encoding patterns.
  */
 class PbtkMultiLanguageCodeGenTest {
 
