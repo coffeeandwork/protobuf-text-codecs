@@ -15,9 +15,9 @@
  */
 package dev.protocgen.textcodecs.jsonarray.codegen.objc;
 
+import dev.protocgen.textcodecs.jsonarray.codegen.KeywordUtil;
 import dev.protocgen.textcodecs.jsonarray.codegen.NameResolver;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoFile;
-import java.util.Set;
 
 /**
  * Converts proto names to idiomatic Objective-C names. Uses PascalCase for classes with a 2-letter
@@ -25,73 +25,7 @@ import java.util.Set;
  */
 public class ObjCNameResolver implements NameResolver {
 
-  private static final Set<String> OBJC_KEYWORDS =
-      Set.of(
-          "auto",
-          "break",
-          "case",
-          "char",
-          "const",
-          "continue",
-          "default",
-          "do",
-          "double",
-          "else",
-          "enum",
-          "extern",
-          "float",
-          "for",
-          "goto",
-          "if",
-          "int",
-          "long",
-          "register",
-          "return",
-          "short",
-          "signed",
-          "sizeof",
-          "static",
-          "struct",
-          "switch",
-          "typedef",
-          "union",
-          "unsigned",
-          "void",
-          "volatile",
-          "while",
-          "id",
-          "self",
-          "super",
-          "nil",
-          "Nil",
-          "YES",
-          "NO",
-          "TRUE",
-          "FALSE",
-          "BOOL",
-          "Class",
-          "SEL",
-          "IMP",
-          "Protocol",
-          "NSObject",
-          "NSString",
-          "NSArray",
-          "NSDictionary",
-          "NSNumber",
-          "NSData",
-          "NSNull",
-          "NSError",
-          "description",
-          "hash",
-          "init",
-          "new",
-          "copy",
-          "mutableCopy",
-          "dealloc",
-          "class",
-          "retain",
-          "release",
-          "autorelease");
+  // Keyword set is maintained in KeywordUtil.OBJC_KEYWORDS
 
   @Override
   public String resolvePackage(ProtoFile file) {
@@ -245,8 +179,8 @@ public class ObjCNameResolver implements NameResolver {
     return sb.toString();
   }
 
-  /** Escape an Objective-C identifier by appending _pb if it collides with a keyword. */
+  /** Escape an Objective-C identifier — delegates to {@link KeywordUtil#escapeObjC(String)}. */
   public static String escapeObjC(String name) {
-    return OBJC_KEYWORDS.contains(name) ? name + "_pb" : name;
+    return KeywordUtil.escapeObjC(name);
   }
 }

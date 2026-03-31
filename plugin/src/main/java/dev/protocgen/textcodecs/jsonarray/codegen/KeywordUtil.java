@@ -839,4 +839,113 @@ public final class KeywordUtil {
   public static String escapeSwift(String name) {
     return SWIFT_KEYWORDS.contains(name) ? "`" + name + "`" : name;
   }
+
+  private static final Set<String> KOTLIN_KEYWORDS =
+      Set.of(
+          "as",
+          "break",
+          "class",
+          "continue",
+          "do",
+          "else",
+          "false",
+          "for",
+          "fun",
+          "if",
+          "in",
+          "interface",
+          "is",
+          "null",
+          "object",
+          "package",
+          "return",
+          "super",
+          "this",
+          "throw",
+          "true",
+          "try",
+          "typealias",
+          "typeof",
+          "val",
+          "var",
+          "when",
+          "while");
+
+  /** Escape a Kotlin identifier using backtick syntax if it collides with a hard keyword. */
+  public static String escapeKotlin(String name) {
+    return KOTLIN_KEYWORDS.contains(name) ? "`" + name + "`" : name;
+  }
+
+  private static final Set<String> OBJC_KEYWORDS =
+      Set.of(
+          "auto",
+          "break",
+          "case",
+          "char",
+          "const",
+          "continue",
+          "default",
+          "do",
+          "double",
+          "else",
+          "enum",
+          "extern",
+          "float",
+          "for",
+          "goto",
+          "if",
+          "int",
+          "long",
+          "register",
+          "return",
+          "short",
+          "signed",
+          "sizeof",
+          "static",
+          "struct",
+          "switch",
+          "typedef",
+          "union",
+          "unsigned",
+          "void",
+          "volatile",
+          "while",
+          "id",
+          "self",
+          "super",
+          "nil",
+          "Nil",
+          "YES",
+          "NO",
+          "TRUE",
+          "FALSE",
+          "BOOL",
+          "Class",
+          "SEL",
+          "IMP",
+          "Protocol",
+          "NSObject",
+          "NSString",
+          "NSArray",
+          "NSDictionary",
+          "NSNumber",
+          "NSData",
+          "NSNull",
+          "NSError",
+          "description",
+          "hash",
+          "init",
+          "new",
+          "copy",
+          "mutableCopy",
+          "dealloc",
+          "class",
+          "retain",
+          "release",
+          "autorelease");
+
+  /** Escape an Objective-C identifier by appending _pb if it collides with a keyword. */
+  public static String escapeObjC(String name) {
+    return OBJC_KEYWORDS.contains(name) ? name + "_pb" : name;
+  }
 }

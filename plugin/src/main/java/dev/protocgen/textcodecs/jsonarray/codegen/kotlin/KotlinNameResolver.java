@@ -18,49 +18,13 @@ package dev.protocgen.textcodecs.jsonarray.codegen.kotlin;
 import dev.protocgen.textcodecs.jsonarray.codegen.KeywordUtil;
 import dev.protocgen.textcodecs.jsonarray.codegen.NameResolver;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoFile;
-import java.util.Set;
 
 /** Converts proto names to idiomatic Kotlin names. */
 public class KotlinNameResolver implements NameResolver {
 
-  /**
-   * Kotlin hard keywords that require backtick escaping. Soft keywords (by, catch, constructor,
-   * etc.) are not included because they are only reserved in certain contexts.
-   */
-  private static final Set<String> KOTLIN_KEYWORDS =
-      Set.of(
-          "as",
-          "break",
-          "class",
-          "continue",
-          "do",
-          "else",
-          "false",
-          "for",
-          "fun",
-          "if",
-          "in",
-          "interface",
-          "is",
-          "null",
-          "object",
-          "package",
-          "return",
-          "super",
-          "this",
-          "throw",
-          "true",
-          "try",
-          "typealias",
-          "typeof",
-          "val",
-          "var",
-          "when",
-          "while");
-
-  /** Escape a Kotlin identifier using backtick syntax if it collides with a hard keyword. */
+  /** Escape a Kotlin identifier — delegates to {@link KeywordUtil#escapeKotlin(String)}. */
   public static String escapeKotlin(String name) {
-    return KOTLIN_KEYWORDS.contains(name) ? "`" + name + "`" : name;
+    return KeywordUtil.escapeKotlin(name);
   }
 
   @Override

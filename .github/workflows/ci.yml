@@ -35,7 +35,7 @@ jobs:
         run: |
           PROTO_DIR=test-protos/src/main/proto
           PROTOS=$(find "$PROTO_DIR" -name '*.proto')
-          LANGUAGES=(java python javascript typescript c cpp rust zig go)
+          LANGUAGES=(java python javascript typescript c cpp rust zig go csharp kotlin swift dart php ruby objc perl)
 
           for lang in "${LANGUAGES[@]}"; do
             echo "--- Generating jsonarray $lang ---"
@@ -48,13 +48,13 @@ jobs:
             echo "  $lang: OK (exit $?)"
             rm -rf "$OUT_DIR"
           done
-          echo "All 9 jsonarray languages generated successfully."
+          echo "All 17 jsonarray languages generated successfully."
 
       - name: Integration tests - generate pbtkurl code for all languages
         run: |
           PROTO_DIR=test-protos/src/main/proto
           PROTOS=$(find "$PROTO_DIR" -name '*.proto')
-          LANGUAGES=(java python javascript typescript c cpp rust zig go)
+          LANGUAGES=(java python javascript typescript c cpp rust zig go csharp kotlin swift dart php ruby objc perl)
 
           for lang in "${LANGUAGES[@]}"; do
             echo "--- Generating pbtkurl $lang ---"
@@ -67,7 +67,7 @@ jobs:
             echo "  $lang: OK (exit $?)"
             rm -rf "$OUT_DIR"
           done
-          echo "All 9 pbtkurl languages generated successfully."
+          echo "All 17 pbtkurl languages generated successfully."
 
       - name: Upload jsonarray JAR
         uses: actions/upload-artifact@v4

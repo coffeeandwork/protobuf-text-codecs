@@ -168,7 +168,25 @@ class SafetySecurityTest {
    */
   @ParameterizedTest(name = "SR-001 field positions in {0}")
   @ValueSource(
-      strings = {"java", "python", "javascript", "typescript", "c", "cpp", "rust", "zig", "go"})
+      strings = {
+        "java",
+        "python",
+        "javascript",
+        "typescript",
+        "c",
+        "cpp",
+        "rust",
+        "zig",
+        "go",
+        "csharp",
+        "kotlin",
+        "swift",
+        "dart",
+        "php",
+        "ruby",
+        "objc",
+        "perl"
+      })
   void testSR001_fieldPositionInGeneratedCode(String lang) {
     DescriptorProto msg =
         DescriptorProto.newBuilder()
@@ -206,7 +224,25 @@ class SafetySecurityTest {
    */
   @ParameterizedTest(name = "SR-002 int32 encoding in {0}")
   @ValueSource(
-      strings = {"java", "python", "javascript", "typescript", "c", "cpp", "rust", "zig", "go"})
+      strings = {
+        "java",
+        "python",
+        "javascript",
+        "typescript",
+        "c",
+        "cpp",
+        "rust",
+        "zig",
+        "go",
+        "csharp",
+        "kotlin",
+        "swift",
+        "dart",
+        "php",
+        "ruby",
+        "objc",
+        "perl"
+      })
   void testSR002_int32EncodingConsistency(String lang) {
     DescriptorProto msg =
         DescriptorProto.newBuilder()
@@ -232,7 +268,25 @@ class SafetySecurityTest {
    */
   @ParameterizedTest(name = "SR-002 bytes base64 in {0}")
   @ValueSource(
-      strings = {"java", "python", "javascript", "typescript", "c", "cpp", "rust", "zig", "go"})
+      strings = {
+        "java",
+        "python",
+        "javascript",
+        "typescript",
+        "c",
+        "cpp",
+        "rust",
+        "zig",
+        "go",
+        "csharp",
+        "kotlin",
+        "swift",
+        "dart",
+        "php",
+        "ruby",
+        "objc",
+        "perl"
+      })
   void testSR002_bytesBase64Consistency(String lang) {
     DescriptorProto msg =
         DescriptorProto.newBuilder()
@@ -254,7 +308,25 @@ class SafetySecurityTest {
    */
   @ParameterizedTest(name = "SR-002 enum as integer in {0}")
   @ValueSource(
-      strings = {"java", "python", "javascript", "typescript", "c", "cpp", "rust", "zig", "go"})
+      strings = {
+        "java",
+        "python",
+        "javascript",
+        "typescript",
+        "c",
+        "cpp",
+        "rust",
+        "zig",
+        "go",
+        "csharp",
+        "kotlin",
+        "swift",
+        "dart",
+        "php",
+        "ruby",
+        "objc",
+        "perl"
+      })
   void testSR002_enumAsIntegerConsistency(String lang) {
     EnumDescriptorProto statusEnum =
         EnumDescriptorProto.newBuilder()
@@ -292,7 +364,15 @@ class SafetySecurityTest {
           Map.entry("cpp", List.of("big_val_")),
           Map.entry("rust", List.of(".to_string()")),
           Map.entry("zig", List.of("std.fmt.allocPrint(")),
-          Map.entry("go", List.of("strconv.FormatInt(")));
+          Map.entry("go", List.of("strconv.FormatInt(")),
+          Map.entry("csharp", List.of(".Append(")),
+          Map.entry("kotlin", List.of(".toString()")),
+          Map.entry("swift", List.of("String(")),
+          Map.entry("dart", List.of(".add(")),
+          Map.entry("php", List.of("$this->")),
+          Map.entry("ruby", List.of("big_val")),
+          Map.entry("objc", List.of("bigVal")),
+          Map.entry("perl", List.of("big_val")));
 
   /**
    * SR-003 / HAZ-007: int64 fields must serialize as JSON strings in all 9 languages.
@@ -302,7 +382,25 @@ class SafetySecurityTest {
    */
   @ParameterizedTest(name = "SR-003 int64 as string in {0}")
   @ValueSource(
-      strings = {"java", "python", "javascript", "typescript", "c", "cpp", "rust", "zig", "go"})
+      strings = {
+        "java",
+        "python",
+        "javascript",
+        "typescript",
+        "c",
+        "cpp",
+        "rust",
+        "zig",
+        "go",
+        "csharp",
+        "kotlin",
+        "swift",
+        "dart",
+        "php",
+        "ruby",
+        "objc",
+        "perl"
+      })
   void testSR003_int64AsString(String lang) {
     DescriptorProto msg =
         DescriptorProto.newBuilder()
@@ -680,7 +778,25 @@ class SafetySecurityTest {
    */
   @ParameterizedTest(name = "SEC-003 keyword escaping in {0}")
   @ValueSource(
-      strings = {"java", "python", "javascript", "typescript", "c", "cpp", "rust", "zig", "go"})
+      strings = {
+        "java",
+        "python",
+        "javascript",
+        "typescript",
+        "c",
+        "cpp",
+        "rust",
+        "zig",
+        "go",
+        "csharp",
+        "kotlin",
+        "swift",
+        "dart",
+        "php",
+        "ruby",
+        "objc",
+        "perl"
+      })
   void testSEC003_keywordEscapingInGeneratedCode(String lang) {
     // Each language has different reserved words
     String fieldName;
@@ -706,7 +822,27 @@ class SafetySecurityTest {
         fieldName = "type";
         expectedEscaped = "Type ";
         break;
-      default: // java, python, javascript, typescript
+      case "csharp":
+        fieldName = "class";
+        expectedEscaped = "@class";
+        break;
+      case "kotlin":
+        fieldName = "class";
+        expectedEscaped = "`class`";
+        break;
+      case "swift":
+        fieldName = "class";
+        expectedEscaped = "`class`";
+        break;
+      case "perl":
+        fieldName = "package";
+        expectedEscaped = "package_";
+        break;
+      case "objc":
+        fieldName = "auto";
+        expectedEscaped = "auto_pb";
+        break;
+      default: // java, python, javascript, typescript, dart, php, ruby
         fieldName = "class";
         expectedEscaped = "class_";
         break;
@@ -864,7 +1000,25 @@ class SafetySecurityTest {
    */
   @ParameterizedTest(name = "FAULT-003 empty message in {0}")
   @ValueSource(
-      strings = {"java", "python", "javascript", "typescript", "c", "cpp", "rust", "zig", "go"})
+      strings = {
+        "java",
+        "python",
+        "javascript",
+        "typescript",
+        "c",
+        "cpp",
+        "rust",
+        "zig",
+        "go",
+        "csharp",
+        "kotlin",
+        "swift",
+        "dart",
+        "php",
+        "ruby",
+        "objc",
+        "perl"
+      })
   void testFAULT003_messageWithNoFields(String lang) {
     DescriptorProto msg = DescriptorProto.newBuilder().setName("EmptyMsg").build();
 
@@ -1096,7 +1250,25 @@ class SafetySecurityTest {
    */
   @ParameterizedTest(name = "FAULT-010 empty package in {0}")
   @ValueSource(
-      strings = {"java", "python", "javascript", "typescript", "c", "cpp", "rust", "zig", "go"})
+      strings = {
+        "java",
+        "python",
+        "javascript",
+        "typescript",
+        "c",
+        "cpp",
+        "rust",
+        "zig",
+        "go",
+        "csharp",
+        "kotlin",
+        "swift",
+        "dart",
+        "php",
+        "ruby",
+        "objc",
+        "perl"
+      })
   void testFAULT010_emptyPackageName(String lang) {
     DescriptorProto msg =
         DescriptorProto.newBuilder()

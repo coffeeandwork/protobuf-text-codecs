@@ -158,7 +158,25 @@ class PbtkSafetySecurityTest {
 
   @ParameterizedTest(name = "SR-001 field references present in {0}")
   @ValueSource(
-      strings = {"java", "python", "javascript", "typescript", "c", "cpp", "rust", "zig", "go"})
+      strings = {
+        "java",
+        "python",
+        "javascript",
+        "typescript",
+        "c",
+        "cpp",
+        "rust",
+        "zig",
+        "go",
+        "csharp",
+        "kotlin",
+        "swift",
+        "dart",
+        "php",
+        "ruby",
+        "objc",
+        "perl"
+      })
   void testSR001_fieldNamesPresentInAllLanguages(String lang) {
     DescriptorProto msg =
         DescriptorProto.newBuilder()
@@ -537,7 +555,25 @@ class PbtkSafetySecurityTest {
 
   @ParameterizedTest(name = "SEC-003 keyword escaping in pbtk {0}")
   @ValueSource(
-      strings = {"java", "python", "javascript", "typescript", "c", "cpp", "rust", "zig", "go"})
+      strings = {
+        "java",
+        "python",
+        "javascript",
+        "typescript",
+        "c",
+        "cpp",
+        "rust",
+        "zig",
+        "go",
+        "csharp",
+        "kotlin",
+        "swift",
+        "dart",
+        "php",
+        "ruby",
+        "objc",
+        "perl"
+      })
   void testSEC003_keywordEscapingInGeneratedPbtkCode(String lang) {
     // Pick a keyword and expected escaped form per language.
     String fieldName;
@@ -563,7 +599,27 @@ class PbtkSafetySecurityTest {
         fieldName = "type";
         expectedEscaped = "Type ";
         break;
-      default: // java, python, javascript, typescript
+      case "csharp":
+        fieldName = "class";
+        expectedEscaped = "@class";
+        break;
+      case "kotlin":
+        fieldName = "class";
+        expectedEscaped = "`class`";
+        break;
+      case "swift":
+        fieldName = "class";
+        expectedEscaped = "`class`";
+        break;
+      case "perl":
+        fieldName = "package";
+        expectedEscaped = "package_";
+        break;
+      case "objc":
+        fieldName = "auto";
+        expectedEscaped = "auto_pb";
+        break;
+      default: // java, python, javascript, typescript, dart, php, ruby
         fieldName = "class";
         expectedEscaped = "class_";
         break;

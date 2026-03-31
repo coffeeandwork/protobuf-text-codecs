@@ -340,9 +340,21 @@ class PluginRunnerTest {
       "c",
       "cpp",
       "c++",
+      "csharp",
+      "c#",
+      "dart",
+      "go",
+      "kotlin",
+      "kt",
+      "objc",
+      "objective-c",
+      "perl",
+      "php",
+      "ruby",
+      "rb",
       "rust",
-      "zig",
-      "go"
+      "swift",
+      "zig"
     };
     for (String lang : languages) {
       CodeGeneratorRequest request = minimalProto3Request().setParameter("lang=" + lang).build();
