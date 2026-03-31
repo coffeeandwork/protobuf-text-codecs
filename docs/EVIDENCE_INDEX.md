@@ -217,7 +217,7 @@ Note: 15 `@ParameterizedTest` methods x 16 languages = 240 expanded invocations 
 | Root build | `build.gradle` | Spotless + Google Java Format |
 | Plugin build | `plugin/build.gradle` | Shadow JAR, JaCoCo, test config |
 | Settings | `settings.gradle` | Multi-project structure |
-| CI workflow | `.github/workflows/ci.yml` | Automated build, test, coverage |
+| CI workflow | GitHub Actions (user-configured) | Automated build, test, coverage |
 | Plugin wrapper (jsonarray) | `protoc-gen-jsonarray` | Shell script for protoc integration |
 | Plugin wrapper (pbtkurl) | `protoc-gen-pbtkurl` | Shell script for protoc integration |
 

@@ -393,7 +393,7 @@ bash integration-tests/schema-evolution-test.sh
 ### 9.2 CI/CD Integration
 
 - **Trigger:** Push to main, all pull requests
-- **Pipeline:** `.github/workflows/ci.yml`
+- **Pipeline:** GitHub Actions (or local `./gradlew` commands)
 - **Steps:**
   1. Checkout → Setup Java 17 → Setup Gradle
   2. `spotlessCheck` (formatting gate)
