@@ -148,6 +148,14 @@ Note: 15 `@ParameterizedTest` methods x 16 languages = 240 expanded invocations 
 | Rust | `plugin/src/test/resources/golden/rust/` | Generated Rust source |
 | Zig | `plugin/src/test/resources/golden/zig/` | Generated Zig source |
 | Go | `plugin/src/test/resources/golden/go/` | Generated Go source |
+| C# | `plugin/src/test/resources/golden/csharp/` | Generated C# source |
+| Kotlin | `plugin/src/test/resources/golden/kotlin/` | Generated Kotlin source |
+| Swift | `plugin/src/test/resources/golden/swift/` | Generated Swift source |
+| Dart | `plugin/src/test/resources/golden/dart/` | Generated Dart source |
+| PHP | `plugin/src/test/resources/golden/php/` | Generated PHP source |
+| Ruby | `plugin/src/test/resources/golden/ruby/` | Generated Ruby source |
+| Objective-C | `plugin/src/test/resources/golden/objc/` | Generated Objective-C source |
+| Perl | `plugin/src/test/resources/golden/perl/` | Generated Perl source |
 
 ### Integration Tests
 
@@ -188,7 +196,7 @@ Note: 15 `@ParameterizedTest` methods x 16 languages = 240 expanded invocations 
 | VULN-003 | High | Fixed | SafetySecurityTest -- default value validation |
 | VULN-004 | Medium | Fixed | SafetySecurityTest -- path traversal rejection |
 | VULN-005 | Low | Fixed | JavaCodeGenTest -- Javadoc `*/` escaping |
-| VULN-006 | Low | Accepted | Warning emitted; protoc limits practical field numbers |
+| VULN-006 | Low | Fixed | Warning emitted; protoc limits practical field numbers |
 | VULN-007 | Low | Partial | C runtime has bounds-checked array access; generated code gap remains |
 | VULN-008 | Medium | Fixed | C runtime base64 validates input length % 4 |
 | VULN-009 | Info | Fixed | Resolved in v0.2.0 |

@@ -288,8 +288,8 @@ LIMITATIONS:
 | SEC-002 | Unit | PluginRunnerTest path traversal test | Implemented |
 | SEC-003 | Unit | JavaCodeGenTest.testKeyword*, MultiLang.testKeyword* | Implemented |
 | SEC-004 | Unit | JavaCodeGenTest.testNameCollision* | Implemented |
-| PERF-001 | Benchmark | PerfTest.java (manual) | Manual only |
-| PERF-002 | Benchmark | PerfTest.java (manual) | Manual only |
+| PERF-001 | Benchmark | PerformanceBenchmarkTest.java, MemoryBenchmarkTest.java | Implemented |
+| PERF-002 | Benchmark | PerformanceBenchmarkTest.java, MemoryBenchmarkTest.java | Implemented |
 
 ## 7. Test Data Strategy
 
@@ -331,8 +331,8 @@ plugin/src/test/java/dev/protocgen/textcodecs/jsonarray/
 ├── GoldenFileTest.java              # Snapshot: exact output comparison
 ├── PerformanceBenchmarkTest.java    # Plugin throughput benchmarks
 ├── MemoryBenchmarkTest.java         # Memory allocation benchmarks
-├── SchemaEvolutionTest.java         # Schema evolution across all 17 langs, both formats (~100 tests)
-├── JavaSchemaEvolutionTest.java     # Java-specific schema evolution patterns (~30 tests)
+├── SchemaEvolutionTest.java         # Schema evolution across all 17 langs, both formats (119 tests)
+├── JavaSchemaEvolutionTest.java     # Java-specific schema evolution patterns (11 tests)
 └── ../pbtkurl/
     ├── PbtkJavaCodeGenTest.java     # E2E: pbtk Java code generation
     ├── PbtkMultiLanguageCodeGenTest.java  # E2E: pbtk 16 non-Java languages

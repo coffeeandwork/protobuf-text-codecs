@@ -1905,6 +1905,308 @@ class JavaCodeGenTest {
   }
 
   // ======================================================================
+  // 46. [P0] Unknown enum value deserialization — forNumber fallback
+  // ======================================================================
+
+  @Test
+  void testUnknownEnumValueDeserialization() {
+    EnumDescriptorProto statusEnum =
+        EnumDescriptorProto.newBuilder()
+            .setName("Status")
+            .addValue(EnumValueDescriptorProto.newBuilder().setName("UNKNOWN").setNumber(0).build())
+            .addValue(EnumValueDescriptorProto.newBuilder().setName("ACTIVE").setNumber(1).build())
+            .build();
+
+    DescriptorProto msg =
+        DescriptorProto.newBuilder()
+            .setName("Msg")
+            .addEnumType(statusEnum)
+            .addField(enumField("status", 1, ".test.Msg.Status"))
+            .build();
+    String code = generateSingleMessage(msg);
+
+    // Enum definition must include all expected values
+    assertTrue(code.contains("UNKNOWN(0)"), "Enum value UNKNOWN(0) present");
+    assertTrue(code.contains("ACTIVE(1)"), "Enum value ACTIVE(1) present");
+
+    // forNumber must iterate values and match by number
+    assertTrue(
+        code.contains("public static Status forNumber(int number)"),
+        "forNumber method generated for Status enum");
+    assertTrue(
+        code.contains("if (v.number == number)"), "forNumber checks v.number == number for match");
+
+    // forNumber must have a default/fallback case that returns null (not crash) for unknown values
+    assertTrue(
+        code.contains("return null;"), "forNumber returns null for unknown enum values (e.g., 99)");
+  }
+
+  // ======================================================================
+  // 47. [P0] Proto3 default values serialized not null
+  // ======================================================================
+
+  @Test
+  void testProto3DefaultValuesSerializedNotNull() {
+    DescriptorProto msg =
+        DescriptorProto.newBuilder()
+            .setName("Msg")
+            .addField(scalarField("name", 1, FieldDescriptorProto.Type.TYPE_STRING))
+            .addField(scalarField("age", 2, FieldDescriptorProto.Type.TYPE_INT32))
+            .addField(scalarField("active", 3, FieldDescriptorProto.Type.TYPE_BOOL))
+            .build();
+    String code = generateSingleMessage(msg);
+
+    // Extract the serializer method body to check field-level serialization
+    String serializerBody = extractMethodBody(code, "appendJsonArray");
+
+    // Proto3 scalar fields without explicit presence must never emit null.
+    // Positional encoding requires every position to be filled with actual values.
+
+    // String field at position 0: must emit appendQuotedString (which outputs ""), not null
+    assertTrue(
+        serializerBody.contains("appendQuotedString(sb, this.name)"),
+        "String field serializes via appendQuotedString (emits \"\" for default)");
+
+    // Int32 field at position 1: must emit sb.append(this.age) which outputs 0, not null
+    assertTrue(
+        serializerBody.contains("sb.append(this.age)"),
+        "Int32 field serializes via sb.append (emits 0 for default)");
+
+    // Bool field at position 2: must emit sb.append(this.active) which outputs false, not null
+    assertTrue(
+        serializerBody.contains("sb.append(this.active)"),
+        "Bool field serializes via sb.append (emits false for default)");
+
+    // The serializer for these proto3 non-presence fields must NOT have null branches
+    // (null is only for gaps, optional fields, or message fields)
+    assertFalse(
+        serializerBody.contains("presentFields_"),
+        "Proto3 non-optional scalar fields must not use presence tracking in serializer");
+  }
+
+  // ======================================================================
+  // 48. [P1] Proto2 enum with negative value
+  // ======================================================================
+
+  @Test
+  void testProto2EnumWithNegativeValue() {
+    EnumDescriptorProto negEnum =
+        EnumDescriptorProto.newBuilder()
+            .setName("SignedPriority")
+            .addValue(
+                EnumValueDescriptorProto.newBuilder().setName("NEG_ONE").setNumber(-1).build())
+            .addValue(EnumValueDescriptorProto.newBuilder().setName("ZERO").setNumber(0).build())
+            .addValue(EnumValueDescriptorProto.newBuilder().setName("ONE").setNumber(1).build())
+            .build();
+
+    DescriptorProto msg =
+        DescriptorProto.newBuilder()
+            .setName("Msg")
+            .addEnumType(negEnum)
+            .addField(enumField("priority", 1, ".test.Msg.SignedPriority"))
+            .build();
+
+    String code = generateSingleMessage(msg, "test", "proto2");
+
+    // Negative enum values are valid in proto2
+    assertTrue(
+        code.contains("NEG_ONE(-1)"),
+        "Enum value NEG_ONE(-1) must be generated with negative number");
+    assertTrue(code.contains("ZERO(0)"), "Enum value ZERO(0) present");
+    assertTrue(code.contains("ONE(1)"), "Enum value ONE(1) present");
+
+    // forNumber must still work with the negative value
+    assertTrue(
+        code.contains("public static SignedPriority forNumber(int number)"),
+        "forNumber generated for enum with negative values");
+  }
+
+  // ======================================================================
+  // 49. [P1] Cross-file circular reference
+  // ======================================================================
+
+  @Test
+  void testCrossFileCircularReference() {
+    // File A: message A has field of type B
+    DescriptorProto msgA =
+        DescriptorProto.newBuilder()
+            .setName("NodeA")
+            .addField(scalarField("label", 1, FieldDescriptorProto.Type.TYPE_STRING))
+            .addField(messageField("ref_b", 2, ".circular.NodeB"))
+            .build();
+
+    FileDescriptorProto fileA =
+        FileDescriptorProto.newBuilder()
+            .setName("a.proto")
+            .setPackage("circular")
+            .setSyntax("proto3")
+            .addMessageType(msgA)
+            .addDependency("b.proto")
+            .build();
+
+    // File B: message B has field of type A
+    DescriptorProto msgB =
+        DescriptorProto.newBuilder()
+            .setName("NodeB")
+            .addField(scalarField("value", 1, FieldDescriptorProto.Type.TYPE_INT32))
+            .addField(messageField("ref_a", 2, ".circular.NodeA"))
+            .build();
+
+    FileDescriptorProto fileB =
+        FileDescriptorProto.newBuilder()
+            .setName("b.proto")
+            .setPackage("circular")
+            .setSyntax("proto3")
+            .addMessageType(msgB)
+            .addDependency("a.proto")
+            .build();
+
+    CodeGeneratorRequest request =
+        CodeGeneratorRequest.newBuilder()
+            .addProtoFile(fileA)
+            .addProtoFile(fileB)
+            .addFileToGenerate("a.proto")
+            .addFileToGenerate("b.proto")
+            .setParameter("lang=java")
+            .build();
+
+    CodeGeneratorResponse response = runner.run(request);
+    assertFalse(
+        response.hasError(),
+        "Circular cross-file references should not cause an error, got: " + response.getError());
+    assertTrue(response.getFileCount() >= 2, "Should generate files for both messages");
+
+    // Find the generated content for each message
+    String codeA = null;
+    String codeB = null;
+    for (int i = 0; i < response.getFileCount(); i++) {
+      String content = response.getFile(i).getContent();
+      if (content.contains("public final class NodeA")) codeA = content;
+      if (content.contains("public final class NodeB")) codeB = content;
+    }
+
+    assertTrue(codeA != null, "NodeA class should be generated");
+    assertTrue(codeB != null, "NodeB class should be generated");
+
+    // NodeA references NodeB
+    assertTrue(codeA.contains("NodeB"), "NodeA references NodeB type");
+    assertTrue(
+        codeA.contains("NodeB.fromJsonArray("), "NodeA deserializes NodeB via fromJsonArray");
+
+    // NodeB references NodeA
+    assertTrue(codeB.contains("NodeA"), "NodeB references NodeA type");
+    assertTrue(
+        codeB.contains("NodeA.fromJsonArray("), "NodeB deserializes NodeA via fromJsonArray");
+  }
+
+  // ======================================================================
+  // 50. [P1] Oneof all members unset initial state
+  // ======================================================================
+
+  @Test
+  void testOneofAllMembersUnsetInitialState() {
+    FieldDescriptorProto emailField =
+        FieldDescriptorProto.newBuilder()
+            .setName("email")
+            .setNumber(2)
+            .setType(FieldDescriptorProto.Type.TYPE_STRING)
+            .setLabel(FieldDescriptorProto.Label.LABEL_OPTIONAL)
+            .setOneofIndex(0)
+            .build();
+
+    FieldDescriptorProto phoneField =
+        FieldDescriptorProto.newBuilder()
+            .setName("phone")
+            .setNumber(3)
+            .setType(FieldDescriptorProto.Type.TYPE_STRING)
+            .setLabel(FieldDescriptorProto.Label.LABEL_OPTIONAL)
+            .setOneofIndex(0)
+            .build();
+
+    DescriptorProto msg =
+        DescriptorProto.newBuilder()
+            .setName("Msg")
+            .addField(scalarField("name", 1, FieldDescriptorProto.Type.TYPE_STRING))
+            .addField(emailField)
+            .addField(phoneField)
+            .addOneofDecl(OneofDescriptorProto.newBuilder().setName("contact").build())
+            .build();
+    String code = generateSingleMessage(msg);
+
+    // The Builder must initialize the oneof case field to 0 (NOT_SET)
+    assertTrue(
+        code.contains("private int contactCase_ = 0;"),
+        "Builder initializes oneof case field to 0 (NOT_SET)");
+
+    // The clear method must reset the case field to 0
+    assertTrue(
+        code.contains("this.contactCase_ = 0;"), "Clear/reset sets oneof case field back to 0");
+
+    // The serializer must check the case and emit null for both positions when case is 0
+    // EMAIL at position 1 (field number 2)
+    assertTrue(
+        code.contains("contactCase_ == EMAILCase_"),
+        "Serializer checks EMAIL case for field number 2");
+    // PHONE at position 2 (field number 3)
+    assertTrue(
+        code.contains("contactCase_ == PHONECase_"),
+        "Serializer checks PHONE case for field number 3");
+    // When case doesn't match, emit null
+    assertTrue(
+        code.contains("else { sb.append(\"null\"); }"),
+        "When oneof case is 0 (NOT_SET), inactive members emit null");
+  }
+
+  // ======================================================================
+  // 51. [P2] Repeated field serializes empty array not null
+  // ======================================================================
+
+  @Test
+  void testRepeatedFieldSerializesEmptyArrayNotNull() {
+    DescriptorProto msg =
+        DescriptorProto.newBuilder()
+            .setName("Msg")
+            .addField(repeatedField("tags", 1, FieldDescriptorProto.Type.TYPE_STRING))
+            .build();
+    String code = generateSingleMessage(msg);
+
+    // The serializer must always emit [ and ] for a repeated field (empty array), never null
+    String serializerBody = extractMethodBody(code, "appendJsonArray");
+    assertTrue(serializerBody.contains("sb.append('[')"), "Repeated field emits opening bracket");
+    assertTrue(serializerBody.contains("sb.append(']')"), "Repeated field emits closing bracket");
+
+    // A repeated field in proto3 should never have a null branch in serialization.
+    // Count null appends in the serializer — should be zero because the only field is repeated.
+    int nullAppends = countOccurrences(serializerBody, "sb.append(\"null\")");
+    assertTrue(
+        nullAppends == 0,
+        "Repeated field serializer must not emit null (emits empty array instead)");
+  }
+
+  // ======================================================================
+  // 52. [P2] Sparse field at high position — bounds check
+  // ======================================================================
+
+  @Test
+  void testSparseFieldAtHighPosition() {
+    DescriptorProto msg =
+        DescriptorProto.newBuilder()
+            .setName("Msg")
+            .addField(scalarField("first", 1, FieldDescriptorProto.Type.TYPE_STRING))
+            .addField(scalarField("sparse", 1000, FieldDescriptorProto.Type.TYPE_STRING))
+            .build();
+    String code = generateSingleMessage(msg);
+
+    // The deserializer must use correct 0-indexed bounds check for field at position 999
+    assertTrue(
+        code.contains("size > 999"),
+        "Deserializer uses size > 999 for field at position 1000 (0-indexed position 999)");
+
+    // First field at position 0 should use size > 0
+    assertTrue(code.contains("size > 0"), "Deserializer uses size > 0 for field at position 1");
+  }
+
+  // ======================================================================
   // Helpers
   // ======================================================================
 

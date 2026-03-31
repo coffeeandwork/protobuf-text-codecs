@@ -194,7 +194,7 @@ LIMITATIONS:
 | Tests passing | 1,059 (100%) |
 | Tests failing | 0 |
 | Test files | 19 classes |
-| Parameterized test methods | 25+ (expanding to ~500+ test invocations across 16-17 languages) |
+| Parameterized test methods | 25+ (expanding to 1,059 test invocations across 17 languages) |
 | Golden file snapshots | 17 (one per language) |
 | Integration test scripts | 2 (cross-language, schema-evolution) |
 

@@ -86,8 +86,8 @@ LIMITATIONS:
 
 | Requirement | Test File(s) | Test Case(s) | Type | Status |
 |-------------|-------------|--------------|------|--------|
-| PERF-001: Plugin execution | PerfTest.java (manual) | wall-clock timing | Benchmark | Manual |
-| PERF-002: Serialization perf | PerfTest.java (manual) | ops/sec measurement | Benchmark | Manual |
+| PERF-001: Plugin execution | PerformanceBenchmarkTest.java, MemoryBenchmarkTest.java | wall-clock timing | Benchmark | Implemented |
+| PERF-002: Serialization perf | PerformanceBenchmarkTest.java, MemoryBenchmarkTest.java | ops/sec measurement | Benchmark | Implemented |
 
 ### Interface Requirements
 
@@ -104,9 +104,11 @@ LIMITATIONS:
 | Functional (FR) | 18 | ~660 | ~2 (FR-016, FR-018 fault test) | ~662 |
 | Safety (SR) | 4 | ~48 | 0 | ~48 |
 | Security (SEC) | 4 | ~48 | 0 | ~48 |
-| Performance (PERF) | 2 | 0 (manual only) | 0 | 0 |
+| Performance (PERF) | 2 | 12 | 0 | 12 |
 | Interface (IF) | 3 | ~25 | 0 | ~25 |
-| **Total** | **31** | **~911** | **~2** | **1059** |
+| pbtk URL format | — | ~241 | 0 | ~241 |
+| Schema Evolution | — | ~130 | 0 | ~130 |
+| **Total** | **31** | **~1,164** | **~2** | **1,059** |
 
 ## Test Files
 

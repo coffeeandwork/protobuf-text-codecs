@@ -109,7 +109,7 @@ Key directories:
 |-----------|----------|-------|---------------|
 | Java (6 classes) | `codegen/java/` | 1,458 | 87.6% (71 dedicated + shared tests) |
 | Python (6 classes) | `codegen/python/` | 1,104 | 72.2% (parameterized tests) |
-| JavaScript (6 classes) | `codegen/javascript/` | 1,072 | 80.0% (parameterized tests) |
+| JavaScript (6 classes) | `codegen/javascript/` | 1,072 | 78.8% (parameterized tests) |
 | TypeScript (6 classes) | `codegen/typescript/` | 932 | 79.2% (parameterized tests) |
 | C (6 classes) | `codegen/c/` | 1,832 | 66.4% (parameterized tests) |
 | C++ (6 classes) | `codegen/cpp/` | 1,264 | 78.7% (parameterized tests) |
@@ -412,8 +412,8 @@ The core encoding format that all generated code must implement:
 | PbtkJavaCodeGenTest | 27 | pbtk URL format Java code generation |
 | PbtkMultiLanguageCodeGenTest | 144 | pbtk URL format across 16 non-Java languages |
 | PbtkSafetySecurityTest | 70 | Safety/security tests for pbtk format |
-| SchemaEvolutionTest | ~100 | Schema evolution across all 17 languages, both formats (parameterized) |
-| JavaSchemaEvolutionTest | ~30 | Java-specific schema evolution patterns (array sizing, bounds, gaps, oneofs) |
+| SchemaEvolutionTest | 119 | Schema evolution across all 17 languages, both formats (parameterized) |
+| JavaSchemaEvolutionTest | 11 | Java-specific schema evolution patterns (array sizing, bounds, gaps, oneofs) |
 
 **Total: 1,059 tests (19 test classes). Overall coverage: 73.9% instructions, 76.6% lines.**
 
