@@ -143,6 +143,8 @@ public class PbtkRubyGenerator implements LanguageGenerator {
   }
 
   private void emitImports(CodeWriter w) {
+    w.line("# frozen_string_literal: true");
+    w.blankLine();
     w.line("require 'base64'");
     w.line("require 'cgi'");
   }

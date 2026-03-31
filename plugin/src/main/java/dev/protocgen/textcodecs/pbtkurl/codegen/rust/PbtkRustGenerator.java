@@ -286,8 +286,10 @@ public class PbtkRustGenerator implements LanguageGenerator {
         w.block(
             "pub fn " + getterName + "(&self) -> " + rustType, () -> w.line("self.%s", rustName));
       } else {
+        // Use &str instead of &String for idiomatic Rust
+        String refType = rustType.equals("String") ? "str" : rustType;
         w.block(
-            "pub fn " + getterName + "(&self) -> &" + rustType, () -> w.line("&self.%s", rustName));
+            "pub fn " + getterName + "(&self) -> &" + refType, () -> w.line("&self.%s", rustName));
       }
 
       w.blankLine();

@@ -80,11 +80,11 @@ public class CSharpSerializerGenerator {
   }
 
   private void emitFieldSerialize(CodeWriter w, ProtoField field) {
-    String csField = "this." + nameResolver.fieldName(field.getName());
+    String csField = "this._" + nameResolver.fieldName(field.getName());
 
     if (field.isOneofMember()) {
       // For oneof members: write the value if this is the active case, else null
-      String caseName = nameResolver.fieldName(field.getOneofName()) + "Case_";
+      String caseName = "_" + nameResolver.fieldName(field.getOneofName()) + "Case_";
       String enumConst = field.getName().toUpperCase() + "Case_";
       w.block(
           "if (" + caseName + " == " + enumConst + ")",

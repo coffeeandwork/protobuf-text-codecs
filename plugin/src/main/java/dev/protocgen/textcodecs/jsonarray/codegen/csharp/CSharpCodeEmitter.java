@@ -211,7 +211,7 @@ public class CSharpCodeEmitter {
 
   private void emitFieldNumberConstants(CodeWriter w, ProtoMessage message) {
     for (ProtoField field : message.getFields()) {
-      String constName = snakeToUpperSnake(field.getName()) + "_FIELD_NUMBER";
+      String constName = CSharpNameResolver.snakeToPascal(field.getName()) + "FieldNumber";
       w.line("public const int %s = %d;", constName, field.getFieldNumber());
     }
   }
@@ -226,8 +226,8 @@ public class CSharpCodeEmitter {
     }
     for (ProtoField field : message.getFields()) {
       String csType = typeMapper.languageType(field);
-      String csName = nameResolver.fieldName(field.getName());
-      w.line("private readonly %s %s;", csType, csName);
+      String pvtName = privateFieldName(field.getName());
+      w.line("private readonly %s %s;", csType, pvtName);
     }
   }
 
@@ -238,7 +238,7 @@ public class CSharpCodeEmitter {
   private void emitOneofCaseFields(CodeWriter w, ProtoMessage message) {
     for (ProtoMessage.OneofGroup group : message.getOneofGroups()) {
       w.blankLine();
-      String caseName = nameResolver.fieldName(group.name()) + "Case_";
+      String caseName = "_" + nameResolver.fieldName(group.name()) + "Case_";
       w.line("private readonly int %s;", caseName);
       // Static constants for each oneof member
       for (ProtoField member : group.members()) {
@@ -285,25 +285,27 @@ public class CSharpCodeEmitter {
         "private " + className + "(Builder builder)",
         () -> {
           for (ProtoField field : message.getFields()) {
+            String pvtName = privateFieldName(field.getName());
             String csName = nameResolver.fieldName(field.getName());
             if (field.isRepeated()) {
               w.line(
                   "this.%s = new List<%s>(builder.%s).AsReadOnly();",
-                  csName, repeatedElementType(field), csName);
+                  pvtName, repeatedElementType(field), csName);
             } else if (field.isMap()) {
               w.line(
                   "this.%s = new Dictionary<%s>(builder.%s);",
-                  csName, mapGenericArgs(field), csName);
+                  pvtName, mapGenericArgs(field), csName);
             } else {
-              w.line("this.%s = builder.%s;", csName, csName);
+              w.line("this.%s = builder.%s;", pvtName, csName);
             }
           }
           if (hasPresenceTrackedFields(message)) {
             w.line("this.presentFields_ = (bool[])builder.presentFields_.Clone();");
           }
           for (ProtoMessage.OneofGroup group : message.getOneofGroups()) {
-            String caseName = nameResolver.fieldName(group.name()) + "Case_";
-            w.line("this.%s = builder.%s;", caseName, caseName);
+            String pvtCase = "_" + nameResolver.fieldName(group.name()) + "Case_";
+            String builderCase = nameResolver.fieldName(group.name()) + "Case_";
+            w.line("this.%s = builder.%s;", pvtCase, builderCase);
           }
         });
   }
@@ -315,18 +317,18 @@ public class CSharpCodeEmitter {
   private void emitMessageProperties(CodeWriter w, ProtoMessage message) {
     for (ProtoField field : message.getFields()) {
       String csType = typeMapper.languageType(field);
-      String csName = nameResolver.fieldName(field.getName());
+      String pvtName = privateFieldName(field.getName());
       String pascalName = CSharpNameResolver.snakeToPascal(field.getName());
 
       if (field.isRepeated()) {
-        emitRepeatedProperties(w, field, csType, csName, pascalName);
+        emitRepeatedProperties(w, field, csType, pvtName, pascalName);
       } else if (field.isMap()) {
-        emitMapProperties(w, field, csType, csName, pascalName);
+        emitMapProperties(w, field, csType, pvtName, pascalName);
       } else if (field.getKind() == ProtoField.FieldKind.MESSAGE
           || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
-        emitMessageFieldProperties(w, field, csType, csName, pascalName);
+        emitMessageFieldProperties(w, field, csType, pvtName, pascalName);
       } else {
-        emitScalarProperty(w, field, csType, csName, pascalName);
+        emitScalarProperty(w, field, csType, pvtName, pascalName);
       }
     }
 
@@ -334,12 +336,12 @@ public class CSharpCodeEmitter {
     for (ProtoMessage.OneofGroup group : message.getOneofGroups()) {
       String pascalOneof = CSharpNameResolver.snakeToPascal(group.name());
       String enumName = pascalOneof + "Case";
-      String caseName = nameResolver.fieldName(group.name()) + "Case_";
+      String pvtCase = "_" + nameResolver.fieldName(group.name()) + "Case_";
       w.blankLine();
       w.block(
           "public " + enumName + " Get" + pascalOneof + "Case()",
           () -> {
-            w.line("return (%s)%s;", enumName, caseName);
+            w.line("return (%s)%s;", enumName, pvtCase);
           });
     }
   }
@@ -440,24 +442,26 @@ public class CSharpCodeEmitter {
               () -> {
                 for (ProtoField field : message.getFields()) {
                   String csName = nameResolver.fieldName(field.getName());
+                  String pvtName = privateFieldName(field.getName());
                   if (field.isRepeated()) {
                     w.line(
                         "this.%s = new List<%s>(from.%s);",
-                        csName, repeatedElementType(field), csName);
+                        csName, repeatedElementType(field), pvtName);
                   } else if (field.isMap()) {
                     w.line(
                         "this.%s = new Dictionary<%s>(from.%s);",
-                        csName, mapGenericArgs(field), csName);
+                        csName, mapGenericArgs(field), pvtName);
                   } else {
-                    w.line("this.%s = from.%s;", csName, csName);
+                    w.line("this.%s = from.%s;", csName, pvtName);
                   }
                 }
                 if (hasPresenceTrackedFields(message)) {
                   w.line("this.presentFields_ = (bool[])from.presentFields_.Clone();");
                 }
                 for (ProtoMessage.OneofGroup group : message.getOneofGroups()) {
-                  String caseName = nameResolver.fieldName(group.name()) + "Case_";
-                  w.line("this.%s = from.%s;", caseName, caseName);
+                  String csCase = nameResolver.fieldName(group.name()) + "Case_";
+                  String pvtCase = "_" + csCase;
+                  w.line("this.%s = from.%s;", csCase, pvtCase);
                 }
               });
 
@@ -826,13 +830,13 @@ public class CSharpCodeEmitter {
           w.indent();
           for (int i = 0; i < message.getFields().size(); i++) {
             ProtoField field = message.getFields().get(i);
-            String csName = nameResolver.fieldName(field.getName());
+            String pvtName = privateFieldName(field.getName());
             String prefix = i == 0 ? "\"" : "\", ";
             boolean isLast = i == message.getFields().size() - 1;
             if (isLast) {
-              w.line("%s%s=\" + %s + \"}\";", prefix, field.getName(), csName);
+              w.line("%s%s=\" + %s + \"}\";", prefix, field.getName(), pvtName);
             } else {
-              w.line("%s%s=\" + %s +", prefix, field.getName(), csName);
+              w.line("%s%s=\" + %s +", prefix, field.getName(), pvtName);
             }
           }
           w.dedent();
@@ -854,18 +858,18 @@ public class CSharpCodeEmitter {
           StringBuilder sb = new StringBuilder("return ");
           for (int i = 0; i < message.getFields().size(); i++) {
             ProtoField field = message.getFields().get(i);
-            String csName = nameResolver.fieldName(field.getName());
+            String pvtName = privateFieldName(field.getName());
             if (i > 0) {
               sb.append(" && ");
             }
             if (isByteArrayField(field)) {
-              sb.append(String.format("this.%s.SequenceEqual(that.%s)", csName, csName));
+              sb.append(String.format("this.%s.SequenceEqual(that.%s)", pvtName, pvtName));
             } else if (isFloatField(field) || isDoubleField(field)) {
-              sb.append(String.format("this.%s.Equals(that.%s)", csName, csName));
+              sb.append(String.format("this.%s.Equals(that.%s)", pvtName, pvtName));
             } else if (isPrimitiveField(field)) {
-              sb.append(String.format("this.%s == that.%s", csName, csName));
+              sb.append(String.format("this.%s == that.%s", pvtName, pvtName));
             } else {
-              sb.append(String.format("object.Equals(this.%s, that.%s)", csName, csName));
+              sb.append(String.format("object.Equals(this.%s, that.%s)", pvtName, pvtName));
             }
           }
           sb.append(";");
@@ -886,15 +890,15 @@ public class CSharpCodeEmitter {
           w.indent();
           w.line("int hash = 17;");
           for (ProtoField field : message.getFields()) {
-            String csName = nameResolver.fieldName(field.getName());
+            String pvtName = privateFieldName(field.getName());
             if (isByteArrayField(field)) {
               w.line(
                   "hash = hash * 31 + (%s != null ? %s.Aggregate(0, (a, b) => a * 31 + b) : 0);",
-                  csName, csName);
+                  pvtName, pvtName);
             } else if (isPrimitiveField(field)) {
-              w.line("hash = hash * 31 + %s.GetHashCode();", csName);
+              w.line("hash = hash * 31 + %s.GetHashCode();", pvtName);
             } else {
-              w.line("hash = hash * 31 + (%s != null ? %s.GetHashCode() : 0);", csName, csName);
+              w.line("hash = hash * 31 + (%s != null ? %s.GetHashCode() : 0);", pvtName, pvtName);
             }
           }
           w.line("return hash;");
@@ -969,6 +973,11 @@ public class CSharpCodeEmitter {
   // Utility methods
   // ---------------------------------------------------------------------------
 
+  /** Return the private backing field name for a proto field (underscore-prefixed camelCase). */
+  private String privateFieldName(String protoFieldName) {
+    return "_" + nameResolver.fieldName(protoFieldName);
+  }
+
   private boolean isByteArrayField(ProtoField field) {
     return field.getProtoType()
             == com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type.TYPE_BYTES
@@ -1021,19 +1030,6 @@ public class CSharpCodeEmitter {
         .mapToInt(ProtoField::getArrayPosition)
         .max()
         .orElse(0);
-  }
-
-  /** Convert snake_case proto field name to UPPER_SNAKE_CASE for constants. */
-  private String snakeToUpperSnake(String name) {
-    StringBuilder sb = new StringBuilder();
-    for (int i = 0; i < name.length(); i++) {
-      char c = name.charAt(i);
-      if (Character.isUpperCase(c) && i > 0 && name.charAt(i - 1) != '_') {
-        sb.append('_');
-      }
-      sb.append(Character.toUpperCase(c));
-    }
-    return sb.toString();
   }
 
   /** Get the element type for a repeated field. */

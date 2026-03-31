@@ -11,42 +11,42 @@ namespace Example {
     /// A physical mailing address.
     /// </summary>
     public sealed class Address {
-        public const int STREET_FIELD_NUMBER = 1;
-        public const int CITY_FIELD_NUMBER = 2;
-        public const int STATE_FIELD_NUMBER = 3;
-        public const int ZIP_FIELD_NUMBER = 4;
+        public const int StreetFieldNumber = 1;
+        public const int CityFieldNumber = 2;
+        public const int StateFieldNumber = 3;
+        public const int ZipFieldNumber = 4;
 
-        private readonly string street;
-        private readonly string city;
-        private readonly string state;
-        private readonly int zip;
+        private readonly string _street;
+        private readonly string _city;
+        private readonly string _state;
+        private readonly int _zip;
 
         private Address(Builder builder) {
-            this.street = builder.street;
-            this.city = builder.city;
-            this.state = builder.state;
-            this.zip = builder.zip;
+            this._street = builder.street;
+            this._city = builder.city;
+            this._state = builder.state;
+            this._zip = builder.zip;
         }
 
         /// <summary>
         /// The street address line.
         /// </summary>
-        public string Street => this.street;
+        public string Street => this._street;
 
         /// <summary>
         /// The city name.
         /// </summary>
-        public string City => this.city;
+        public string City => this._city;
 
         /// <summary>
         /// The state or province code.
         /// </summary>
-        public string State => this.state;
+        public string State => this._state;
 
         /// <summary>
         /// The postal/ZIP code.
         /// </summary>
-        public int Zip => this.zip;
+        public int Zip => this._zip;
 
         private static readonly Address DefaultInstance_ = new Address(new Builder());
 
@@ -69,18 +69,18 @@ namespace Example {
         internal void AppendJsonArray(StringBuilder sb) {
             sb.Append('[');
             sb.Append('"');
-            sb.Append(JsonEncodedText.Encode(this.street).ToString());
+            sb.Append(JsonEncodedText.Encode(this._street).ToString());
             sb.Append('"');
             sb.Append(',');
             sb.Append('"');
-            sb.Append(JsonEncodedText.Encode(this.city).ToString());
+            sb.Append(JsonEncodedText.Encode(this._city).ToString());
             sb.Append('"');
             sb.Append(',');
             sb.Append('"');
-            sb.Append(JsonEncodedText.Encode(this.state).ToString());
+            sb.Append(JsonEncodedText.Encode(this._state).ToString());
             sb.Append('"');
             sb.Append(',');
-            sb.Append(this.zip);
+            sb.Append(this._zip);
             sb.Append(']');
         }
 
@@ -123,26 +123,26 @@ namespace Example {
 
         public override string ToString() {
             return "Address{" +
-                "street=" + street +
-                ", city=" + city +
-                ", state=" + state +
-                ", zip=" + zip + "}";
+                "street=" + _street +
+                ", city=" + _city +
+                ", state=" + _state +
+                ", zip=" + _zip + "}";
         }
 
         public override bool Equals(object o) {
             if (ReferenceEquals(this, o)) return true;
             if (!(o is Address)) return false;
             var that = (Address)o;
-            return object.Equals(this.street, that.street) && object.Equals(this.city, that.city) && object.Equals(this.state, that.state) && this.zip == that.zip;
+            return object.Equals(this._street, that._street) && object.Equals(this._city, that._city) && object.Equals(this._state, that._state) && this._zip == that._zip;
         }
 
         public override int GetHashCode() {
             unchecked {
                 int hash = 17;
-                hash = hash * 31 + (street != null ? street.GetHashCode() : 0);
-                hash = hash * 31 + (city != null ? city.GetHashCode() : 0);
-                hash = hash * 31 + (state != null ? state.GetHashCode() : 0);
-                hash = hash * 31 + zip.GetHashCode();
+                hash = hash * 31 + (_street != null ? _street.GetHashCode() : 0);
+                hash = hash * 31 + (_city != null ? _city.GetHashCode() : 0);
+                hash = hash * 31 + (_state != null ? _state.GetHashCode() : 0);
+                hash = hash * 31 + _zip.GetHashCode();
                 return hash;
             }
         }
@@ -157,10 +157,10 @@ namespace Example {
             }
 
             internal Builder(Address from) {
-                this.street = from.street;
-                this.city = from.city;
-                this.state = from.state;
-                this.zip = from.zip;
+                this.street = from._street;
+                this.city = from._city;
+                this.state = from._state;
+                this.zip = from._zip;
             }
 
             public string GetStreet() {

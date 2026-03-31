@@ -221,8 +221,10 @@ public class RustCodeEmitter {
               w.line("self.%s", rustName);
             });
       } else {
+        // Use &str instead of &String for idiomatic Rust
+        String refType = rustType.equals("String") ? "str" : rustType;
         w.block(
-            "pub fn " + getterName + "(&self) -> &" + rustType,
+            "pub fn " + getterName + "(&self) -> &" + refType,
             () -> {
               w.line("&self.%s", rustName);
             });

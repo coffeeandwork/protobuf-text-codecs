@@ -13,7 +13,7 @@ impl Address {
         Self::default()
     }
 
-    pub fn street(&self) -> &String {
+    pub fn street(&self) -> &str {
         &self.street
     }
 
@@ -21,7 +21,7 @@ impl Address {
         self.street = value;
     }
 
-    pub fn city(&self) -> &String {
+    pub fn city(&self) -> &str {
         &self.city
     }
 
@@ -29,7 +29,7 @@ impl Address {
         self.city = value;
     }
 
-    pub fn state(&self) -> &String {
+    pub fn state(&self) -> &str {
         &self.state
     }
 

@@ -113,6 +113,8 @@ public class RubyCodeEmitter {
   }
 
   private void emitImports(CodeWriter w) {
+    w.line("# frozen_string_literal: true");
+    w.blankLine();
     w.line("require 'json'");
     w.line("require 'base64'");
   }

@@ -138,7 +138,7 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
       CodeWriter w, ProtoMessage message, String className, ProtoFile file) {
     // Field number constants
     for (ProtoField field : message.getFields()) {
-      String constName = snakeToUpperSnake(field.getName()) + "_FIELD_NUMBER";
+      String constName = CSharpNameResolver.snakeToPascal(field.getName()) + "FieldNumber";
       w.line("public const int %s = %d;", constName, field.getFieldNumber());
     }
 
@@ -146,8 +146,8 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
     w.blankLine();
     for (ProtoField field : message.getFields()) {
       String csType = typeMapper.languageType(field);
-      String csName = nameResolver.fieldName(field.getName());
-      w.line("private readonly %s %s;", csType, csName);
+      String pvtName = "_" + nameResolver.fieldName(field.getName());
+      w.line("private readonly %s %s;", csType, pvtName);
     }
 
     // Presence tracking
@@ -159,8 +159,8 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
     // Oneof case tracking
     for (ProtoMessage.OneofGroup group : message.getOneofGroups()) {
       w.blankLine();
-      String caseName = nameResolver.fieldName(group.name()) + "Case_";
-      w.line("private readonly int %s;", caseName);
+      String pvtCase = "_" + nameResolver.fieldName(group.name()) + "Case_";
+      w.line("private readonly int %s;", pvtCase);
       for (ProtoField member : group.members()) {
         w.line(
             "private const int %sCase_ = %d;",
@@ -262,11 +262,11 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
   }
 
   private void emitFieldSerialize(CodeWriter w, ProtoField field) {
-    String csField = "this." + nameResolver.fieldName(field.getName());
+    String csField = "this._" + nameResolver.fieldName(field.getName());
     int fieldNum = field.getFieldNumber();
 
     if (field.isOneofMember()) {
-      String caseName = nameResolver.fieldName(field.getOneofName()) + "Case_";
+      String caseName = "_" + nameResolver.fieldName(field.getOneofName()) + "Case_";
       String enumConst = field.getName().toUpperCase() + "Case_";
       w.block(
           "if (" + caseName + " == " + enumConst + ")",
@@ -421,10 +421,10 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
   }
 
   private void emitFieldCount(CodeWriter w, ProtoField field) {
-    String csField = "this." + nameResolver.fieldName(field.getName());
+    String csField = "this._" + nameResolver.fieldName(field.getName());
 
     if (field.isOneofMember()) {
-      String caseName = nameResolver.fieldName(field.getOneofName()) + "Case_";
+      String caseName = "_" + nameResolver.fieldName(field.getOneofName()) + "Case_";
       String enumConst = field.getName().toUpperCase() + "Case_";
       w.line("if (%s == %s) count++;", caseName, enumConst);
       return;
@@ -645,25 +645,27 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
         "private " + className + "(Builder builder)",
         () -> {
           for (ProtoField field : message.getFields()) {
+            String pvtName = "_" + nameResolver.fieldName(field.getName());
             String csName = nameResolver.fieldName(field.getName());
             if (field.isRepeated()) {
               w.line(
                   "this.%s = new List<%s>(builder.%s).AsReadOnly();",
-                  csName, elementType(field), csName);
+                  pvtName, elementType(field), csName);
             } else if (field.isMap()) {
               w.line(
                   "this.%s = new Dictionary<%s>(builder.%s);",
-                  csName, mapGenericArgs(field), csName);
+                  pvtName, mapGenericArgs(field), csName);
             } else {
-              w.line("this.%s = builder.%s;", csName, csName);
+              w.line("this.%s = builder.%s;", pvtName, csName);
             }
           }
           if (hasPresenceTrackedFields(message)) {
             w.line("this.presentFields_ = (bool[])builder.presentFields_.Clone();");
           }
           for (ProtoMessage.OneofGroup group : message.getOneofGroups()) {
-            String caseName = nameResolver.fieldName(group.name()) + "Case_";
-            w.line("this.%s = builder.%s;", caseName, caseName);
+            String pvtCase = "_" + nameResolver.fieldName(group.name()) + "Case_";
+            String builderCase = nameResolver.fieldName(group.name()) + "Case_";
+            w.line("this.%s = builder.%s;", pvtCase, builderCase);
           }
         });
   }
@@ -671,7 +673,7 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
   private void emitProperties(CodeWriter w, ProtoMessage message) {
     for (ProtoField field : message.getFields()) {
       String csType = typeMapper.languageType(field);
-      String csName = nameResolver.fieldName(field.getName());
+      String pvtName = "_" + nameResolver.fieldName(field.getName());
       String pascalName = CSharpNameResolver.snakeToPascal(field.getName());
 
       w.blankLine();
@@ -682,9 +684,9 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
         String msgType = simpleTypeName(field.getTypeReference());
         w.line(
             "public %s %s => this.%s ?? %s.GetDefaultInstance();",
-            csType, pascalName, csName, msgType);
+            csType, pascalName, pvtName, msgType);
       } else {
-        w.line("public %s %s => this.%s;", csType, pascalName, csName);
+        w.line("public %s %s => this.%s;", csType, pascalName, pvtName);
       }
 
       // Has method for message fields and presence-tracked fields
@@ -695,7 +697,7 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
               "public bool Has%s => this.presentFields_[%d];",
               pascalName, field.getArrayPosition());
         } else {
-          w.line("public bool Has%s => this.%s != null;", pascalName, csName);
+          w.line("public bool Has%s => this.%s != null;", pascalName, pvtName);
         }
       }
     }
@@ -704,11 +706,11 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
     for (ProtoMessage.OneofGroup group : message.getOneofGroups()) {
       String pascalOneof = CSharpNameResolver.snakeToPascal(group.name());
       String enumName = pascalOneof + "Case";
-      String caseName = nameResolver.fieldName(group.name()) + "Case_";
+      String pvtCase = "_" + nameResolver.fieldName(group.name()) + "Case_";
       w.blankLine();
       w.block(
           "public " + enumName + " Get" + pascalOneof + "Case()",
-          () -> w.line("return (%s)%s;", enumName, caseName));
+          () -> w.line("return (%s)%s;", enumName, pvtCase));
     }
   }
 
@@ -766,24 +768,26 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
               () -> {
                 for (ProtoField field : message.getFields()) {
                   String csName = nameResolver.fieldName(field.getName());
+                  String pvtName = "_" + csName;
                   if (field.isRepeated()) {
                     w.line(
                         "this.%s = new List<%s>(prototype.%s);",
-                        csName, elementType(field), csName);
+                        csName, elementType(field), pvtName);
                   } else if (field.isMap()) {
                     w.line(
                         "this.%s = new Dictionary<%s>(prototype.%s);",
-                        csName, mapGenericArgs(field), csName);
+                        csName, mapGenericArgs(field), pvtName);
                   } else {
-                    w.line("this.%s = prototype.%s;", csName, csName);
+                    w.line("this.%s = prototype.%s;", csName, pvtName);
                   }
                 }
                 if (hasPresenceTrackedFields(message)) {
                   w.line("this.presentFields_ = (bool[])prototype.presentFields_.Clone();");
                 }
                 for (ProtoMessage.OneofGroup group : message.getOneofGroups()) {
-                  String caseName = nameResolver.fieldName(group.name()) + "Case_";
-                  w.line("this.%s = prototype.%s;", caseName, caseName);
+                  String csCase = nameResolver.fieldName(group.name()) + "Case_";
+                  String pvtCase = "_" + csCase;
+                  w.line("this.%s = prototype.%s;", csCase, pvtCase);
                 }
               });
 
@@ -950,13 +954,13 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
           w.indent();
           for (int i = 0; i < message.getFields().size(); i++) {
             ProtoField field = message.getFields().get(i);
-            String csName = nameResolver.fieldName(field.getName());
+            String pvtName = "_" + nameResolver.fieldName(field.getName());
             String prefix = i == 0 ? "\"" : "\", ";
             boolean isLast = i == message.getFields().size() - 1;
             if (isLast) {
-              w.line("%s%s=\" + %s + \"}\";", prefix, field.getName(), csName);
+              w.line("%s%s=\" + %s + \"}\";", prefix, field.getName(), pvtName);
             } else {
-              w.line("%s%s=\" + %s +", prefix, field.getName(), csName);
+              w.line("%s%s=\" + %s +", prefix, field.getName(), pvtName);
             }
           }
           w.dedent();
@@ -978,14 +982,14 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
           StringBuilder sb = new StringBuilder("return ");
           for (int i = 0; i < message.getFields().size(); i++) {
             ProtoField field = message.getFields().get(i);
-            String csName = nameResolver.fieldName(field.getName());
+            String pvtName = "_" + nameResolver.fieldName(field.getName());
             if (i > 0) sb.append(" && ");
             if (isByteArrayField(field)) {
-              sb.append(String.format("this.%s.SequenceEqual(that.%s)", csName, csName));
+              sb.append(String.format("this.%s.SequenceEqual(that.%s)", pvtName, pvtName));
             } else if (isPrimitiveField(field)) {
-              sb.append(String.format("this.%s == that.%s", csName, csName));
+              sb.append(String.format("this.%s == that.%s", pvtName, pvtName));
             } else {
-              sb.append(String.format("object.Equals(this.%s, that.%s)", csName, csName));
+              sb.append(String.format("object.Equals(this.%s, that.%s)", pvtName, pvtName));
             }
           }
           sb.append(";");
@@ -1006,11 +1010,11 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
           w.indent();
           w.line("int hash = 17;");
           for (ProtoField field : message.getFields()) {
-            String csName = nameResolver.fieldName(field.getName());
+            String pvtName = "_" + nameResolver.fieldName(field.getName());
             if (isPrimitiveField(field)) {
-              w.line("hash = hash * 31 + %s.GetHashCode();", csName);
+              w.line("hash = hash * 31 + %s.GetHashCode();", pvtName);
             } else {
-              w.line("hash = hash * 31 + (%s != null ? %s.GetHashCode() : 0);", csName, csName);
+              w.line("hash = hash * 31 + (%s != null ? %s.GetHashCode() : 0);", pvtName, pvtName);
             }
           }
           w.line("return hash;");
@@ -1182,18 +1186,6 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
         .mapToInt(ProtoField::getArrayPosition)
         .max()
         .orElse(0);
-  }
-
-  private static String snakeToUpperSnake(String name) {
-    StringBuilder sb = new StringBuilder();
-    for (int i = 0; i < name.length(); i++) {
-      char c = name.charAt(i);
-      if (Character.isUpperCase(c) && i > 0 && name.charAt(i - 1) != '_') {
-        sb.append('_');
-      }
-      sb.append(Character.toUpperCase(c));
-    }
-    return sb.toString();
   }
 
   private String simpleTypeName(String protoFullName) {
