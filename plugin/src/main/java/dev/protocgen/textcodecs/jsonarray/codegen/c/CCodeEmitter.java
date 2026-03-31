@@ -48,7 +48,7 @@ public class CCodeEmitter {
 
   /** Generate the .h header file for a message. */
   public String emitHeader(ProtoMessage message, ProtoFile file) {
-    CodeWriter w = new CodeWriter();
+    CodeWriter w = new CodeWriter("  ");
     String pkg = nameResolver.resolvePackage(file);
     String typeName = nameResolver.qualifiedTypeName(pkg, message.getName());
     String funcPrefix = nameResolver.functionPrefix(pkg, message.getName());
@@ -134,7 +134,7 @@ public class CCodeEmitter {
 
   /** Generate the .h header file for a top-level enum. */
   public String emitTopLevelEnumHeader(ProtoEnum protoEnum, ProtoFile file) {
-    CodeWriter w = new CodeWriter();
+    CodeWriter w = new CodeWriter("  ");
     String pkg = nameResolver.resolvePackage(file);
     String guard = nameResolver.includeGuard(file, protoEnum.getName());
 
@@ -163,7 +163,7 @@ public class CCodeEmitter {
 
   /** Generate the .c source file for a message. */
   public String emitSource(ProtoMessage message, ProtoFile file) {
-    CodeWriter w = new CodeWriter();
+    CodeWriter w = new CodeWriter("  ");
     String pkg = nameResolver.resolvePackage(file);
     String typeName = nameResolver.qualifiedTypeName(pkg, message.getName());
     String funcPrefix = nameResolver.functionPrefix(pkg, message.getName());

@@ -150,7 +150,7 @@ public class CDeserializerGenerator {
         w.block(
             "if (cJSON_IsString(item) && item->valuestring)",
             () -> {
-              w.line("msg->%s = strdup(item->valuestring);", fieldName);
+              w.line("msg->%s = jsonarray_strdup(item->valuestring);", fieldName);
             });
         break;
       case TYPE_BYTES:
@@ -215,7 +215,7 @@ public class CDeserializerGenerator {
                 () -> {
                   w.line("cJSON* elem = cJSON_GetArrayItem(item, i);");
                   w.line(
-                      "msg->%s[i] = (elem && cJSON_IsString(elem) && elem->valuestring) ? strdup(elem->valuestring) : NULL;",
+                      "msg->%s[i] = (elem && cJSON_IsString(elem) && elem->valuestring) ? jsonarray_strdup(elem->valuestring) : NULL;",
                       fieldName);
                 });
           } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
@@ -264,7 +264,7 @@ public class CDeserializerGenerator {
             w.block(
                 "for (int i = 0; child != NULL; i++, child = child->next)",
                 () -> {
-                  w.line("msg->%s[i].key = strdup(child->string);", fieldName);
+                  w.line("msg->%s[i].key = jsonarray_strdup(child->string);", fieldName);
                   emitMapValueRead(w, field, fieldName + "[i].value", "child", funcPrefix);
                 });
           });
@@ -302,7 +302,7 @@ public class CDeserializerGenerator {
       w.line("msg->%s = (int)cJSON_GetNumberValue(%s);", target, nodeExpr);
     } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_STRING) {
       w.line(
-          "msg->%s = (%s && cJSON_IsString(%s) && %s->valuestring) ? strdup(%s->valuestring) : NULL;",
+          "msg->%s = (%s && cJSON_IsString(%s) && %s->valuestring) ? jsonarray_strdup(%s->valuestring) : NULL;",
           target, nodeExpr, nodeExpr, nodeExpr, nodeExpr);
     } else {
       w.line("msg->%s = %s;", target, scalarReadExpr(field.getMapValueType(), nodeExpr));
@@ -339,7 +339,7 @@ public class CDeserializerGenerator {
               + nodeExpr
               + ") && "
               + nodeExpr
-              + "->valuestring) ? strdup("
+              + "->valuestring) ? jsonarray_strdup("
               + nodeExpr
               + "->valuestring) : NULL";
       case TYPE_BYTES -> "NULL /* bytes decoded separately */";

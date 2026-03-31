@@ -82,7 +82,7 @@ public class PbtkCppGenerator implements LanguageGenerator {
   // ========================================================================
 
   private String emitMessage(ProtoMessage message, ProtoFile file) {
-    CodeWriter w = new CodeWriter();
+    CodeWriter w = new CodeWriter("  ");
 
     w.line(GENERATED_MARKER);
     w.blankLine();
@@ -138,7 +138,7 @@ public class PbtkCppGenerator implements LanguageGenerator {
   }
 
   private String emitTopLevelEnum(ProtoEnum protoEnum, ProtoFile file) {
-    CodeWriter w = new CodeWriter();
+    CodeWriter w = new CodeWriter("  ");
 
     w.line(GENERATED_MARKER);
     w.blankLine();

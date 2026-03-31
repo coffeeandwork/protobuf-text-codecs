@@ -15,10 +15,10 @@ extern "C" {
 #endif
 
 typedef struct {
-    char* street;
-    char* city;
-    char* state;
-    int32_t zip;
+  char* street;
+  char* city;
+  char* state;
+  int32_t zip;
 } example_Address;
 
 /* Serialization */

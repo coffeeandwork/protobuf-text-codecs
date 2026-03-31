@@ -97,7 +97,7 @@ public class PbtkCGenerator implements LanguageGenerator {
   // ========================================================================
 
   private String emitHeader(ProtoMessage message, ProtoFile file) {
-    CodeWriter w = new CodeWriter();
+    CodeWriter w = new CodeWriter("  ");
     String pkg = nameResolver.resolvePackage(file);
     String typeName = nameResolver.qualifiedTypeName(pkg, message.getName());
     String funcPrefix = nameResolver.functionPrefix(pkg, message.getName());
@@ -115,6 +115,7 @@ public class PbtkCGenerator implements LanguageGenerator {
     w.line("#include <stdlib.h>");
     w.line("#include <string.h>");
     w.line("#include <stdio.h>");
+    w.line("#include <inttypes.h>");
     w.blankLine();
 
     // Cross-file includes for referenced message/enum types
@@ -184,7 +185,7 @@ public class PbtkCGenerator implements LanguageGenerator {
   }
 
   private String emitTopLevelEnumHeader(ProtoEnum protoEnum, ProtoFile file) {
-    CodeWriter w = new CodeWriter();
+    CodeWriter w = new CodeWriter("  ");
     String pkg = nameResolver.resolvePackage(file);
     String guard = nameResolver.includeGuard(file, protoEnum.getName()) + "_PBTK";
 
@@ -214,7 +215,7 @@ public class PbtkCGenerator implements LanguageGenerator {
   // ========================================================================
 
   private String emitSource(ProtoMessage message, ProtoFile file) {
-    CodeWriter w = new CodeWriter();
+    CodeWriter w = new CodeWriter("  ");
     String pkg = nameResolver.resolvePackage(file);
     String typeName = nameResolver.qualifiedTypeName(pkg, message.getName());
     String funcPrefix = nameResolver.functionPrefix(pkg, message.getName());
@@ -431,11 +432,13 @@ public class PbtkCGenerator implements LanguageGenerator {
   }
 
   private void emitStringBufferHelper(CodeWriter w) {
+    w.line("#define PBTK_BUF_INITIAL_CAP 256");
+    w.blankLine();
     w.line("typedef struct { char* data; size_t len; size_t cap; } pbtk_buf_t;");
     w.blankLine();
     w.line("static void pbtk_buf_init(pbtk_buf_t* buf) {");
     w.indent();
-    w.line("buf->cap = 256;");
+    w.line("buf->cap = PBTK_BUF_INITIAL_CAP;");
     w.line("buf->data = (char*)malloc(buf->cap);");
     w.line("buf->len = 0;");
     w.line("if (buf->data) buf->data[0] = '\\0';");
@@ -723,25 +726,25 @@ public class PbtkCGenerator implements LanguageGenerator {
       CodeWriter w, ProtoField field, String accessor, int fieldNum, String funcPrefix) {
     String fieldName = nameResolver.fieldName(field.getName());
     w.block(
-        "for (size_t __i = 0; __i < msg->" + fieldName + "_count; __i++)",
+        "for (size_t pb_i = 0; pb_i < msg->" + fieldName + "_count; pb_i++)",
         () -> {
           if (field.getKind() == ProtoField.FieldKind.MESSAGE
               || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
             String refPrefix = nameResolver.resolveTypeFunctionPrefix(field.getTypeReference());
             w.block(
-                "if (" + accessor + "[__i])",
+                "if (" + accessor + "[pb_i])",
                 () -> {
                   w.line("pbtk_buf_append(buf, \"!%dm\");", fieldNum);
                   w.line(
-                      "pbtk_buf_append_int(buf, %s_count_pbtk_fields(%s[__i]));",
+                      "pbtk_buf_append_int(buf, %s_count_pbtk_fields(%s[pb_i]));",
                       refPrefix, accessor);
-                  w.line("%s_append_pbtk_fields(buf, %s[__i]);", refPrefix, accessor);
+                  w.line("%s_append_pbtk_fields(buf, %s[pb_i]);", refPrefix, accessor);
                 });
           } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
             w.line("pbtk_buf_append(buf, \"!%de\");", fieldNum);
-            w.line("pbtk_buf_append_int(buf, (int64_t)%s[__i]);", accessor);
+            w.line("pbtk_buf_append_int(buf, (int64_t)%s[pb_i]);", accessor);
           } else {
-            emitScalarElementAppend(w, field, accessor + "[__i]", fieldNum, fieldName);
+            emitScalarElementAppend(w, field, accessor + "[pb_i]", fieldNum, fieldName);
           }
         });
   }
@@ -768,7 +771,7 @@ public class PbtkCGenerator implements LanguageGenerator {
       case TYPE_BYTES:
         w.line("pbtk_buf_append(buf, \"!%d%s\");", fieldNum, typeChar);
         w.line(
-            "char* b64_%s = pbtk_base64_encode(%s, msg->%s_lengths[__i]);",
+            "char* b64_%s = pbtk_base64_encode(%s, msg->%s_lengths[pb_i]);",
             fieldName, elemAccessor, fieldName);
         w.line(
             "if (b64_%s) { pbtk_buf_append(buf, b64_%s); free(b64_%s); }",
@@ -800,12 +803,12 @@ public class PbtkCGenerator implements LanguageGenerator {
       CodeWriter w, ProtoField field, String accessor, int fieldNum, String funcPrefix) {
     String fieldName = nameResolver.fieldName(field.getName());
     w.block(
-        "for (size_t __i = 0; __i < msg->" + fieldName + "_count; __i++)",
+        "for (size_t pb_i = 0; pb_i < msg->" + fieldName + "_count; pb_i++)",
         () -> {
           w.line("pbtk_buf_append(buf, \"!%dm2\");", fieldNum);
           // Key (field 1)
           String keyTypeChar = pbtkTypeChar(field.getMapKeyType());
-          String keyAccessor = accessor + "[__i].key";
+          String keyAccessor = accessor + "[pb_i].key";
           if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_STRING) {
             w.line("char* kenc = pbtk_url_encode(%s);", keyAccessor);
             w.line("pbtk_buf_append(buf, \"!1%s\");", keyTypeChar);
@@ -818,7 +821,7 @@ public class PbtkCGenerator implements LanguageGenerator {
             w.line("pbtk_buf_append_int(buf, (int64_t)%s);", keyAccessor);
           }
           // Value (field 2)
-          String valAccessor = accessor + "[__i].value";
+          String valAccessor = accessor + "[pb_i].value";
           if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE) {
             String refPrefix =
                 nameResolver.resolveTypeFunctionPrefix(field.getMapValueTypeReference());
@@ -896,7 +899,7 @@ public class PbtkCGenerator implements LanguageGenerator {
                 w.line("if (num_end > 15) num_end = 15;");
                 w.line("memcpy(field_num_str, token, num_end);");
                 w.line("field_num_str[num_end] = '\\0';");
-                w.line("int field_num = atoi(field_num_str);");
+                w.line("int field_num = (int)strtol(field_num_str, NULL, 10);");
                 w.line("const char* value = token + num_end + 1;");
                 w.blankLine();
                 w.block(
@@ -970,7 +973,7 @@ public class PbtkCGenerator implements LanguageGenerator {
     } else {
       target = "obj->" + fieldName;
     }
-    w.line("%s = atoi(value);", target);
+    w.line("%s = (int)strtol(value, NULL, 10);", target);
     if (field.isProto3Optional()) {
       w.line("obj->has_%s = true;", fieldName);
     }
@@ -994,7 +997,7 @@ public class PbtkCGenerator implements LanguageGenerator {
     } else {
       target = "obj->" + fieldName;
     }
-    w.line("int sub_count = atoi(value);");
+    w.line("int sub_count = (int)strtol(value, NULL, 10);");
     w.line("(*offset)++;");
     w.line("%s = %s_parse_pbtk_tokens(tokens, sub_count, offset);", target, refPrefix);
     w.line("(*offset)--;"); // compensate for outer offset++
@@ -1016,20 +1019,20 @@ public class PbtkCGenerator implements LanguageGenerator {
         || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
       String refType = nameResolver.resolveTypeReference(field.getTypeReference(), null);
       String refPrefix = nameResolver.resolveTypeFunctionPrefix(field.getTypeReference());
-      w.line("int sub_count = atoi(value);");
+      w.line("int sub_count = (int)strtol(value, NULL, 10);");
       w.line("(*offset)++;");
-      w.line("%s* __elem = %s_parse_pbtk_tokens(tokens, sub_count, offset);", refType, refPrefix);
+      w.line("%s* pb_elem = %s_parse_pbtk_tokens(tokens, sub_count, offset);", refType, refPrefix);
       w.line("(*offset)--;");
       w.line(
           "obj->%s = (%s**)realloc(obj->%s, sizeof(%s*) * (obj->%s_count + 1));",
           fieldName, refType, fieldName, refType, fieldName);
-      w.line("obj->%s[obj->%s_count++] = __elem;", fieldName, fieldName);
+      w.line("obj->%s[obj->%s_count++] = pb_elem;", fieldName, fieldName);
     } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
       String enumType = nameResolver.resolveTypeReference(field.getTypeReference(), null);
       w.line(
           "obj->%s = (%s*)realloc(obj->%s, sizeof(%s) * (obj->%s_count + 1));",
           fieldName, enumType, fieldName, enumType, fieldName);
-      w.line("obj->%s[obj->%s_count++] = atoi(value);", fieldName, fieldName);
+      w.line("obj->%s[obj->%s_count++] = (int)strtol(value, NULL, 10);", fieldName, fieldName);
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_STRING) {
       w.line(
           "obj->%s = (char**)realloc(obj->%s, sizeof(char*) * (obj->%s_count + 1));",
@@ -1061,19 +1064,19 @@ public class PbtkCGenerator implements LanguageGenerator {
     String fieldName = nameResolver.fieldName(field.getName());
     String entryType = typeMapper.qualifiedMapEntryTypeName(funcPrefix, field);
 
-    w.line("int entry_count = atoi(value);");
+    w.line("int entry_count = (int)strtol(value, NULL, 10);");
     w.line("(*offset)++;");
     // Parse key and value from the next entry_count tokens
     w.line("%s entry;", entryType);
     w.line("memset(&entry, 0, sizeof(entry));");
     w.block(
-        "for (int __mi = 0; __mi < entry_count && tokens[*offset]; __mi++)",
+        "for (int pb_mi = 0; pb_mi < entry_count && tokens[*offset]; pb_mi++)",
         () -> {
           w.line("const char* map_token = tokens[*offset];");
           w.line("int mne = 0;");
           w.line("while (map_token[mne] >= '0' && map_token[mne] <= '9') mne++;");
           w.line("if (mne == 0 || map_token[mne] == '\\0') { (*offset)++; continue; }");
-          w.line("int mfn = atoi(map_token);");
+          w.line("int mfn = (int)strtol(map_token, NULL, 10);");
           w.line("const char* mval = map_token + mne + 1;");
           w.block(
               "if (mfn == 1)",
@@ -1084,7 +1087,7 @@ public class PbtkCGenerator implements LanguageGenerator {
                 } else if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_BOOL) {
                   w.line("entry.key = (mval[0] == '1');");
                 } else {
-                  w.line("entry.key = atol(mval);");
+                  w.line("entry.key = strtoll(mval, NULL, 10);");
                 }
               });
           w.block(
@@ -1094,20 +1097,20 @@ public class PbtkCGenerator implements LanguageGenerator {
                 if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE) {
                   String refPrefix =
                       nameResolver.resolveTypeFunctionPrefix(field.getMapValueTypeReference());
-                  w.line("int val_sub_count = atoi(mval);");
+                  w.line("int val_sub_count = (int)strtol(mval, NULL, 10);");
                   w.line("(*offset)++;");
                   w.line(
                       "entry.value = %s_parse_pbtk_tokens(tokens, val_sub_count, offset);",
                       refPrefix);
                   w.line("(*offset)--;");
                 } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
-                  w.line("entry.value = atoi(mval);");
+                  w.line("entry.value = (int)strtol(mval, NULL, 10);");
                 } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_STRING) {
                   w.line("entry.value = pbtk_url_decode(mval);");
                 } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BOOL) {
                   w.line("entry.value = (mval[0] == '1');");
                 } else {
-                  w.line("entry.value = atol(mval);");
+                  w.line("entry.value = strtoll(mval, NULL, 10);");
                 }
               });
           w.line("(*offset)++;");
@@ -1589,7 +1592,7 @@ public class PbtkCGenerator implements LanguageGenerator {
       case TYPE_FLOAT -> "(float)strtod(" + valueVar + ", NULL)";
       case TYPE_INT64, TYPE_SINT64, TYPE_SFIXED64 -> "strtoll(" + valueVar + ", NULL, 10)";
       case TYPE_UINT64, TYPE_FIXED64 -> "strtoull(" + valueVar + ", NULL, 10)";
-      case TYPE_INT32, TYPE_SINT32, TYPE_SFIXED32 -> "(int32_t)atoi(" + valueVar + ")";
+      case TYPE_INT32, TYPE_SINT32, TYPE_SFIXED32 -> "(int32_t)strtol(" + valueVar + ", NULL, 10)";
       case TYPE_UINT32, TYPE_FIXED32 -> "(uint32_t)strtoul(" + valueVar + ", NULL, 10)";
       case TYPE_BOOL -> "(" + valueVar + "[0] == '1')";
       case TYPE_STRING -> "pbtk_url_decode(" + valueVar + ")";

@@ -57,6 +57,40 @@ The project uses [Spotless](https://github.com/diffplug/spotless) with **Google 
 
 Always run `./gradlew spotlessApply` before committing.
 
+## Code Style
+
+Generated code should follow the target language's idiomatic style guide so it integrates naturally into user projects.
+
+**Plugin source code (Java):**
+- [Google Java Style Guide](https://google.github.io/styleguide/javaguide.html) -- enforced by Spotless with Google Java Format
+
+**Generated code -- languages with Google style guides:**
+
+| Language | Style Guide |
+|----------|-------------|
+| Java | [Google Java Style Guide](https://google.github.io/styleguide/javaguide.html) |
+| Python | [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html) |
+| C/C++ | [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html) |
+| JavaScript | [Google JavaScript Style Guide](https://google.github.io/styleguide/jsguide.html) |
+| TypeScript | [Google TypeScript Style Guide](https://google.github.io/styleguide/tsguide.html) |
+| Go | [Google Go Style Guide](https://google.github.io/styleguide/go/) |
+| Swift | [Google Swift Style Guide](https://google.github.io/swift/) |
+| Objective-C | [Google Objective-C Style Guide](https://google.github.io/styleguide/objcguide.html) |
+| Shell scripts | [Google Shell Style Guide](https://google.github.io/styleguide/shellguide.html) |
+
+**Generated code -- languages using community standards:**
+
+| Language | Style Guide |
+|----------|-------------|
+| Kotlin | [Kotlin Coding Conventions](https://kotlinlang.org/docs/coding-conventions.html) |
+| C# | [Microsoft C# Coding Conventions](https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/coding-conventions) |
+| Dart | [Effective Dart Style](https://dart.dev/effective-dart/style) |
+| PHP | [PSR-12 Extended Coding Style](https://www.php-fig.org/psr/psr-12/) |
+| Ruby | [Ruby Style Guide](https://rubystyle.guide/) |
+| Rust | [Rust API Guidelines](https://rust-lang.github.io/api-guidelines/) |
+| Zig | [Zig Style Guide](https://ziglang.org/documentation/master/#style-guide) |
+| Perl | [perlstyle](https://perldoc.perl.org/perlstyle) |
+
 ## Testing with protoc
 
 To manually test the plugins with `protoc`:

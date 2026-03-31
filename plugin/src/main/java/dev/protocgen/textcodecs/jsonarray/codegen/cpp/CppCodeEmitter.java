@@ -46,7 +46,7 @@ public class CppCodeEmitter {
 
   /** Generate a complete C++ header file for a message. */
   public String emitMessage(ProtoMessage message, ProtoFile file) {
-    CodeWriter w = new CodeWriter();
+    CodeWriter w = new CodeWriter("  ");
 
     emitHeaderPreamble(w, message, file);
 
@@ -102,7 +102,7 @@ public class CppCodeEmitter {
 
   /** Generate a complete C++ header file for a top-level enum. */
   public String emitTopLevelEnum(ProtoEnum protoEnum, ProtoFile file) {
-    CodeWriter w = new CodeWriter();
+    CodeWriter w = new CodeWriter("  ");
 
     w.line("#pragma once");
     w.blankLine();
