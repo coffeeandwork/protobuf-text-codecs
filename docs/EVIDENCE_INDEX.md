@@ -121,7 +121,7 @@ LIMITATIONS:
 | PbtkSafetySecurityTest | `plugin/src/test/java/.../pbtkurl/PbtkSafetySecurityTest.java` | 70 | SR-001-SR-004, SEC-001-SEC-004 (pbtk) |
 | SchemaEvolutionTest | `plugin/src/test/java/.../jsonarray/SchemaEvolutionTest.java` | 119 | FR-001, FR-002, SR-001 |
 | JavaSchemaEvolutionTest | `plugin/src/test/java/.../jsonarray/JavaSchemaEvolutionTest.java` | 11 | FR-001, FR-002, SR-001 |
-| | | **Total: 1,059** | |
+| | | **Total: 1,066** | |
 
 Note: 15 `@ParameterizedTest` methods x 16 languages = 240 expanded invocations for MultiLanguageCodeGenTest.
 
