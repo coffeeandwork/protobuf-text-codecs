@@ -94,7 +94,7 @@ public class CSharpTypeMapper implements TypeMapper {
       return formatSchemaDefault(field.getProtoType(), schemaDefault);
     }
     if (field.getKind() == ProtoField.FieldKind.ENUM) {
-      return simpleTypeName(field.getTypeReference()) + ".ForNumber(0)";
+      return "(" + simpleTypeName(field.getTypeReference()) + ")0";
     }
     return scalarDefault(field.getProtoType());
   }
@@ -145,13 +145,19 @@ public class CSharpTypeMapper implements TypeMapper {
         }
         yield (defaultValue.contains(".") ? defaultValue : defaultValue + ".0") + "f";
       }
-      case TYPE_INT64, TYPE_SINT64, TYPE_SFIXED64, TYPE_UINT64, TYPE_FIXED64 -> {
-        // Validate numeric format to prevent code injection (VULN-003)
+      case TYPE_INT64, TYPE_SINT64, TYPE_SFIXED64 -> {
         if (!defaultValue.matches("-?[0-9]+")) {
           throw new IllegalArgumentException(
               "Integer default value '" + defaultValue + "' is not a valid number");
         }
         yield defaultValue + "L";
+      }
+      case TYPE_UINT64, TYPE_FIXED64 -> {
+        if (!defaultValue.matches("[0-9]+")) {
+          throw new IllegalArgumentException(
+              "Unsigned integer default value '" + defaultValue + "' is not a valid number");
+        }
+        yield defaultValue + "UL";
       }
       case TYPE_BYTES -> {
         if (defaultValue.isEmpty()) {

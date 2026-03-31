@@ -118,7 +118,7 @@ public class CSharpDeserializerGenerator {
 
   private void emitEnumDeserialize(CodeWriter w, ProtoField field, String setter, String elemExpr) {
     String enumType = simpleTypeName(field.getTypeReference());
-    w.line("%s(%s.ForNumber(%s.GetInt32()));", setter, enumType, elemExpr);
+    w.line("%s((%s)%s.GetInt32());", setter, enumType, elemExpr);
   }
 
   private void emitMessageDeserialize(
@@ -144,7 +144,7 @@ public class CSharpDeserializerGenerator {
                 listVar, elemVar, msgType, elemVar);
           } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
             String enumType = simpleTypeName(field.getTypeReference());
-            w.line("%s.Add(%s.ForNumber(%s.GetInt32()));", listVar, enumType, elemVar);
+            w.line("%s.Add((%s)%s.GetInt32());", listVar, enumType, elemVar);
           } else {
             String readExpr = scalarReadExpr(field.getProtoType(), elemVar);
             w.line("%s.Add(%s);", listVar, readExpr);
@@ -225,7 +225,7 @@ public class CSharpDeserializerGenerator {
     }
     if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
       String enumType = simpleTypeName(field.getMapValueTypeReference());
-      return enumType + ".ForNumber(" + elemExpr + ".GetInt32())";
+      return "(" + enumType + ")" + elemExpr + ".GetInt32()";
     }
     return scalarReadExpr(field.getMapValueType(), elemExpr);
   }

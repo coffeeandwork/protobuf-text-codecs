@@ -150,9 +150,8 @@ public class PbtkPluginRunner {
                   + path
                   + ". Paths must be relative, must not contain '..', and must not contain null bytes.");
         }
+        response.addFile(genFile.toBuilder().setName(path).build());
       }
-
-      response.addAllFile(generatedFiles);
     }
 
     return response.build();

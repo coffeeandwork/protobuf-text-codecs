@@ -155,7 +155,7 @@ public class PluginRunner {
 
       List<CodeGeneratorResponse.File> generatedFiles = processor.process(file);
 
-      // Validate output paths against path traversal
+      // Validate and normalize output paths against path traversal
       for (CodeGeneratorResponse.File genFile : generatedFiles) {
         String path = genFile.getName();
         // Normalize leading slash from empty package (e.g., "/Msg.java" → "Msg.java")
@@ -168,9 +168,9 @@ public class PluginRunner {
                   + path
                   + ". Paths must be relative, must not contain '..', and must not contain null bytes.");
         }
+        // Use the normalized path, not the original
+        response.addFile(genFile.toBuilder().setName(path).build());
       }
-
-      response.addAllFile(generatedFiles);
     }
 
     return response.build();
