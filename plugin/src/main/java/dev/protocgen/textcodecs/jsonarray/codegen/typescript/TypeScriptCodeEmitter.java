@@ -52,10 +52,24 @@ public class TypeScriptCodeEmitter extends JavaScriptCodeEmitter {
 
     emitFileHeader(w, file);
 
-    // Collect referenced types — these will be emitted as lazy imports inside methods
+    // Collect referenced types — emitted as top-level ES module imports
     Set<String> importNames = new LinkedHashSet<>();
     collectReferencedTypeNames(message, file, importNames);
-    List<String> lazyImportNames = List.copyOf(importNames);
+    List<String> importNameList = List.copyOf(importNames);
+
+    // Emit top-level imports
+    for (String name : importNameList) {
+      w.line(formatImport(name));
+    }
+    if (!importNameList.isEmpty()) {
+      w.blankLine();
+    }
+
+    // Emit base64 helpers if needed
+    if (messageHasBytesFields(message)) {
+      emitBase64Helpers(w);
+      w.blankLine();
+    }
 
     // Emit nested enums as const objects before the class
     for (ProtoEnum protoEnum : message.getEnums()) {
@@ -69,8 +83,8 @@ public class TypeScriptCodeEmitter extends JavaScriptCodeEmitter {
       w.blankLine();
     }
 
-    // Main class
-    emitMessageClass(w, message, file, lazyImportNames);
+    // Main class — no lazy imports needed, imports are at top level
+    emitMessageClass(w, message, file, List.of());
 
     // Export
     w.blankLine();
@@ -98,13 +112,12 @@ public class TypeScriptCodeEmitter extends JavaScriptCodeEmitter {
 
   @Override
   protected String formatImport(String simpleName) {
-    return String.format("import { %s } from './%s';", simpleName, simpleName);
+    return String.format("import { %s } from './%s.js';", simpleName, simpleName);
   }
 
   @Override
   public String formatLazyImport(String simpleName) {
-    // Use require() inside method body for both JS and TS to avoid circular import issues
-    return String.format("const { %s } = require('./%s');", simpleName, simpleName);
+    return formatImport(simpleName);
   }
 
   @Override
@@ -300,5 +313,34 @@ public class TypeScriptCodeEmitter extends JavaScriptCodeEmitter {
     }
 
     w.line("export { %s };", exports.toString());
+  }
+
+  @Override
+  protected void emitBase64Helpers(CodeWriter w) {
+    w.block(
+        "function _base64Encode(bytes: Uint8Array): string",
+        () -> {
+          w.line("let binary: string = '';");
+          w.line("for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);");
+          w.line("if (typeof btoa === 'function') return btoa(binary);");
+          w.line("if (typeof Buffer === 'function') return Buffer.from(bytes).toString('base64');");
+          w.line("throw new Error('No base64 encoder available');");
+        });
+    w.blankLine();
+    w.block(
+        "function _base64Decode(str: string): Uint8Array",
+        () -> {
+          w.block(
+              "if (typeof atob === 'function')",
+              () -> {
+                w.line("const binary: string = atob(str);");
+                w.line("const bytes: Uint8Array = new Uint8Array(binary.length);");
+                w.line("for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);");
+                w.line("return bytes;");
+              });
+          w.line(
+              "if (typeof Buffer === 'function') return new Uint8Array(Buffer.from(str, 'base64'));");
+          w.line("throw new Error('No base64 decoder available');");
+        });
   }
 }

@@ -245,12 +245,9 @@ public class TypeScriptSerializerGenerator {
     }
   }
 
+  /** Emit base64 encoding for bytes fields using the file-level _base64Encode helper. */
   private void emitBytesEncode(CodeWriter w, String fieldExpr, String pushTemplate) {
-    String encodeExpr =
-        String.format(
-            "(typeof Buffer !== 'undefined' ? Buffer.from(%s).toString('base64') "
-                + ": (() => { let binary = ''; for (let i = 0; i < %s.length; i++) binary += String.fromCharCode((%s as unknown as number[])[i]); return btoa(binary); })())",
-            fieldExpr, fieldExpr, fieldExpr);
+    String encodeExpr = String.format("_base64Encode(%s)", fieldExpr);
     w.line(pushTemplate, encodeExpr);
   }
 

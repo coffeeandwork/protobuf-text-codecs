@@ -197,12 +197,9 @@ public class TypeScriptDeserializerGenerator {
     return scalarReadExpr(field.getMapValueType(), nodeExpr);
   }
 
+  /** Generate a base64 decode expression for bytes fields using the file-level helper. */
   private String bytesDecodeExpr(String nodeExpr) {
-    return "(typeof Buffer !== 'undefined' ? new Uint8Array(Buffer.from("
-        + nodeExpr
-        + " as string, 'base64')) : new Uint8Array(atob("
-        + nodeExpr
-        + " as string).split('').map((c: string) => c.charCodeAt(0))))";
+    return "_base64Decode(" + nodeExpr + " as string)";
   }
 
   private String elementTsType(ProtoField field) {

@@ -83,9 +83,24 @@ public class PbtkTypeScriptGenerator implements LanguageGenerator {
 
     emitFileHeader(w, file);
 
+    // Collect referenced types — emitted as top-level ES module imports
     Set<String> importNames = new LinkedHashSet<>();
     collectReferencedTypeNames(message, file, importNames);
-    List<String> lazyImportNames = List.copyOf(importNames);
+    List<String> importNameList = List.copyOf(importNames);
+
+    // Emit top-level imports
+    for (String name : importNameList) {
+      w.line("import { %s } from './%s.js';", name, name);
+    }
+    if (!importNameList.isEmpty()) {
+      w.blankLine();
+    }
+
+    // Emit base64 helpers if needed
+    if (messageHasBytesFields(message)) {
+      emitBase64Helpers(w);
+      w.blankLine();
+    }
 
     // Nested enums
     for (ProtoEnum protoEnum : message.getEnums()) {
@@ -99,8 +114,8 @@ public class PbtkTypeScriptGenerator implements LanguageGenerator {
       w.blankLine();
     }
 
-    // Main class
-    emitMessageClass(w, message, file, lazyImportNames);
+    // Main class — no lazy imports needed, imports are at top level
+    emitMessageClass(w, message, file, List.of());
 
     // Exports
     w.blankLine();
@@ -358,9 +373,7 @@ public class PbtkTypeScriptGenerator implements LanguageGenerator {
         w.line("parts.push('!%d%s' + (%s ? '1' : '0'));", fieldNum, typeChar, jsField);
         break;
       case TYPE_BYTES:
-        w.line(
-            "parts.push('!%d%s' + (typeof Buffer !== 'undefined' ? Buffer.from(%s).toString('base64') : btoa(String.fromCharCode.apply(null, %s as unknown as number[]))));",
-            fieldNum, typeChar, jsField, jsField);
+        w.line("parts.push('!%d%s' + _base64Encode(%s));", fieldNum, typeChar, jsField);
         break;
       case TYPE_STRING:
         w.line("parts.push('!%d%s' + encodeURIComponent(%s));", fieldNum, typeChar, jsField);
@@ -439,8 +452,7 @@ public class PbtkTypeScriptGenerator implements LanguageGenerator {
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_STRING) {
             w.line("parts.push('!2s' + encodeURIComponent(String(__val)));");
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
-            w.line(
-                "parts.push('!2z' + (typeof Buffer !== 'undefined' ? Buffer.from(__val as Uint8Array).toString('base64') : btoa(String.fromCharCode.apply(null, __val as unknown as number[]))));");
+            w.line("parts.push('!2z' + _base64Encode(__val as Uint8Array));");
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BOOL) {
             w.line("parts.push('!2b' + (__val ? '1' : '0'));");
           } else {
@@ -462,11 +474,6 @@ public class PbtkTypeScriptGenerator implements LanguageGenerator {
         "private static _parsePbtkTokens(tokens: string[], fieldCount: number, offset: {v: number}): "
             + className,
         () -> {
-          // Lazy imports
-          for (String name : lazyImportNames) {
-            w.line("const { %s } = require('./%s');", name, name);
-          }
-
           w.line("const obj = new %s();", className);
           w.line("let consumed: number = 0;");
           w.block(
@@ -743,6 +750,53 @@ public class PbtkTypeScriptGenerator implements LanguageGenerator {
     return message.getFields().stream().anyMatch(ProtoField::isProto3Optional);
   }
 
+  /** Check if any field in the message (or nested messages) uses bytes type. */
+  private boolean messageHasBytesFields(ProtoMessage message) {
+    for (ProtoField field : message.getFields()) {
+      if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+        return true;
+      }
+      if (field.isMap() && field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+        return true;
+      }
+    }
+    for (ProtoMessage nested : message.getNestedMessages()) {
+      if (messageHasBytesFields(nested)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** Emit file-level base64 encode/decode helper functions with type annotations. */
+  private void emitBase64Helpers(CodeWriter w) {
+    w.block(
+        "function _base64Encode(bytes: Uint8Array): string",
+        () -> {
+          w.line("let binary: string = '';");
+          w.line("for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);");
+          w.line("if (typeof btoa === 'function') return btoa(binary);");
+          w.line("if (typeof Buffer === 'function') return Buffer.from(bytes).toString('base64');");
+          w.line("throw new Error('No base64 encoder available');");
+        });
+    w.blankLine();
+    w.block(
+        "function _base64Decode(str: string): Uint8Array",
+        () -> {
+          w.block(
+              "if (typeof atob === 'function')",
+              () -> {
+                w.line("const binary: string = atob(str);");
+                w.line("const bytes: Uint8Array = new Uint8Array(binary.length);");
+                w.line("for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);");
+                w.line("return bytes;");
+              });
+          w.line(
+              "if (typeof Buffer === 'function') return new Uint8Array(Buffer.from(str, 'base64'));");
+          w.line("throw new Error('No base64 decoder available');");
+        });
+  }
+
   private String tsScalarReadExpr(FieldDescriptorProto.Type type, String valueVar) {
     return switch (type) {
       case TYPE_DOUBLE, TYPE_FLOAT -> "Number(" + valueVar + ")";
@@ -752,12 +806,7 @@ public class PbtkTypeScriptGenerator implements LanguageGenerator {
           "parseInt(" + valueVar + ", 10)";
       case TYPE_BOOL -> valueVar + " === '1'";
       case TYPE_STRING -> "decodeURIComponent(" + valueVar + ")";
-      case TYPE_BYTES ->
-          "(typeof Buffer !== 'undefined' ? new Uint8Array(Buffer.from("
-              + valueVar
-              + ", 'base64')) : new Uint8Array(atob("
-              + valueVar
-              + ").split('').map((c: string) => c.charCodeAt(0))))";
+      case TYPE_BYTES -> "_base64Decode(" + valueVar + ")";
       default -> valueVar;
     };
   }
