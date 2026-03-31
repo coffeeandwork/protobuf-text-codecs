@@ -17,6 +17,7 @@ package dev.protocgen.textcodecs.jsonarray.codegen.cpp;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
+import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoMessage;
 
@@ -109,11 +110,7 @@ public class CppSerializerGenerator {
   }
 
   private static boolean is64BitType(FieldDescriptorProto.Type type) {
-    return type == FieldDescriptorProto.Type.TYPE_INT64
-        || type == FieldDescriptorProto.Type.TYPE_SINT64
-        || type == FieldDescriptorProto.Type.TYPE_SFIXED64
-        || type == FieldDescriptorProto.Type.TYPE_UINT64
-        || type == FieldDescriptorProto.Type.TYPE_FIXED64;
+    return ProtoTypeUtil.isInt64Type(type);
   }
 
   private void emitScalarSerialize(CodeWriter w, ProtoField field, String cppField) {

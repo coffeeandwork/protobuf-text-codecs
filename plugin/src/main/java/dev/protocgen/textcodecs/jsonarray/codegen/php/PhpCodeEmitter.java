@@ -16,6 +16,7 @@
 package dev.protocgen.textcodecs.jsonarray.codegen.php;
 
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
+import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoEnum;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoFile;
@@ -452,8 +453,7 @@ public class PhpCodeEmitter {
   }
 
   private String simpleTypeName(String protoFullName) {
-    if (protoFullName == null) return "mixed";
-    int lastDot = protoFullName.lastIndexOf('.');
-    return lastDot >= 0 ? protoFullName.substring(lastDot + 1) : protoFullName;
+    String simple = ProtoTypeUtil.simpleTypeName(protoFullName);
+    return simple != null ? simple : "mixed";
   }
 }

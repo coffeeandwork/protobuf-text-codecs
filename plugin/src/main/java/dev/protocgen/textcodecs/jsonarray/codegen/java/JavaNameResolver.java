@@ -17,6 +17,7 @@ package dev.protocgen.textcodecs.jsonarray.codegen.java;
 
 import dev.protocgen.textcodecs.jsonarray.codegen.KeywordUtil;
 import dev.protocgen.textcodecs.jsonarray.codegen.NameResolver;
+import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoFile;
 
 /** Converts proto names to idiomatic Java names. */
@@ -96,9 +97,8 @@ public class JavaNameResolver implements NameResolver {
 
   /** Extract the simple (unqualified) type name from a proto full name. */
   public static String simpleTypeName(String protoFullName) {
-    if (protoFullName == null) return "Object";
-    int lastDot = protoFullName.lastIndexOf('.');
-    return lastDot >= 0 ? protoFullName.substring(lastDot + 1) : protoFullName;
+    String simple = ProtoTypeUtil.simpleTypeName(protoFullName);
+    return simple != null ? simple : "Object";
   }
 
   /** Convert snake_case to camelCase. */

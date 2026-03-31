@@ -19,6 +19,7 @@ import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse;
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
 import dev.protocgen.textcodecs.jsonarray.codegen.LanguageGenerator;
+import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.codegen.php.PhpNameResolver;
 import dev.protocgen.textcodecs.jsonarray.codegen.php.PhpTypeMapper;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoEnum;
@@ -977,9 +978,8 @@ public class PbtkPhpGenerator implements LanguageGenerator {
   }
 
   private String simpleTypeName(String protoFullName) {
-    if (protoFullName == null) return "mixed";
-    int lastDot = protoFullName.lastIndexOf('.');
-    return lastDot >= 0 ? protoFullName.substring(lastDot + 1) : protoFullName;
+    String simple = ProtoTypeUtil.simpleTypeName(protoFullName);
+    return simple != null ? simple : "mixed";
   }
 
   // ---------------------------------------------------------------------------

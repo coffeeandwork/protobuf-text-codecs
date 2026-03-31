@@ -17,6 +17,7 @@ package dev.protocgen.textcodecs.jsonarray.codegen.rust;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
+import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoMessage;
 
@@ -250,8 +251,7 @@ public class RustDeserializerGenerator {
   }
 
   private String simpleTypeName(String protoFullName) {
-    if (protoFullName == null) return "Value";
-    int lastDot = protoFullName.lastIndexOf('.');
-    return lastDot >= 0 ? protoFullName.substring(lastDot + 1) : protoFullName;
+    String simple = ProtoTypeUtil.simpleTypeName(protoFullName);
+    return simple != null ? simple : "Value";
   }
 }

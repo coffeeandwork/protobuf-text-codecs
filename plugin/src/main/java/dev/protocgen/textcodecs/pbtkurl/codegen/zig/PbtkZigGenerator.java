@@ -19,6 +19,7 @@ import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse;
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
 import dev.protocgen.textcodecs.jsonarray.codegen.LanguageGenerator;
+import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.codegen.zig.ZigNameResolver;
 import dev.protocgen.textcodecs.jsonarray.codegen.zig.ZigTypeMapper;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoEnum;
@@ -931,9 +932,8 @@ public class PbtkZigGenerator implements LanguageGenerator {
 
   /** Extract the simple type name from a fully-qualified proto type reference. */
   private static String zigSimpleTypeName(String protoFullName) {
-    if (protoFullName == null) return "void";
-    int lastDot = protoFullName.lastIndexOf('.');
-    return lastDot >= 0 ? protoFullName.substring(lastDot + 1) : protoFullName;
+    String simple = ProtoTypeUtil.simpleTypeName(protoFullName);
+    return simple != null ? simple : "void";
   }
 
   static String pascalCase(String snake) {

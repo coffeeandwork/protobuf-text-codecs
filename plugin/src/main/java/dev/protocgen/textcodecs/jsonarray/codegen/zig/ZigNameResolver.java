@@ -17,6 +17,7 @@ package dev.protocgen.textcodecs.jsonarray.codegen.zig;
 
 import dev.protocgen.textcodecs.jsonarray.codegen.KeywordUtil;
 import dev.protocgen.textcodecs.jsonarray.codegen.NameResolver;
+import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoFile;
 
 /**
@@ -116,8 +117,7 @@ public class ZigNameResolver implements NameResolver {
 
   /** Extract the simple type name from a fully-qualified proto type reference. */
   public static String simpleTypeName(String protoFullName) {
-    if (protoFullName == null) return "void";
-    int lastDot = protoFullName.lastIndexOf('.');
-    return lastDot >= 0 ? protoFullName.substring(lastDot + 1) : protoFullName;
+    String simple = ProtoTypeUtil.simpleTypeName(protoFullName);
+    return simple != null ? simple : "void";
   }
 }

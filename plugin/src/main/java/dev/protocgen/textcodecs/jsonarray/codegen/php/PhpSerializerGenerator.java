@@ -17,6 +17,7 @@ package dev.protocgen.textcodecs.jsonarray.codegen.php;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
+import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoMessage;
 import java.util.Set;
@@ -242,7 +243,6 @@ public class PhpSerializerGenerator {
   }
 
   private boolean isFloatOrDouble(FieldDescriptorProto.Type type) {
-    return type == FieldDescriptorProto.Type.TYPE_FLOAT
-        || type == FieldDescriptorProto.Type.TYPE_DOUBLE;
+    return ProtoTypeUtil.isFloatOrDoubleType(type);
   }
 }

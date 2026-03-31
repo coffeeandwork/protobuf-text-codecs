@@ -17,6 +17,7 @@ package dev.protocgen.textcodecs.jsonarray.codegen.javascript;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
+import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoMessage;
 
@@ -270,10 +271,6 @@ public class JavaScriptSerializerGenerator {
 
   /** Check if the given proto type is a 64-bit integer type that needs string encoding. */
   private static boolean isInt64Type(FieldDescriptorProto.Type type) {
-    return type == FieldDescriptorProto.Type.TYPE_INT64
-        || type == FieldDescriptorProto.Type.TYPE_UINT64
-        || type == FieldDescriptorProto.Type.TYPE_SINT64
-        || type == FieldDescriptorProto.Type.TYPE_FIXED64
-        || type == FieldDescriptorProto.Type.TYPE_SFIXED64;
+    return ProtoTypeUtil.isInt64Type(type);
   }
 }

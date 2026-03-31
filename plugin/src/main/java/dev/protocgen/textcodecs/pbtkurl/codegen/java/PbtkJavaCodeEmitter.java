@@ -16,6 +16,7 @@
 package dev.protocgen.textcodecs.pbtkurl.codegen.java;
 
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
+import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.codegen.java.JavaNameResolver;
 import dev.protocgen.textcodecs.jsonarray.codegen.java.JavaTypeMapper;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoEnum;
@@ -819,7 +820,8 @@ public class PbtkJavaCodeEmitter {
   }
 
   private String simpleTypeName(String protoFullName) {
-    return JavaNameResolver.simpleTypeName(protoFullName);
+    String simple = ProtoTypeUtil.simpleTypeName(protoFullName);
+    return simple != null ? simple : "Object";
   }
 
   private boolean isByteArrayField(ProtoField field) {

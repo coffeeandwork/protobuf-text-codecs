@@ -17,6 +17,7 @@ package dev.protocgen.textcodecs.jsonarray.codegen.cpp;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
+import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoMessage;
 
@@ -198,8 +199,7 @@ public class CppDeserializerGenerator {
   }
 
   private String simpleTypeName(String protoFullName) {
-    if (protoFullName == null) return "void*";
-    int lastDot = protoFullName.lastIndexOf('.');
-    return lastDot >= 0 ? protoFullName.substring(lastDot + 1) : protoFullName;
+    String simple = ProtoTypeUtil.simpleTypeName(protoFullName);
+    return simple != null ? simple : "void*";
   }
 }

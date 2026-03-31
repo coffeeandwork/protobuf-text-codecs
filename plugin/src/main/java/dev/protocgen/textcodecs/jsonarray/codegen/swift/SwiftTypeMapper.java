@@ -16,6 +16,7 @@
 package dev.protocgen.textcodecs.jsonarray.codegen.swift;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
+import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.codegen.TypeMapper;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 
@@ -157,8 +158,7 @@ public class SwiftTypeMapper implements TypeMapper {
    * ".example.sub.Address" -> "Address"
    */
   String simpleTypeName(String protoFullName) {
-    if (protoFullName == null) return "Any";
-    int lastDot = protoFullName.lastIndexOf('.');
-    return lastDot >= 0 ? protoFullName.substring(lastDot + 1) : protoFullName;
+    String simple = ProtoTypeUtil.simpleTypeName(protoFullName);
+    return simple != null ? simple : "Any";
   }
 }

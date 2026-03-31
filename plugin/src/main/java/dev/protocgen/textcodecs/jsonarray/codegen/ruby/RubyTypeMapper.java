@@ -16,6 +16,7 @@
 package dev.protocgen.textcodecs.jsonarray.codegen.ruby;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
+import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.codegen.TypeMapper;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 
@@ -106,8 +107,7 @@ public class RubyTypeMapper implements TypeMapper {
 
   /** Extract the simple type name from a fully-qualified proto type reference. */
   private String simpleTypeName(String protoFullName) {
-    if (protoFullName == null) return "Object";
-    int lastDot = protoFullName.lastIndexOf('.');
-    return lastDot >= 0 ? protoFullName.substring(lastDot + 1) : protoFullName;
+    String simple = ProtoTypeUtil.simpleTypeName(protoFullName);
+    return simple != null ? simple : "Object";
   }
 }

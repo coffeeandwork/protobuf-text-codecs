@@ -16,6 +16,7 @@
 package dev.protocgen.textcodecs.jsonarray.codegen.java;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
+import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.codegen.TypeMapper;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import java.nio.charset.StandardCharsets;
@@ -211,6 +212,7 @@ public class JavaTypeMapper implements TypeMapper {
   }
 
   private String simpleTypeName(String protoFullName) {
-    return JavaNameResolver.simpleTypeName(protoFullName);
+    String simple = ProtoTypeUtil.simpleTypeName(protoFullName);
+    return simple != null ? simple : "Object";
   }
 }

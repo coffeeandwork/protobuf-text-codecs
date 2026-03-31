@@ -19,6 +19,7 @@ import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse;
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
 import dev.protocgen.textcodecs.jsonarray.codegen.LanguageGenerator;
+import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.codegen.csharp.CSharpNameResolver;
 import dev.protocgen.textcodecs.jsonarray.codegen.csharp.CSharpTypeMapper;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoEnum;
@@ -1196,8 +1197,7 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
   }
 
   private String simpleTypeName(String protoFullName) {
-    if (protoFullName == null) return "object";
-    int lastDot = protoFullName.lastIndexOf('.');
-    return lastDot >= 0 ? protoFullName.substring(lastDot + 1) : protoFullName;
+    String simple = ProtoTypeUtil.simpleTypeName(protoFullName);
+    return simple != null ? simple : "object";
   }
 }

@@ -17,6 +17,7 @@ package dev.protocgen.textcodecs.jsonarray.codegen.kotlin;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
+import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoEnum;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoFile;
@@ -952,9 +953,8 @@ public class KotlinCodeEmitter {
   }
 
   private String simpleTypeName(String protoFullName) {
-    if (protoFullName == null) return "Any";
-    int lastDot = protoFullName.lastIndexOf('.');
-    return lastDot >= 0 ? protoFullName.substring(lastDot + 1) : protoFullName;
+    String simple = ProtoTypeUtil.simpleTypeName(protoFullName);
+    return simple != null ? simple : "Any";
   }
 
   /** Converts a snake_case (or camelCase) name to UPPER_SNAKE_CASE. */

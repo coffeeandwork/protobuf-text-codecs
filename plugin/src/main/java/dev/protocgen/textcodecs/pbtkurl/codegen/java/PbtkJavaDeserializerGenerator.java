@@ -17,6 +17,7 @@ package dev.protocgen.textcodecs.pbtkurl.codegen.java;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
+import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.codegen.java.JavaNameResolver;
 import dev.protocgen.textcodecs.jsonarray.codegen.java.JavaTypeMapper;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
@@ -299,6 +300,7 @@ public class PbtkJavaDeserializerGenerator {
   }
 
   private String simpleTypeName(String protoFullName) {
-    return JavaNameResolver.simpleTypeName(protoFullName);
+    String simple = ProtoTypeUtil.simpleTypeName(protoFullName);
+    return simple != null ? simple : "Object";
   }
 }

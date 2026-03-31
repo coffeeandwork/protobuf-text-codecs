@@ -17,6 +17,7 @@ package dev.protocgen.textcodecs.jsonarray.codegen.swift;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
+import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoMessage;
 
@@ -282,16 +283,11 @@ public class SwiftSerializerGenerator {
 
   /** Check if this proto type is a 64-bit integer type. */
   private boolean isInt64Type(FieldDescriptorProto.Type type) {
-    return type == FieldDescriptorProto.Type.TYPE_INT64
-        || type == FieldDescriptorProto.Type.TYPE_SINT64
-        || type == FieldDescriptorProto.Type.TYPE_SFIXED64
-        || type == FieldDescriptorProto.Type.TYPE_UINT64
-        || type == FieldDescriptorProto.Type.TYPE_FIXED64;
+    return ProtoTypeUtil.isInt64Type(type);
   }
 
   /** Check if this proto type is a floating-point type. */
   private boolean isFloatType(FieldDescriptorProto.Type type) {
-    return type == FieldDescriptorProto.Type.TYPE_FLOAT
-        || type == FieldDescriptorProto.Type.TYPE_DOUBLE;
+    return ProtoTypeUtil.isFloatOrDoubleType(type);
   }
 }
