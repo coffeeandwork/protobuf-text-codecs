@@ -217,7 +217,7 @@ class SafetySecurityTest {
   // ======================================================================
 
   /**
-   * SR-002 / HAZ-002: int32 fields must produce JSON number encoding in all 9 languages.
+   * SR-002 / HAZ-002: int32 fields must produce JSON number encoding in all 17 languages.
    *
    * <p>Verifies that int32 generates as a numeric type (int, i32, int32, int32_t, etc.) across all
    * languages, not as a string or other representation.
@@ -262,7 +262,7 @@ class SafetySecurityTest {
   }
 
   /**
-   * SR-002 / HAZ-002: bytes fields must produce base64-encoded string encoding in all 9 languages.
+   * SR-002 / HAZ-002: bytes fields must produce base64-encoded string encoding in all 17 languages.
    *
    * <p>Verifies that bytes fields use base64 encoding across all language generators.
    */
@@ -375,7 +375,7 @@ class SafetySecurityTest {
           Map.entry("perl", List.of("big_val")));
 
   /**
-   * SR-003 / HAZ-007: int64 fields must serialize as JSON strings in all 9 languages.
+   * SR-003 / HAZ-007: int64 fields must serialize as JSON strings in all 17 languages.
    *
    * <p>This prevents precision loss when int64 values exceed 2^53 and pass through JSON
    * intermediaries (e.g., JavaScript's Number type).
@@ -772,7 +772,7 @@ class SafetySecurityTest {
   }
 
   /**
-   * SEC-003 / HAZ-004: Keyword escaping must appear in generated code for all 9 languages.
+   * SEC-003 / HAZ-004: Keyword escaping must appear in generated code for all 17 languages.
    *
    * <p>End-to-end test: generate code with a keyword field name and verify it is escaped.
    */

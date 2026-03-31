@@ -36,7 +36,7 @@ LIMITATIONS:
 protobuf-text-codecs/
 ├── plugin/                           # Main protoc plugin (Java)
 │   └── src/
-│       ├── main/java/.../            # 139 source files, ~27,000 lines
+│       ├── main/java/.../            # 139 source files, ~47,000 lines
 │       │   ├── Main.java             # Entry point (stdin/stdout)
 │       │   ├── PluginRunner.java     # Orchestrator
 │       │   ├── ProtoFileProcessor.java
@@ -90,16 +90,16 @@ Key directories:
 
 | Component | Location | Purpose | Lines | Test Coverage |
 |-----------|----------|---------|-------|---------------|
-| PluginRunner | `PluginRunner.java` | Orchestration, parameter parsing, language dispatch, path validation | 146 | 93.3% (22 tests) |
-| ProtoFileProcessor | `ProtoFileProcessor.java` | Proto file analysis, comment extraction, model construction | 109 | 95.5% (indirect) |
-| MessageAnalyzer | `MessageAnalyzer.java` | Proto descriptor → ProtoMessage conversion, field ordering, validation | 309 | 96.9% (37 tests) |
-| TypeRegistry | `model/TypeRegistry.java` | Global type catalog for cross-file resolution | 62 | 100% (14 tests) |
-| ProtoField | `model/ProtoField.java` | Field model with builder, validation | 282 | 100% |
-| ProtoMessage | `model/ProtoMessage.java` | Message model, field position mapping | 109 | 91.5% |
-| ProtoEnum | `model/ProtoEnum.java` | Enum model | 31 | 100% |
-| ProtoFile | `model/ProtoFile.java` | File metadata model | 75 | 70.3% |
-| WellKnownType | `model/WellKnownType.java` | Google WKT detection (17 types) | 69 | 100% (3 tests) |
-| CodeWriter | `CodeWriter.java` | Indented source code builder | 105 | 100% (14 tests) |
+| PluginRunner | `PluginRunner.java` | Orchestration, parameter parsing, language dispatch, path validation | 195 | 93.3% (22 tests) |
+| ProtoFileProcessor | `ProtoFileProcessor.java` | Proto file analysis, comment extraction, model construction | 124 | 95.5% (indirect) |
+| MessageAnalyzer | `MessageAnalyzer.java` | Proto descriptor → ProtoMessage conversion, field ordering, validation | 368 | 96.9% (37 tests) |
+| TypeRegistry | `model/TypeRegistry.java` | Global type catalog for cross-file resolution | 93 | 100% (14 tests) |
+| ProtoField | `model/ProtoField.java` | Field model with builder, validation | 297 | 100% |
+| ProtoMessage | `model/ProtoMessage.java` | Message model, field position mapping | 154 | 91.5% |
+| ProtoEnum | `model/ProtoEnum.java` | Enum model | 46 | 100% |
+| ProtoFile | `model/ProtoFile.java` | File metadata model | 90 | 70.3% |
+| WellKnownType | `model/WellKnownType.java` | Google WKT detection (17 types) | 84 | 100% (3 tests) |
+| CodeWriter | `CodeWriter.java` | Indented source code builder | 129 | 100% (14 tests) |
 | KeywordUtil | `codegen/KeywordUtil.java` | Language keyword escaping (16 keyword sets: 14 in KeywordUtil, 2 delegated from NameResolvers) | ~950 | 98.7% |
 
 ### Language Generators (Criticality A — bugs produce incorrect generated code)
@@ -341,7 +341,7 @@ The generated code runs in the user's application with fundamentally different c
 |----------|--------|---------------|
 | Execution context | Build-time CLI tool | User's production application |
 | Trust model | Trusted (runs locally) | Must handle untrusted JSON input |
-| Dependencies | protobuf-java only | Jackson (Java), cJSON (C), etc. |
+| Dependencies | protobuf-java only | Zero-dependency (Java), cJSON (C), etc. |
 | Thread safety | N/A (single-threaded) | NOT thread-safe (documented) |
 | Memory model | JVM managed | C: manual malloc/free; Zig: allocator-based |
 | Error handling | Exception → error response | Java: RuntimeException; Go: error return; Rust: Result; C: NULL returns |
@@ -351,7 +351,7 @@ The generated code runs in the user's application with fundamentally different c
 
 | Boundary | Input | Validation in Generated Code |
 |----------|-------|------------------------------|
-| `fromJsonString(String)` | Untrusted JSON string | JSON parsing via library (Jackson/json/serde); type mismatches caught by library |
+| `fromJsonString(String)` | Untrusted JSON string | JSON parsing via built-in reader (Java) or library (json/serde/cJSON); type mismatches caught by parser |
 | `deserialize(ArrayNode)` | Parsed JSON array | Bounds checking (`size > pos`); null checking (`!isNull()`) |
 | Base64 decoding | String from JSON | Library-provided decoding; malformed base64 → empty bytes or exception |
 | int64 string parsing | String or number from JSON | `Long.parseLong` / `strconv.ParseInt` with fallback to numeric |
@@ -404,13 +404,13 @@ The core encoding format that all generated code must implement:
 | CodeWriterTest | 14 | Indentation, blocks, formatting |
 | JavaNameResolverTest | 5 | Naming conventions |
 | WellKnownTypeTest | 3 | WKT lookup and classification |
-| SafetySecurityTest | 116 | Safety (SR-001–004), security (SEC-001–004), fault injection for jsonarray |
+| SafetySecurityTest | 180 | Safety (SR-001–004), security (SEC-001–004), fault injection for jsonarray |
 | GoldenFileTest | 9+ | @ParameterizedTest — exact output comparison against golden files |
-| PerformanceBenchmarkTest | — | Plugin throughput benchmarks |
-| MemoryBenchmarkTest | — | Memory allocation benchmarks |
-| PbtkJavaCodeGenTest | — | pbtk URL format Java code generation |
-| PbtkMultiLanguageCodeGenTest | — | pbtk URL format across 16 non-Java languages |
-| PbtkSafetySecurityTest | — | Safety/security tests for pbtk format |
+| PerformanceBenchmarkTest | 8 | Plugin throughput benchmarks |
+| MemoryBenchmarkTest | 4 | Memory allocation benchmarks |
+| PbtkJavaCodeGenTest | 27 | pbtk URL format Java code generation |
+| PbtkMultiLanguageCodeGenTest | 144 | pbtk URL format across 16 non-Java languages |
+| PbtkSafetySecurityTest | 70 | Safety/security tests for pbtk format |
 
 **Total: 921 tests. Overall coverage: 74.0% instructions, 76.5% lines.**
 

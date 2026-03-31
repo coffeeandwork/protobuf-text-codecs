@@ -369,7 +369,7 @@ This is a **build-time CLI tool**, not a web application. OWASP Top 10 categorie
 
 ## 9. Existing Security Test Coverage
 
-Tests already implemented in `SafetySecurityTest.java` (116 tests):
+Tests already implemented in `SafetySecurityTest.java` (180 tests):
 
 | ID | Test | Covers | Status |
 |----|------|--------|--------|

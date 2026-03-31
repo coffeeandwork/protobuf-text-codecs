@@ -12,7 +12,7 @@ Positional JSON array encoding where `position = field_number - 1`.
 ["Alice", "Smith", 30, ["123 Main Street", "Springfield", "IL", 62704]]
 ```
 
-- Zero-dependency Java (StringBuilder-based), stdlib JSON (Python/JS/Go), cJSON (C), nlohmann/json (C++), serde_json (Rust), std.json (Zig)
+- Zero-dependency Java (StringBuilder-based), stdlib JSON (Python/JS/Go/Ruby), cJSON (C), nlohmann/json (C++), serde_json (Rust), std.json (Zig), System.Text.Json (C#), kotlinx.serialization (Kotlin), Foundation JSON (Swift/Objective-C), dart:convert (Dart), json built-in (PHP), JSON CPAN (Perl)
 - Gaps in field numbering produce `null` entries
 - Well-known types have special encoding (Timestamp → RFC 3339, etc.)
 
@@ -52,7 +52,7 @@ protoc \
   src/main/proto/user.proto
 ```
 
-Both plugins accept `lang=<language>` parameter. Default is `java`. Aliases: `js`=javascript, `ts`=typescript, `c++`=cpp, `c#`=csharp, `kt`=kotlin, `rb`=ruby, `objective-c`=objc.
+Both plugins accept `lang=<language>` parameter. Default is `java`. Aliases: `js`=javascript, `ts`=typescript, `c++`=cpp, `c#`=csharp, `kt`=kotlin, `rb`=ruby, `objective-c`=objc (24 entries: 17 languages + 7 aliases).
 
 ## Architecture
 

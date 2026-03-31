@@ -328,7 +328,7 @@ plugin/src/test/java/dev/protocgen/textcodecs/jsonarray/
 ├── IndexingAuditTest.java           # Unit: position correctness (12 tests)
 ├── JavaCodeGenTest.java             # E2E: Java code generation (71 tests)
 ├── MultiLanguageCodeGenTest.java    # E2E: 16 non-Java languages (15 parameterized x 16 = 240 tests)
-├── SafetySecurityTest.java          # Safety/security/fault injection (116 tests)
+├── SafetySecurityTest.java          # Safety/security/fault injection (180 tests)
 ├── GoldenFileTest.java              # Snapshot: exact output comparison
 ├── PerformanceBenchmarkTest.java    # Plugin throughput benchmarks
 ├── MemoryBenchmarkTest.java         # Memory allocation benchmarks

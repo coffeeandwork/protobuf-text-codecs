@@ -43,7 +43,7 @@ LIMITATIONS:
 | FR-010: Proto2 support | JavaCodeGenTest | testProto2RequiredField, testProto2OptionalPresence, testProto2StringDefault, testProto2IntDefault, testProto2BoolDefault, testProto2EnumDefault | Unit | Implemented |
 | FR-010 | PluginRunnerTest | testProto2Support | Unit | Implemented |
 | FR-011: Multi-language | MultiLanguageCodeGenTest | 15 tests x 16 languages = 240 tests | Unit | Implemented |
-| FR-011 | CI workflow | 9-language protoc generation smoke test | System | Implemented |
+| FR-011 | CI workflow | 17-language protoc generation smoke test | System | Implemented |
 | FR-012: Cross-language interop | cross-language-test.sh | 5 assertions (Java↔Python) | Integration | Implemented |
 | FR-013: Cross-file refs | MultiLanguageCodeGenTest | testCrossFileReference (x16 langs) | Unit | Implemented |
 | FR-014: Plugin protocol | PluginRunnerTest | 22 tests (parameter parsing, error handling, features) | Unit | Implemented |
@@ -122,12 +122,12 @@ LIMITATIONS:
 | IndexingAuditTest.java | Unit: position correctness, boundaries | 12 | Implemented |
 | JavaCodeGenTest.java | E2E: Java code generation (all constructs) | 71 | Implemented |
 | MultiLanguageCodeGenTest.java | E2E: 16 non-Java languages (15 @ParameterizedTest x 16 langs = 240 invocations) | 240 | Implemented |
-| PerformanceBenchmarkTest.java | Performance: plugin throughput benchmarks | — | Implemented |
-| MemoryBenchmarkTest.java | Performance: memory allocation benchmarks | — | Implemented |
-| PbtkJavaCodeGenTest.java | E2E: pbtk URL format Java code generation | — | Implemented |
-| PbtkMultiLanguageCodeGenTest.java | E2E: pbtk URL format across 16 non-Java languages | — | Implemented |
-| PbtkSafetySecurityTest.java | Safety/security tests for pbtk format | — | Implemented |
-| SafetySecurityTest.java | Safety/security/fault injection (39 @Test + 9 @ParameterizedTest = 116 invocations) | 116 | Implemented |
+| PerformanceBenchmarkTest.java | Performance: plugin throughput benchmarks | 8 | Implemented |
+| MemoryBenchmarkTest.java | Performance: memory allocation benchmarks | 4 | Implemented |
+| PbtkJavaCodeGenTest.java | E2E: pbtk URL format Java code generation | 27 | Implemented |
+| PbtkMultiLanguageCodeGenTest.java | E2E: pbtk URL format across 16 non-Java languages | 144 | Implemented |
+| PbtkSafetySecurityTest.java | Safety/security tests for pbtk format | 70 | Implemented |
+| SafetySecurityTest.java | Safety/security/fault injection (39 @Test + 9 @ParameterizedTest = 180 invocations) | 180 | Implemented |
 | GoldenFileTest.java | Snapshot: exact output comparison | 9 | Implemented |
 
 ## Missing Coverage

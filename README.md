@@ -21,7 +21,7 @@ Key properties:
 - Gaps in field numbering produce `null` entries (in practice most protos use contiguous numbers).
 - Nested messages become nested arrays.
 - Output is valid JSON encoded as UTF-8 bytes.
-- Supports 9 target languages from a single plugin binary.
+- Supports 17 target languages from a single plugin binary.
 
 ### Format 2: pbtk URL Encoding (`protoc-gen-pbtkurl`)
 
@@ -34,7 +34,7 @@ Key properties:
 - Nested messages use `!<num>m<count>` followed by sub-fields.
 - URL-safe: strings are percent-encoded, bytes are base64-encoded.
 - No JSON library dependency in generated code -- pure string manipulation.
-- Supports 9 target languages from a single plugin binary.
+- Supports 17 target languages from a single plugin binary.
 
 ---
 

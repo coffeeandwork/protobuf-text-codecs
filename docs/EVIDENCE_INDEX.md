@@ -104,7 +104,7 @@ LIMITATIONS:
 |------------|------|-------|-----------------------|
 | JavaCodeGenTest | `plugin/src/test/java/.../jsonarray/JavaCodeGenTest.java` | 71 | FR-001-FR-010, SR-001-SR-004, SEC-001, SEC-003, SEC-004 |
 | JavaTypeMapperTest | `plugin/src/test/java/.../jsonarray/JavaTypeMapperTest.java` | 61 | FR-003, SR-002 |
-| SafetySecurityTest | `plugin/src/test/java/.../jsonarray/SafetySecurityTest.java` | 116 | SR-001-SR-004, SEC-001-SEC-004, VULN-001-009 |
+| SafetySecurityTest | `plugin/src/test/java/.../jsonarray/SafetySecurityTest.java` | 180 | SR-001-SR-004, SEC-001-SEC-004, VULN-001-009 |
 | MessageAnalyzerTest | `plugin/src/test/java/.../jsonarray/MessageAnalyzerTest.java` | 37 | SEC-001, FR-010, FR-018 |
 | PluginRunnerTest | `plugin/src/test/java/.../jsonarray/PluginRunnerTest.java` | 22 | FR-014, FR-015, FR-011 |
 | TypeRegistryTest | `plugin/src/test/java/.../jsonarray/TypeRegistryTest.java` | 14 | SEC-001 (VULN-002) |
@@ -114,11 +114,11 @@ LIMITATIONS:
 | JavaNameResolverTest | `plugin/src/test/java/.../jsonarray/JavaNameResolverTest.java` | 5 | SEC-003, SEC-004 |
 | WellKnownTypeTest | `plugin/src/test/java/.../jsonarray/WellKnownTypeTest.java` | 3 | FR-017 |
 | MultiLanguageCodeGenTest | `plugin/src/test/java/.../jsonarray/MultiLanguageCodeGenTest.java` | 240 | FR-011, FR-013, SR-001, SR-002 |
-| PerformanceBenchmarkTest | `plugin/src/test/java/.../jsonarray/PerformanceBenchmarkTest.java` | -- | PERF-001, PERF-002 |
-| MemoryBenchmarkTest | `plugin/src/test/java/.../jsonarray/MemoryBenchmarkTest.java` | -- | PERF-001 |
-| PbtkJavaCodeGenTest | `plugin/src/test/java/.../pbtkurl/PbtkJavaCodeGenTest.java` | -- | FR-011 (pbtk) |
-| PbtkMultiLanguageCodeGenTest | `plugin/src/test/java/.../pbtkurl/PbtkMultiLanguageCodeGenTest.java` | -- | FR-011, FR-013 (pbtk) |
-| PbtkSafetySecurityTest | `plugin/src/test/java/.../pbtkurl/PbtkSafetySecurityTest.java` | -- | SR-001-SR-004, SEC-001-SEC-004 (pbtk) |
+| PerformanceBenchmarkTest | `plugin/src/test/java/.../jsonarray/PerformanceBenchmarkTest.java` | 8 | PERF-001, PERF-002 |
+| MemoryBenchmarkTest | `plugin/src/test/java/.../jsonarray/MemoryBenchmarkTest.java` | 4 | PERF-001 |
+| PbtkJavaCodeGenTest | `plugin/src/test/java/.../pbtkurl/PbtkJavaCodeGenTest.java` | 27 | FR-011 (pbtk) |
+| PbtkMultiLanguageCodeGenTest | `plugin/src/test/java/.../pbtkurl/PbtkMultiLanguageCodeGenTest.java` | 144 | FR-011, FR-013 (pbtk) |
+| PbtkSafetySecurityTest | `plugin/src/test/java/.../pbtkurl/PbtkSafetySecurityTest.java` | 70 | SR-001-SR-004, SEC-001-SEC-004 (pbtk) |
 | | | **Total: 921** | |
 
 Note: 15 `@ParameterizedTest` methods x 16 languages = 240 expanded invocations for MultiLanguageCodeGenTest.
@@ -127,11 +127,11 @@ Note: 15 `@ParameterizedTest` methods x 16 languages = 240 expanded invocations 
 
 | Proto File | Path | Purpose |
 |------------|------|---------|
-| user.proto | `plugin/src/test/resources/user.proto` | Basic message with nested address |
-| address.proto | `plugin/src/test/resources/address.proto` | Cross-file reference target |
-| kitchen_sink.proto | `plugin/src/test/resources/kitchen_sink.proto` | 29 fields, all types |
-| edge_cases.proto | `plugin/src/test/resources/edge_cases.proto` | 17 messages, edge cases |
-| proto2_test.proto | `plugin/src/test/resources/proto2_test.proto` | Proto2 syntax features |
+| user.proto | `test-protos/src/main/proto/user.proto` | Basic message with nested address |
+| address.proto | `test-protos/src/main/proto/address.proto` | Cross-file reference target |
+| kitchen_sink.proto | `test-protos/src/main/proto/kitchen_sink.proto` | 29 fields, all types |
+| edge_cases.proto | `test-protos/src/main/proto/edge_cases.proto` | 17 messages, edge cases |
+| proto2_test.proto | `test-protos/src/main/proto/proto2_test.proto` | Proto2 syntax features |
 
 ### Golden Files
 

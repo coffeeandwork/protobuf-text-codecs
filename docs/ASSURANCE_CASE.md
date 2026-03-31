@@ -113,7 +113,7 @@ LIMITATIONS:
   - VULN-003 (default value injection): `JavaDeserializerGenerator.schemaDefaultExpression()` validates bool → `^(true|false)$`, int → `^-?[0-9]+$`, enum → `^[A-Z_][A-Z0-9_]*$`
   - VULN-004 (path traversal): `PluginRunner.java` rejects `..`, leading `/`, and `\0`
   - VULN-005 (Javadoc injection): `JavaCodeEmitter.emitDocComment()` escapes `*/` → `* /`
-- **Test File:** `SafetySecurityTest.java` (39 `@Test` + 9 `@ParameterizedTest` = 116 invocations) — field name validation, keyword escaping, path traversal, int64 encoding, NaN handling
+- **Test File:** `SafetySecurityTest.java` (39 `@Test` + 9 `@ParameterizedTest` = 180 invocations) — field name validation, keyword escaping, path traversal, int64 encoding, NaN handling
 - **Test File:** `MessageAnalyzerTest.java` (37 tests) — invalid name rejection, Any rejection
 - **Evidence Strength:** Strong — defense-in-depth with validation at multiple layers; all 9 VULN items addressed
 
@@ -213,6 +213,14 @@ LIMITATIONS:
 | Rust generator | ~65% | Moderate — RustTypeMapper has low coverage |
 | Zig generator | ~70% | Moderate |
 | Go generator | ~60% | Moderate — GoDeserializerGenerator has gaps |
+| C# generator | — | Parameterized tests |
+| Kotlin generator | — | Parameterized tests |
+| Swift generator | — | Parameterized tests |
+| Dart generator | — | Parameterized tests |
+| PHP generator | — | Parameterized tests |
+| Ruby generator | — | Parameterized tests |
+| Objective-C generator | — | Parameterized tests |
+| Perl generator | — | Parameterized tests |
 | Main (entry point) | 0% | Not unit-testable (stdin/stdout I/O) |
 
 ---
