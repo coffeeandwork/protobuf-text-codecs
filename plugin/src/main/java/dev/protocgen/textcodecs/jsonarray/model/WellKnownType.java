@@ -15,6 +15,7 @@
  */
 package dev.protocgen.textcodecs.jsonarray.model;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /** Enum of well-known protobuf types that receive special serialization treatment. */
@@ -50,7 +51,7 @@ public enum WellKnownType {
   private static final Map<String, WellKnownType> BY_NAME;
 
   static {
-    var map = new java.util.HashMap<String, WellKnownType>();
+    var map = new HashMap<String, WellKnownType>();
     for (WellKnownType wkt : values()) {
       map.put(wkt.fullName, wkt);
     }

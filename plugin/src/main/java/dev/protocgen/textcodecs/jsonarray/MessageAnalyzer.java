@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -35,7 +36,7 @@ import java.util.stream.Collectors;
  * protobuf representation of a message definition, see <a
  * href="https://github.com/protocolbuffers/protobuf/blob/main/src/google/protobuf/descriptor.proto">descriptor.proto</a>)
  * and converts it into the language-neutral {@link ProtoMessage} model. Fields are sorted by field
- * number for positional array encoding (links verified 2026-03-30).
+ * number for positional array encoding.
  */
 public class MessageAnalyzer {
 
@@ -46,8 +47,7 @@ public class MessageAnalyzer {
   private static final String SAFE_IDENTIFIER = "[a-zA-Z_][a-zA-Z0-9_]*";
 
   /** Pre-compiled pattern to avoid per-call regex compilation overhead. */
-  private static final java.util.regex.Pattern SAFE_IDENTIFIER_PATTERN =
-      java.util.regex.Pattern.compile(SAFE_IDENTIFIER);
+  private static final Pattern SAFE_IDENTIFIER_PATTERN = Pattern.compile(SAFE_IDENTIFIER);
 
   private final TypeRegistry typeRegistry;
 

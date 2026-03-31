@@ -44,6 +44,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  * Core orchestrator for the protoc plugin. Parses the {@code lang=} parameter from the {@link
@@ -56,14 +57,14 @@ import java.util.Set;
  * href="https://github.com/protocolbuffers/protobuf/blob/main/src/google/protobuf/compiler/plugin.proto">plugin.proto</a>;
  * the file descriptors that describe each .proto file are defined in <a
  * href="https://github.com/protocolbuffers/protobuf/blob/main/src/google/protobuf/descriptor.proto">descriptor.proto</a>
- * (links verified 2026-03-30).
+ * .
  */
 public class PluginRunner {
 
-  private static final Map<String, java.util.function.Supplier<LanguageGenerator>> GENERATORS;
+  private static final Map<String, Supplier<LanguageGenerator>> GENERATORS;
 
   static {
-    Map<String, java.util.function.Supplier<LanguageGenerator>> map = new HashMap<>();
+    Map<String, Supplier<LanguageGenerator>> map = new HashMap<>();
     map.put("java", JavaGenerator::new);
     map.put("python", PythonGenerator::new);
     map.put("javascript", JavaScriptGenerator::new);

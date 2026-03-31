@@ -45,6 +45,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  * Core orchestrator for the protoc-gen-pbtkurl plugin. Mirrors PluginRunner but dispatches to pbtk
@@ -52,10 +53,10 @@ import java.util.Set;
  */
 public class PbtkPluginRunner {
 
-  private static final Map<String, java.util.function.Supplier<LanguageGenerator>> GENERATORS;
+  private static final Map<String, Supplier<LanguageGenerator>> GENERATORS;
 
   static {
-    Map<String, java.util.function.Supplier<LanguageGenerator>> map = new HashMap<>();
+    Map<String, Supplier<LanguageGenerator>> map = new HashMap<>();
     map.put("c", PbtkCGenerator::new);
     map.put("cpp", PbtkCppGenerator::new);
     map.put("c++", PbtkCppGenerator::new);

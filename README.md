@@ -451,7 +451,7 @@ No JSON library dependency — pure string manipulation. Generated classes have 
 
 ## How It Works
 
-Both plugins implement the standard [protoc plugin protocol](https://protobuf.dev/reference/other/) (links verified 2026-03-30). The protocol is defined in [`plugin.proto`](https://github.com/protocolbuffers/protobuf/blob/main/src/google/protobuf/compiler/plugin.proto) and [`descriptor.proto`](https://github.com/protocolbuffers/protobuf/blob/main/src/google/protobuf/descriptor.proto).
+Both plugins implement the standard [protoc plugin protocol](https://protobuf.dev/reference/other/). The protocol is defined in [`plugin.proto`](https://github.com/protocolbuffers/protobuf/blob/main/src/google/protobuf/compiler/plugin.proto) and [`descriptor.proto`](https://github.com/protocolbuffers/protobuf/blob/main/src/google/protobuf/descriptor.proto).
 
 **Plugin lifecycle:**
 
@@ -470,7 +470,7 @@ Both plugins implement the standard [protoc plugin protocol](https://protobuf.de
 
 5. **Response.** The plugin writes a binary [`CodeGeneratorResponse`](https://protobuf.dev/reference/cpp/api-docs/google.protobuf.compiler.plugin.pb/#CodeGeneratorResponse) to stdout containing the generated source files.
 
-For the full C++ API reference of the plugin protocol types, see the [plugin.pb.h docs](https://protobuf.dev/reference/cpp/api-docs/google.protobuf.compiler.plugin.pb/) and [descriptor.pb.h docs](https://protobuf.dev/reference/cpp/api-docs/google.protobuf.descriptor.pb/) (links verified 2026-03-30).
+For the full C++ API reference of the plugin protocol types, see the [plugin.pb.h docs](https://protobuf.dev/reference/cpp/api-docs/google.protobuf.compiler.plugin.pb/) and [descriptor.pb.h docs](https://protobuf.dev/reference/cpp/api-docs/google.protobuf.descriptor.pb/).
 
 ## Contributing
 

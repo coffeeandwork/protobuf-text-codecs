@@ -15,6 +15,8 @@
  */
 package dev.protocgen.textcodecs.jsonarray.model;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -131,7 +133,7 @@ public class ProtoMessage {
    * prefer {@link #fieldAtPosition(int)} for hot paths.
    */
   public Map<Integer, ProtoField> getFieldsByPosition() {
-    Map<Integer, ProtoField> map = new java.util.HashMap<>();
+    Map<Integer, ProtoField> map = new HashMap<>();
     if (fieldsByPosition != null) {
       for (int i = 0; i < fieldsByPosition.length; i++) {
         if (fieldsByPosition[i] != null) map.put(i, fieldsByPosition[i]);
@@ -141,7 +143,7 @@ public class ProtoMessage {
         map.put(f.getArrayPosition(), f);
       }
     }
-    return java.util.Collections.unmodifiableMap(map);
+    return Collections.unmodifiableMap(map);
   }
 
   public record OneofGroup(String name, int index, List<ProtoField> members) {

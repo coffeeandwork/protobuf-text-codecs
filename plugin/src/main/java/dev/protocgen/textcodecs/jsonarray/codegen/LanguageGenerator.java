@@ -27,7 +27,7 @@ import java.util.List;
  *
  * <p>See the <a
  * href="https://protobuf.dev/reference/cpp/api-docs/google.protobuf.compiler.plugin.pb/#CodeGeneratorResponse.File">CodeGeneratorResponse.File
- * docs</a> for the file name and content fields (links verified 2026-03-30).
+ * docs</a> for the file name and content fields.
  */
 public interface LanguageGenerator {
 

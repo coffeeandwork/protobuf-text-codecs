@@ -20,6 +20,7 @@ import com.google.protobuf.DescriptorProtos.EnumDescriptorProto;
 import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * Global registry mapping fully-qualified proto type names to their descriptors. Built from all
@@ -47,8 +48,7 @@ public class TypeRegistry {
     }
   }
 
-  private static final java.util.regex.Pattern SAFE_IDENTIFIER =
-      java.util.regex.Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*");
+  private static final Pattern SAFE_IDENTIFIER = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*");
 
   private void registerMessage(String prefix, DescriptorProto message, int depth) {
     if (depth > MAX_NESTING_DEPTH) {
