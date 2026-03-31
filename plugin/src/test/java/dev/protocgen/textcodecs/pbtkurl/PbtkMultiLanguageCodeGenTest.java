@@ -158,7 +158,117 @@ class PbtkMultiLanguageCodeGenTest {
                     Map.entry("bytes_base64", List.of("base64.StdEncoding.EncodeToString(")),
                     Map.entry("nested_message", List.of("!1m")),
                     Map.entry("enum_field", List.of("!1e")),
-                    Map.entry("bool_encoding", List.of("!1b1", "!1b0"))))));
+                    Map.entry("bool_encoding", List.of("!1b1", "!1b0"))))),
+        Arguments.of(
+            new LangExpectation(
+                "csharp",
+                Map.ofEntries(
+                    Map.entry("scalar_field_decl", List.of("string", "int")),
+                    Map.entry("pbtk_serialize", List.of("public string ToPbtkUrl()")),
+                    Map.entry(
+                        "pbtk_deserialize", List.of("public static", "FromPbtkUrl(string input)")),
+                    Map.entry("pbtk_prefix", List.of("!1s")),
+                    Map.entry("string_url_encode", List.of("Uri.EscapeDataString(")),
+                    Map.entry("bytes_base64", List.of("Convert.ToBase64String(")),
+                    Map.entry("nested_message", List.of("!1m")),
+                    Map.entry("enum_field", List.of("!1e")),
+                    Map.entry("bool_encoding", List.of("? \"1\" : \"0\""))))),
+        Arguments.of(
+            new LangExpectation(
+                "kotlin",
+                Map.ofEntries(
+                    Map.entry("scalar_field_decl", List.of("val", "String", "Int")),
+                    Map.entry("pbtk_serialize", List.of("fun toPbtkUrl(): String")),
+                    Map.entry("pbtk_deserialize", List.of("fun fromPbtkUrl(input: String)")),
+                    Map.entry("pbtk_prefix", List.of("!1s")),
+                    Map.entry("string_url_encode", List.of("java.net.URLEncoder.encode(")),
+                    Map.entry(
+                        "bytes_base64", List.of("java.util.Base64.getEncoder().encodeToString(")),
+                    Map.entry("nested_message", List.of("!1m")),
+                    Map.entry("enum_field", List.of("!1e")),
+                    Map.entry("bool_encoding", List.of("if (", "\"1\" else \"0\""))))),
+        Arguments.of(
+            new LangExpectation(
+                "swift",
+                Map.ofEntries(
+                    Map.entry("scalar_field_decl", List.of("public var", "String", "Int32")),
+                    Map.entry("pbtk_serialize", List.of("func toPbtkUrl() -> String")),
+                    Map.entry("pbtk_deserialize", List.of("static func fromPbtkUrl(")),
+                    Map.entry("pbtk_prefix", List.of("!1s")),
+                    Map.entry(
+                        "string_url_encode",
+                        List.of("addingPercentEncoding(withAllowedCharacters:")),
+                    Map.entry("bytes_base64", List.of("base64EncodedString()")),
+                    Map.entry("nested_message", List.of("!1m")),
+                    Map.entry("enum_field", List.of("!1e")),
+                    Map.entry("bool_encoding", List.of("? \"1\" : \"0\""))))),
+        Arguments.of(
+            new LangExpectation(
+                "dart",
+                Map.ofEntries(
+                    Map.entry("scalar_field_decl", List.of("String", "int")),
+                    Map.entry("pbtk_serialize", List.of("String toPbtkUrl()")),
+                    Map.entry("pbtk_deserialize", List.of("static", "fromPbtkUrl(String")),
+                    Map.entry("pbtk_prefix", List.of("!1s")),
+                    Map.entry("string_url_encode", List.of("Uri.encodeComponent(")),
+                    Map.entry("bytes_base64", List.of("base64Encode(")),
+                    Map.entry("nested_message", List.of("!1m")),
+                    Map.entry("enum_field", List.of("!1e")),
+                    Map.entry("bool_encoding", List.of("? '1' : '0'"))))),
+        Arguments.of(
+            new LangExpectation(
+                "php",
+                Map.ofEntries(
+                    Map.entry("scalar_field_decl", List.of("string $", "int $")),
+                    Map.entry("pbtk_serialize", List.of("public function toPbtkUrl(): string")),
+                    Map.entry("pbtk_deserialize", List.of("public static function fromPbtkUrl(")),
+                    Map.entry("pbtk_prefix", List.of("!1s")),
+                    Map.entry("string_url_encode", List.of("rawurlencode(")),
+                    Map.entry("bytes_base64", List.of("base64_encode(")),
+                    Map.entry("nested_message", List.of("!1m")),
+                    Map.entry("enum_field", List.of("!1e")),
+                    Map.entry("bool_encoding", List.of("? '1' : '0'"))))),
+        Arguments.of(
+            new LangExpectation(
+                "ruby",
+                Map.ofEntries(
+                    Map.entry("scalar_field_decl", List.of("attr_accessor")),
+                    Map.entry("pbtk_serialize", List.of("def to_pbtk_url")),
+                    Map.entry("pbtk_deserialize", List.of("def self.from_pbtk_url(")),
+                    Map.entry("pbtk_prefix", List.of("!1s")),
+                    Map.entry("string_url_encode", List.of("CGI.escape(")),
+                    Map.entry("bytes_base64", List.of("Base64.strict_encode64(")),
+                    Map.entry("nested_message", List.of("!1m")),
+                    Map.entry("enum_field", List.of("!1e")),
+                    Map.entry("bool_encoding", List.of("? \"1\" : \"0\""))))),
+        Arguments.of(
+            new LangExpectation(
+                "objc",
+                Map.ofEntries(
+                    Map.entry("scalar_field_decl", List.of("@property", "NSString", "int32_t")),
+                    Map.entry("pbtk_serialize", List.of("- (NSString *)toPbtkUrl")),
+                    Map.entry(
+                        "pbtk_deserialize",
+                        List.of("+ (instancetype)fromPbtkUrl:(NSString *)input")),
+                    Map.entry("pbtk_prefix", List.of("!1s")),
+                    Map.entry("string_url_encode", List.of("pbtk_url_encode(")),
+                    Map.entry("bytes_base64", List.of("pbtk_base64_encode(")),
+                    Map.entry("nested_message", List.of("!1m")),
+                    Map.entry("enum_field", List.of("!1e")),
+                    Map.entry("bool_encoding", List.of("? @\"1\" : @\"0\""))))),
+        Arguments.of(
+            new LangExpectation(
+                "perl",
+                Map.ofEntries(
+                    Map.entry("scalar_field_decl", List.of("$self->{")),
+                    Map.entry("pbtk_serialize", List.of("sub to_pbtk_url {")),
+                    Map.entry("pbtk_deserialize", List.of("sub from_pbtk_url {")),
+                    Map.entry("pbtk_prefix", List.of("!1s")),
+                    Map.entry("string_url_encode", List.of("uri_escape_utf8(")),
+                    Map.entry("bytes_base64", List.of("encode_base64(")),
+                    Map.entry("nested_message", List.of("!1m")),
+                    Map.entry("enum_field", List.of("!1e")),
+                    Map.entry("bool_encoding", List.of("? \"1\" : \"0\""))))));
   }
 
   // ======================================================================
