@@ -65,9 +65,4 @@ public class CppGenerator implements LanguageGenerator {
 
     return result;
   }
-
-  @Override
-  public String languageId() {
-    return "cpp";
-  }
 }

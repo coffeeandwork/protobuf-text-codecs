@@ -78,11 +78,6 @@ public class PbtkPerlGenerator implements LanguageGenerator {
     return result;
   }
 
-  @Override
-  public String languageId() {
-    return "perl";
-  }
-
   // ---------------------------------------------------------------------------
   // Top-level emission
   // ---------------------------------------------------------------------------

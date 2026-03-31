@@ -76,11 +76,6 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
     return result;
   }
 
-  @Override
-  public String languageId() {
-    return "kotlin";
-  }
-
   // ---------------------------------------------------------------------------
   // Top-level message / enum emission
   // ---------------------------------------------------------------------------

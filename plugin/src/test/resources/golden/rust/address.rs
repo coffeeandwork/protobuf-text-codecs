@@ -54,12 +54,12 @@ impl Address {
         Value::Array(arr)
     }
 
-    pub fn to_json_string(&self) -> String {
-        serde_json::to_string(&self.serialize()).unwrap()
+    pub fn to_json_string(&self) -> Result<String, serde_json::Error> {
+        serde_json::to_string(&self.serialize())
     }
 
-    pub fn to_json_bytes(&self) -> Vec<u8> {
-        self.to_json_string().into_bytes()
+    pub fn to_json_bytes(&self) -> Result<Vec<u8>, serde_json::Error> {
+        Ok(self.to_json_string()?.into_bytes())
     }
 
     pub fn deserialize(arr: &Value) -> Result<Self, String> {

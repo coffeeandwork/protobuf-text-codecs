@@ -65,9 +65,4 @@ public class GoGenerator implements LanguageGenerator {
 
     return result;
   }
-
-  @Override
-  public String languageId() {
-    return "go";
-  }
 }

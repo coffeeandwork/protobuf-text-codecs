@@ -114,11 +114,6 @@ public class PbtkRustGenerator implements LanguageGenerator {
     return result;
   }
 
-  @Override
-  public String languageId() {
-    return "rust";
-  }
-
   // ---------------------------------------------------------------------------
   // Code emission
   // ---------------------------------------------------------------------------

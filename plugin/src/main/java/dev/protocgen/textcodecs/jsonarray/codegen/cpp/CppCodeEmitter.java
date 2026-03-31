@@ -394,17 +394,7 @@ public class CppCodeEmitter {
       String cppName = nameResolver.fieldName(field.getName()) + "_";
       String defaultVal = typeMapper.defaultValue(field);
 
-      if (field.isProto3Optional()
-          || field.isMap()
-          || field.isRepeated()
-          || field.getKind() == ProtoField.FieldKind.MESSAGE
-          || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
-        w.line("%s %s = %s;", cppType, cppName, defaultVal);
-      } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
-        w.line("%s %s = %s;", cppType, cppName, defaultVal);
-      } else {
-        w.line("%s %s = %s;", cppType, cppName, defaultVal);
-      }
+      w.line("%s %s = %s;", cppType, cppName, defaultVal);
     }
 
     // Oneof case tracking fields

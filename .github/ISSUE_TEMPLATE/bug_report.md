@@ -5,7 +5,7 @@ labels: bug
 ---
 
 **Plugin**: (jsonarray / pbtkurl / both)
-**Target language**: (java / python / javascript / typescript / c / cpp / rust / zig / go)
+**Target language**: (java / python / javascript / typescript / c / cpp / rust / zig / go / ruby / kotlin / swift / dart / perl / php / csharp / objc)
 
 **Proto definition** (minimal reproducer):
 ```protobuf

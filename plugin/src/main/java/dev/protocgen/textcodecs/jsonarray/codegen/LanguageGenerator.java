@@ -33,7 +33,4 @@ public interface LanguageGenerator {
 
   /** Generate source files for all messages and enums in the given proto file. */
   List<CodeGeneratorResponse.File> generate(ProtoFile file, TypeRegistry registry);
-
-  /** The language identifier used in the lang= parameter (e.g., "java", "python"). */
-  String languageId();
 }

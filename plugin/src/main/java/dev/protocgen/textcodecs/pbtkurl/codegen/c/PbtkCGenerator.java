@@ -92,11 +92,6 @@ public class PbtkCGenerator implements LanguageGenerator {
     return result;
   }
 
-  @Override
-  public String languageId() {
-    return "c";
-  }
-
   // ========================================================================
   // Header file (.h) generation
   // ========================================================================

@@ -65,9 +65,4 @@ public class RubyGenerator implements LanguageGenerator {
 
     return result;
   }
-
-  @Override
-  public String languageId() {
-    return "ruby";
-  }
 }

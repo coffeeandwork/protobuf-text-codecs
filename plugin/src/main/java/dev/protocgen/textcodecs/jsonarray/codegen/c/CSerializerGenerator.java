@@ -138,9 +138,9 @@ public class CSerializerGenerator {
     } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
       w.line("cJSON_AddItemToArray(array, cJSON_CreateNumber((double)%s));", accessor);
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
-      w.line("char* __b64 = jsonarray_base64_encode(%s, %s_len);", accessor, accessor);
-      w.line("cJSON_AddItemToArray(array, cJSON_CreateString(__b64));");
-      w.line("free(__b64);");
+      w.line("char* pb_b64 = jsonarray_base64_encode(%s, %s_len);", accessor, accessor);
+      w.line("cJSON_AddItemToArray(array, cJSON_CreateString(pb_b64));");
+      w.line("free(pb_b64);");
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_STRING) {
       w.line(
           "cJSON_AddItemToArray(array, %s ? cJSON_CreateString(%s) : cJSON_CreateNull());",
@@ -208,13 +208,13 @@ public class CSerializerGenerator {
       case TYPE_SINT64:
       case TYPE_SFIXED64:
         w.line(
-            "{ char __buf[32]; snprintf(__buf, sizeof(__buf), \"%%lld\", (long long)%s); cJSON_AddItemToArray(array, cJSON_CreateString(__buf)); }",
+            "{ char pb_buf[32]; snprintf(pb_buf, sizeof(pb_buf), \"%%lld\", (long long)%s); cJSON_AddItemToArray(array, cJSON_CreateString(pb_buf)); }",
             accessor);
         break;
       case TYPE_UINT64:
       case TYPE_FIXED64:
         w.line(
-            "{ char __buf[32]; snprintf(__buf, sizeof(__buf), \"%%llu\", (unsigned long long)%s); cJSON_AddItemToArray(array, cJSON_CreateString(__buf)); }",
+            "{ char pb_buf[32]; snprintf(pb_buf, sizeof(pb_buf), \"%%llu\", (unsigned long long)%s); cJSON_AddItemToArray(array, cJSON_CreateString(pb_buf)); }",
             accessor);
         break;
       default:
@@ -294,12 +294,12 @@ public class CSerializerGenerator {
                     || field.getProtoType() == FieldDescriptorProto.Type.TYPE_SINT64
                     || field.getProtoType() == FieldDescriptorProto.Type.TYPE_SFIXED64) {
                   w.line(
-                      "{ char __buf[32]; snprintf(__buf, sizeof(__buf), \"%%lld\", (long long)%s); cJSON_AddItemToArray(list_node, cJSON_CreateString(__buf)); }",
+                      "{ char pb_buf[32]; snprintf(pb_buf, sizeof(pb_buf), \"%%lld\", (long long)%s); cJSON_AddItemToArray(list_node, cJSON_CreateString(pb_buf)); }",
                       elemExpr);
                 } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_UINT64
                     || field.getProtoType() == FieldDescriptorProto.Type.TYPE_FIXED64) {
                   w.line(
-                      "{ char __buf[32]; snprintf(__buf, sizeof(__buf), \"%%llu\", (unsigned long long)%s); cJSON_AddItemToArray(list_node, cJSON_CreateString(__buf)); }",
+                      "{ char pb_buf[32]; snprintf(pb_buf, sizeof(pb_buf), \"%%llu\", (unsigned long long)%s); cJSON_AddItemToArray(list_node, cJSON_CreateString(pb_buf)); }",
                       elemExpr);
                 } else {
                   w.line(
@@ -364,11 +364,11 @@ public class CSerializerGenerator {
           keyExpr, valExpr, valExpr);
     } else if (isSignedInt64(field.getMapValueType())) {
       w.line(
-          "{ char __buf[32]; snprintf(__buf, sizeof(__buf), \"%%lld\", (long long)%s); cJSON_AddItemToObject(map_node, %s, cJSON_CreateString(__buf)); }",
+          "{ char pb_buf[32]; snprintf(pb_buf, sizeof(pb_buf), \"%%lld\", (long long)%s); cJSON_AddItemToObject(map_node, %s, cJSON_CreateString(pb_buf)); }",
           valExpr, keyExpr);
     } else if (isUnsignedInt64(field.getMapValueType())) {
       w.line(
-          "{ char __buf[32]; snprintf(__buf, sizeof(__buf), \"%%llu\", (unsigned long long)%s); cJSON_AddItemToObject(map_node, %s, cJSON_CreateString(__buf)); }",
+          "{ char pb_buf[32]; snprintf(pb_buf, sizeof(pb_buf), \"%%llu\", (unsigned long long)%s); cJSON_AddItemToObject(map_node, %s, cJSON_CreateString(pb_buf)); }",
           valExpr, keyExpr);
     } else {
       w.line(
@@ -383,11 +383,11 @@ public class CSerializerGenerator {
       w.line("cJSON_AddItemToArray(pair, cJSON_CreateBool(%s));", keyExpr);
     } else if (isSignedInt64(field.getMapKeyType())) {
       w.line(
-          "{ char __buf[32]; snprintf(__buf, sizeof(__buf), \"%%lld\", (long long)%s); cJSON_AddItemToArray(pair, cJSON_CreateString(__buf)); }",
+          "{ char pb_buf[32]; snprintf(pb_buf, sizeof(pb_buf), \"%%lld\", (long long)%s); cJSON_AddItemToArray(pair, cJSON_CreateString(pb_buf)); }",
           keyExpr);
     } else if (isUnsignedInt64(field.getMapKeyType())) {
       w.line(
-          "{ char __buf[32]; snprintf(__buf, sizeof(__buf), \"%%llu\", (unsigned long long)%s); cJSON_AddItemToArray(pair, cJSON_CreateString(__buf)); }",
+          "{ char pb_buf[32]; snprintf(pb_buf, sizeof(pb_buf), \"%%llu\", (unsigned long long)%s); cJSON_AddItemToArray(pair, cJSON_CreateString(pb_buf)); }",
           keyExpr);
     } else {
       w.line("cJSON_AddItemToArray(pair, cJSON_CreateNumber((double)%s));", keyExpr);
@@ -410,11 +410,11 @@ public class CSerializerGenerator {
           valExpr, valExpr);
     } else if (isSignedInt64(field.getMapValueType())) {
       w.line(
-          "{ char __buf[32]; snprintf(__buf, sizeof(__buf), \"%%lld\", (long long)%s); cJSON_AddItemToArray(pair, cJSON_CreateString(__buf)); }",
+          "{ char pb_buf[32]; snprintf(pb_buf, sizeof(pb_buf), \"%%lld\", (long long)%s); cJSON_AddItemToArray(pair, cJSON_CreateString(pb_buf)); }",
           valExpr);
     } else if (isUnsignedInt64(field.getMapValueType())) {
       w.line(
-          "{ char __buf[32]; snprintf(__buf, sizeof(__buf), \"%%llu\", (unsigned long long)%s); cJSON_AddItemToArray(pair, cJSON_CreateString(__buf)); }",
+          "{ char pb_buf[32]; snprintf(pb_buf, sizeof(pb_buf), \"%%llu\", (unsigned long long)%s); cJSON_AddItemToArray(pair, cJSON_CreateString(pb_buf)); }",
           valExpr);
     } else {
       w.line("cJSON_AddItemToArray(pair, cJSON_CreateNumber((double)%s));", valExpr);

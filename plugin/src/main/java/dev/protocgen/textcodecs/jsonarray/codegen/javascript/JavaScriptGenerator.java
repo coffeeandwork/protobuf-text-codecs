@@ -66,9 +66,4 @@ public class JavaScriptGenerator implements LanguageGenerator {
 
     return result;
   }
-
-  @Override
-  public String languageId() {
-    return "javascript";
-  }
 }

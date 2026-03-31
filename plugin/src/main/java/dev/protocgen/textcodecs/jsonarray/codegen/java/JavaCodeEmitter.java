@@ -1178,8 +1178,6 @@ public class JavaCodeEmitter {
   }
 
   private String simpleTypeName(String protoFullName) {
-    if (protoFullName == null) return "Object";
-    int lastDot = protoFullName.lastIndexOf('.');
-    return lastDot >= 0 ? protoFullName.substring(lastDot + 1) : protoFullName;
+    return JavaNameResolver.simpleTypeName(protoFullName);
   }
 }

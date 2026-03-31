@@ -128,11 +128,6 @@ public class PbtkGoGenerator implements LanguageGenerator {
     return result;
   }
 
-  @Override
-  public String languageId() {
-    return "go";
-  }
-
   // ---------------------------------------------------------------------------
   // Top-level emitters
   // ---------------------------------------------------------------------------

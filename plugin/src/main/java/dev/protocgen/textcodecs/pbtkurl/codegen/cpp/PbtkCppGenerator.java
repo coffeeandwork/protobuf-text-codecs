@@ -76,11 +76,6 @@ public class PbtkCppGenerator implements LanguageGenerator {
     return result;
   }
 
-  @Override
-  public String languageId() {
-    return "cpp";
-  }
-
   // ========================================================================
   // Top-level emission
   // ========================================================================

@@ -65,9 +65,4 @@ public class ZigGenerator implements LanguageGenerator {
 
     return result;
   }
-
-  @Override
-  public String languageId() {
-    return "zig";
-  }
 }

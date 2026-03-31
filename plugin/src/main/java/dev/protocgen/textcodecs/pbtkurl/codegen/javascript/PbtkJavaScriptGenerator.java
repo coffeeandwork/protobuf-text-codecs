@@ -70,11 +70,6 @@ public class PbtkJavaScriptGenerator implements LanguageGenerator {
     return result;
   }
 
-  @Override
-  public String languageId() {
-    return "javascript";
-  }
-
   // ---------------------------------------------------------------------------
   // File-level emission
   // ---------------------------------------------------------------------------

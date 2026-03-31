@@ -70,11 +70,6 @@ public class PbtkDartGenerator implements LanguageGenerator {
     return result;
   }
 
-  @Override
-  public String languageId() {
-    return "dart";
-  }
-
   // ---------------------------------------------------------------------------
   // File-level emission
   // ---------------------------------------------------------------------------

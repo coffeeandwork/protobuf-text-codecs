@@ -87,11 +87,6 @@ public class PythonGenerator implements LanguageGenerator {
     return result;
   }
 
-  @Override
-  public String languageId() {
-    return "python";
-  }
-
   private void collectPackageDirs(String filePath, Set<String> dirs) {
     int lastSlash = filePath.lastIndexOf('/');
     if (lastSlash > 0) {

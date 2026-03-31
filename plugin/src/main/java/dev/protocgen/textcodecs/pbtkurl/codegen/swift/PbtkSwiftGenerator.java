@@ -125,11 +125,6 @@ public class PbtkSwiftGenerator implements LanguageGenerator {
     return result;
   }
 
-  @Override
-  public String languageId() {
-    return "swift";
-  }
-
   // ---------------------------------------------------------------------------
   // Top-level emitters
   // ---------------------------------------------------------------------------

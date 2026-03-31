@@ -65,9 +65,4 @@ public class KotlinGenerator implements LanguageGenerator {
 
     return result;
   }
-
-  @Override
-  public String languageId() {
-    return "kotlin";
-  }
 }

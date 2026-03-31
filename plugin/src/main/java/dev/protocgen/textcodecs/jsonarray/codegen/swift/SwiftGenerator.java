@@ -66,9 +66,4 @@ public class SwiftGenerator implements LanguageGenerator {
 
     return result;
   }
-
-  @Override
-  public String languageId() {
-    return "swift";
-  }
 }

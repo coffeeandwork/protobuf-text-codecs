@@ -6,7 +6,7 @@ use JSON qw(encode_json decode_json);
 use MIME::Base64 qw(encode_base64 decode_base64);
 
 sub new {
-    my ($class, %%args) = @_;
+    my ($class, %args) = @_;
     my $self = bless {}, $class;
     $self->{street} = "";
     $self->{city} = "";

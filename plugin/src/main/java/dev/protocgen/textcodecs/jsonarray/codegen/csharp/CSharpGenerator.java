@@ -65,9 +65,4 @@ public class CSharpGenerator implements LanguageGenerator {
 
     return result;
   }
-
-  @Override
-  public String languageId() {
-    return "csharp";
-  }
 }

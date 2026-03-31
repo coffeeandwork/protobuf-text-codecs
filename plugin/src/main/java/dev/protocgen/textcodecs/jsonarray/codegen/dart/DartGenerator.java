@@ -65,9 +65,4 @@ public class DartGenerator implements LanguageGenerator {
 
     return result;
   }
-
-  @Override
-  public String languageId() {
-    return "dart";
-  }
 }

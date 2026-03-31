@@ -72,11 +72,6 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
     return result;
   }
 
-  @Override
-  public String languageId() {
-    return "csharp";
-  }
-
   // ---------------------------------------------------------------------------
   // Top-level message emission
   // ---------------------------------------------------------------------------

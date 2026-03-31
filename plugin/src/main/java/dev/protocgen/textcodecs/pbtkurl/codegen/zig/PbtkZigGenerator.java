@@ -74,11 +74,6 @@ public class PbtkZigGenerator implements LanguageGenerator {
     return result;
   }
 
-  @Override
-  public String languageId() {
-    return "zig";
-  }
-
   // ---------------------------------------------------------------------------
   // Code emission
   // ---------------------------------------------------------------------------

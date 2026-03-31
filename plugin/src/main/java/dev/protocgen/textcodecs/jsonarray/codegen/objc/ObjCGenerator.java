@@ -87,9 +87,4 @@ public class ObjCGenerator implements LanguageGenerator {
 
     return result;
   }
-
-  @Override
-  public String languageId() {
-    return "objc";
-  }
 }

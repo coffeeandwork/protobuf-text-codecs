@@ -79,12 +79,4 @@ public class ProtoFile {
   public List<String> getDependencies() {
     return dependencies;
   }
-
-  public boolean isProto3() {
-    return "proto3".equals(syntax);
-  }
-
-  public boolean isProto2() {
-    return "proto2".equals(syntax);
-  }
 }

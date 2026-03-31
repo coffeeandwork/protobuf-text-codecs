@@ -72,11 +72,6 @@ public class PbtkTypeScriptGenerator implements LanguageGenerator {
     return result;
   }
 
-  @Override
-  public String languageId() {
-    return "typescript";
-  }
-
   // ---------------------------------------------------------------------------
   // File-level emission
   // ---------------------------------------------------------------------------

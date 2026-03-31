@@ -78,11 +78,6 @@ public class PbtkPhpGenerator implements LanguageGenerator {
     return result;
   }
 
-  @Override
-  public String languageId() {
-    return "php";
-  }
-
   // ---------------------------------------------------------------------------
   // Top-level emission
   // ---------------------------------------------------------------------------

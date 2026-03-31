@@ -96,11 +96,6 @@ public class PbtkPythonGenerator implements LanguageGenerator {
     return result;
   }
 
-  @Override
-  public String languageId() {
-    return "python";
-  }
-
   // ---------------------------------------------------------------------------
   // Top-level emission
   // ---------------------------------------------------------------------------

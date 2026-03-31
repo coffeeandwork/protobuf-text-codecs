@@ -80,27 +80,23 @@ public class RubyDeserializerGenerator {
   }
 
   private void emitFieldDeserialize(CodeWriter w, ProtoField field, int pos) {
-    String rbField =
-        "obj.instance_variable_set(:@" + nameResolver.fieldName(field.getName()) + ", ";
-    String rbFieldDirect = "@" + nameResolver.fieldName(field.getName());
-
     w.line("if size > %d && !data[%d].nil?", pos, pos);
     w.indent();
 
     String elemExpr = "data[" + pos + "]";
 
     if (field.isMap()) {
-      emitMapDeserialize(w, field, rbFieldDirect, elemExpr);
+      emitMapDeserialize(w, field, elemExpr);
     } else if (field.isRepeated()) {
-      emitRepeatedDeserialize(w, field, rbFieldDirect, elemExpr);
+      emitRepeatedDeserialize(w, field, elemExpr);
     } else if (field.isWellKnownType()) {
-      emitMessageDeserialize(w, field, rbFieldDirect, elemExpr);
+      emitMessageDeserialize(w, field, elemExpr);
     } else if (field.getKind() == ProtoField.FieldKind.MESSAGE) {
-      emitMessageDeserialize(w, field, rbFieldDirect, elemExpr);
+      emitMessageDeserialize(w, field, elemExpr);
     } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
-      emitEnumDeserialize(w, field, rbFieldDirect, elemExpr);
+      emitEnumDeserialize(w, field, elemExpr);
     } else {
-      emitScalarDeserialize(w, field, rbFieldDirect, elemExpr);
+      emitScalarDeserialize(w, field, elemExpr);
     }
 
     if (field.isProto3Optional()) {
@@ -116,57 +112,44 @@ public class RubyDeserializerGenerator {
     w.line("end");
   }
 
-  private void emitScalarDeserialize(
-      CodeWriter w, ProtoField field, String rbField, String elemExpr) {
+  private void emitScalarDeserialize(CodeWriter w, ProtoField field, String elemExpr) {
     String readExpr = scalarReadExpr(field.getProtoType(), elemExpr);
-    w.line(
-        "obj.instance_variable_set(:@%s, %s)", nameResolver.fieldName(field.getName()), readExpr);
+    w.line("obj.%s = %s", nameResolver.fieldName(field.getName()), readExpr);
   }
 
-  private void emitEnumDeserialize(
-      CodeWriter w, ProtoField field, String rbField, String elemExpr) {
-    w.line(
-        "obj.instance_variable_set(:@%s, %s.to_i)",
-        nameResolver.fieldName(field.getName()), elemExpr);
+  private void emitEnumDeserialize(CodeWriter w, ProtoField field, String elemExpr) {
+    w.line("obj.%s = %s.to_i", nameResolver.fieldName(field.getName()), elemExpr);
   }
 
-  private void emitMessageDeserialize(
-      CodeWriter w, ProtoField field, String rbField, String elemExpr) {
+  private void emitMessageDeserialize(CodeWriter w, ProtoField field, String elemExpr) {
     String msgType = simpleTypeName(field.getTypeReference());
     w.line(
-        "obj.instance_variable_set(:@%s, %s.deserialize(%s))",
-        nameResolver.fieldName(field.getName()), msgType, elemExpr);
+        "obj.%s = %s.deserialize(%s)", nameResolver.fieldName(field.getName()), msgType, elemExpr);
   }
 
-  private void emitRepeatedDeserialize(
-      CodeWriter w, ProtoField field, String rbField, String elemExpr) {
+  private void emitRepeatedDeserialize(CodeWriter w, ProtoField field, String elemExpr) {
     String fieldNameStr = nameResolver.fieldName(field.getName());
     if (field.getKind() == ProtoField.FieldKind.MESSAGE
         || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
       String msgType = simpleTypeName(field.getTypeReference());
       w.line(
-          "obj.instance_variable_set(:@%s, %s.map { |elem| elem.nil? ? nil : %s.deserialize(elem) })",
+          "obj.%s = %s.map { |elem| elem.nil? ? nil : %s.deserialize(elem) }",
           fieldNameStr, elemExpr, msgType);
     } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
-      w.line(
-          "obj.instance_variable_set(:@%s, %s.map { |elem| elem.to_i })", fieldNameStr, elemExpr);
+      w.line("obj.%s = %s.map { |elem| elem.to_i }", fieldNameStr, elemExpr);
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
-      w.line(
-          "obj.instance_variable_set(:@%s, %s.map { |elem| Base64.strict_decode64(elem) })",
-          fieldNameStr, elemExpr);
+      w.line("obj.%s = %s.map { |elem| Base64.strict_decode64(elem) }", fieldNameStr, elemExpr);
     } else {
       String readExpr = scalarListReadExpr(field.getProtoType());
       if (readExpr != null) {
-        w.line(
-            "obj.instance_variable_set(:@%s, %s.map { |elem| %s })",
-            fieldNameStr, elemExpr, readExpr);
+        w.line("obj.%s = %s.map { |elem| %s }", fieldNameStr, elemExpr, readExpr);
       } else {
-        w.line("obj.instance_variable_set(:@%s, Array(%s))", fieldNameStr, elemExpr);
+        w.line("obj.%s = Array(%s)", fieldNameStr, elemExpr);
       }
     }
   }
 
-  private void emitMapDeserialize(CodeWriter w, ProtoField field, String rbField, String elemExpr) {
+  private void emitMapDeserialize(CodeWriter w, ProtoField field, String elemExpr) {
     boolean stringKey = field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_STRING;
     String fieldNameStr = nameResolver.fieldName(field.getName());
 
@@ -175,18 +158,16 @@ public class RubyDeserializerGenerator {
       if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE) {
         String msgType = simpleTypeName(field.getMapValueTypeReference());
         w.line(
-            "obj.instance_variable_set(:@%s, %s.transform_values { |v| v.nil? ? nil : %s.deserialize(v) })",
+            "obj.%s = %s.transform_values { |v| v.nil? ? nil : %s.deserialize(v) }",
             fieldNameStr, elemExpr, msgType);
       } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
-        w.line(
-            "obj.instance_variable_set(:@%s, %s.transform_values { |v| v.to_i })",
-            fieldNameStr, elemExpr);
+        w.line("obj.%s = %s.transform_values { |v| v.to_i }", fieldNameStr, elemExpr);
       } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
         w.line(
-            "obj.instance_variable_set(:@%s, %s.transform_values { |v| Base64.strict_decode64(v) })",
+            "obj.%s = %s.transform_values { |v| Base64.strict_decode64(v) }",
             fieldNameStr, elemExpr);
       } else {
-        w.line("obj.instance_variable_set(:@%s, Hash[%s])", fieldNameStr, elemExpr);
+        w.line("obj.%s = Hash[%s]", fieldNameStr, elemExpr);
       }
     } else {
       // Non-string-keyed maps are deserialized from a list of [k, v] pairs
@@ -194,20 +175,20 @@ public class RubyDeserializerGenerator {
       if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE) {
         String msgType = simpleTypeName(field.getMapValueTypeReference());
         w.line(
-            "obj.instance_variable_set(:@%s, %s.each_with_object({}) { |pair, h| h[%s] = pair[1].nil? ? nil : %s.deserialize(pair[1]) })",
+            "obj.%s = %s.each_with_object({}) { |pair, h| h[%s] = pair[1].nil? ? nil : %s.deserialize(pair[1]) }",
             fieldNameStr, elemExpr, keyRead, msgType);
       } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
         w.line(
-            "obj.instance_variable_set(:@%s, %s.each_with_object({}) { |pair, h| h[%s] = pair[1].to_i })",
+            "obj.%s = %s.each_with_object({}) { |pair, h| h[%s] = pair[1].to_i }",
             fieldNameStr, elemExpr, keyRead);
       } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
         w.line(
-            "obj.instance_variable_set(:@%s, %s.each_with_object({}) { |pair, h| h[%s] = Base64.strict_decode64(pair[1]) })",
+            "obj.%s = %s.each_with_object({}) { |pair, h| h[%s] = Base64.strict_decode64(pair[1]) }",
             fieldNameStr, elemExpr, keyRead);
       } else {
         String valRead = mapValueReadExpr(field.getMapValueType(), "pair[1]");
         w.line(
-            "obj.instance_variable_set(:@%s, %s.each_with_object({}) { |pair, h| h[%s] = %s })",
+            "obj.%s = %s.each_with_object({}) { |pair, h| h[%s] = %s }",
             fieldNameStr, elemExpr, keyRead, valRead);
       }
     }

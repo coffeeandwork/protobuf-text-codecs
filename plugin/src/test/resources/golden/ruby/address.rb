@@ -39,16 +39,16 @@ module Example
       obj = new
       size = data.length
       if size > 0 && !data[0].nil?
-        obj.instance_variable_set(:@street, data[0].to_s)
+        obj.street = data[0].to_s
       end
       if size > 1 && !data[1].nil?
-        obj.instance_variable_set(:@city, data[1].to_s)
+        obj.city = data[1].to_s
       end
       if size > 2 && !data[2].nil?
-        obj.instance_variable_set(:@state, data[2].to_s)
+        obj.state = data[2].to_s
       end
       if size > 3 && !data[3].nil?
-        obj.instance_variable_set(:@zip, data[3].to_i)
+        obj.zip = data[3].to_i
       end
       obj
     end

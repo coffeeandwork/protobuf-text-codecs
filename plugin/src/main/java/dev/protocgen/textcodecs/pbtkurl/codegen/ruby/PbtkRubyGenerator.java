@@ -78,11 +78,6 @@ public class PbtkRubyGenerator implements LanguageGenerator {
     return result;
   }
 
-  @Override
-  public String languageId() {
-    return "ruby";
-  }
-
   // ---------------------------------------------------------------------------
   // Top-level emission
   // ---------------------------------------------------------------------------

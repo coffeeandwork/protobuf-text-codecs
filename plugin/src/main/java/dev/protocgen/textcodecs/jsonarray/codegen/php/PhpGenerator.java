@@ -65,9 +65,4 @@ public class PhpGenerator implements LanguageGenerator {
 
     return result;
   }
-
-  @Override
-  public String languageId() {
-    return "php";
-  }
 }

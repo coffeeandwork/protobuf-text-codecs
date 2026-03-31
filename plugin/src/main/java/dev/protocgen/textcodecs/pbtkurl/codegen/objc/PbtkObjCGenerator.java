@@ -94,11 +94,6 @@ public class PbtkObjCGenerator implements LanguageGenerator {
     return result;
   }
 
-  @Override
-  public String languageId() {
-    return "objc";
-  }
-
   // ========================================================================
   // Header file (.h) generation
   // ========================================================================

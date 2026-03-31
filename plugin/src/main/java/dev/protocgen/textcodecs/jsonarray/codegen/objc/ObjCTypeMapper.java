@@ -111,7 +111,7 @@ public class ObjCTypeMapper implements TypeMapper {
       return "nonatomic, assign";
     }
     return switch (field.getProtoType()) {
-      case TYPE_STRING -> "nonatomic, strong";
+      case TYPE_STRING -> "nonatomic, copy";
       case TYPE_BYTES -> "nonatomic, strong";
       default -> "nonatomic, assign";
     };

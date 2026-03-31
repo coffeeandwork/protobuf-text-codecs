@@ -57,17 +57,17 @@ public class RustSerializerGenerator {
     // Convenience: serialize to JSON string
     w.blankLine();
     w.block(
-        "pub fn to_json_string(&self) -> String",
+        "pub fn to_json_string(&self) -> Result<String, serde_json::Error>",
         () -> {
-          w.line("serde_json::to_string(&self.serialize()).unwrap()");
+          w.line("serde_json::to_string(&self.serialize())");
         });
 
     // Convenience: serialize to bytes
     w.blankLine();
     w.block(
-        "pub fn to_json_bytes(&self) -> Vec<u8>",
+        "pub fn to_json_bytes(&self) -> Result<Vec<u8>, serde_json::Error>",
         () -> {
-          w.line("self.to_json_string().into_bytes()");
+          w.line("Ok(self.to_json_string()?.into_bytes())");
         });
   }
 

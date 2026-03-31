@@ -179,7 +179,7 @@ public class PerlCodeEmitter {
     w.blankLine();
     w.line("sub new {");
     w.indent();
-    w.line("my ($class, %%args) = @_;");
+    w.line("my ($class, %args) = @_;");
     w.line("my $self = bless {}, $class;");
 
     // Field initializations

@@ -65,9 +65,4 @@ public class JavaGenerator implements LanguageGenerator {
 
     return result;
   }
-
-  @Override
-  public String languageId() {
-    return "java";
-  }
 }

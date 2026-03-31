@@ -82,9 +82,4 @@ public class CGenerator implements LanguageGenerator {
 
     return result;
   }
-
-  @Override
-  public String languageId() {
-    return "c";
-  }
 }

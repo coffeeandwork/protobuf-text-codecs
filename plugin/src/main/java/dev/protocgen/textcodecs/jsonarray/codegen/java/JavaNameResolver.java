@@ -94,6 +94,13 @@ public class JavaNameResolver implements NameResolver {
     return dir + "/" + messageName + ".java";
   }
 
+  /** Extract the simple (unqualified) type name from a proto full name. */
+  public static String simpleTypeName(String protoFullName) {
+    if (protoFullName == null) return "Object";
+    int lastDot = protoFullName.lastIndexOf('.');
+    return lastDot >= 0 ? protoFullName.substring(lastDot + 1) : protoFullName;
+  }
+
   /** Convert snake_case to camelCase. */
   static String snakeToCamel(String snake) {
     if (snake == null || snake.isEmpty()) return snake;

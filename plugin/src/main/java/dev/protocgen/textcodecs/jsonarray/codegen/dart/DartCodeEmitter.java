@@ -289,14 +289,14 @@ public class DartCodeEmitter {
             return;
           }
           StringBuilder sb = new StringBuilder();
-          sb.append("return '").append(className).append("{");
+          sb.append("return \"").append(className).append("{");
           for (int i = 0; i < message.getFields().size(); i++) {
             ProtoField field = message.getFields().get(i);
             String dartName = nameResolver.fieldName(field.getName());
             if (i > 0) sb.append(", ");
             sb.append(field.getName()).append("=$").append(dartName);
           }
-          sb.append("}';");
+          sb.append("}\";");
           w.line(sb.toString());
         });
   }
