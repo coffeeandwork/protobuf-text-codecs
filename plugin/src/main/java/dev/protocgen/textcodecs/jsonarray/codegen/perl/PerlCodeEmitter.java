@@ -105,7 +105,7 @@ public class PerlCodeEmitter {
     w.blankLine();
     w.line("use strict;");
     w.line("use warnings;");
-    w.line("use JSON qw(encode_json decode_json);");
+    w.line("use JSON::PP qw(encode_json decode_json);");
     w.line("use MIME::Base64 qw(encode_base64 decode_base64);");
   }
 
@@ -299,7 +299,7 @@ public class PerlCodeEmitter {
     w.blankLine();
     w.line("use strict;");
     w.line("use warnings;");
-    w.line("use JSON qw(encode_json decode_json);");
+    w.line("use JSON::PP qw(encode_json decode_json);");
     w.line("use MIME::Base64 qw(encode_base64 decode_base64);");
 
     // Nested enums

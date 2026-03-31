@@ -2,7 +2,7 @@ package Example::Address;
 
 use strict;
 use warnings;
-use JSON qw(encode_json decode_json);
+use JSON::PP qw(encode_json decode_json);
 use MIME::Base64 qw(encode_base64 decode_base64);
 
 sub new {
