@@ -1,9 +1,9 @@
 package example
 
-import {
+import (
 	"encoding/json"
 	"fmt"
-}
+)
 
 type Address struct {
 	Street string

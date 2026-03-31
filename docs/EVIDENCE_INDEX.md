@@ -89,7 +89,7 @@ LIMITATIONS:
 
 | Language | Path | Purpose |
 |----------|------|---------|
-| Java | `runtime/java/src/main/java/dev/protocgen/textcodecs/jsonarray/runtime/` | JsonArrayCodec interface, FieldCodecs |
+| Java | `runtime/java/src/main/java/dev/protocgen/textcodecs/jsonarray/runtime/` | JsonArrayWriter, JsonArrayReader (zero-dependency) |
 | C | `runtime/c/src/codec.c`, `runtime/c/include/jsonarray/codec.h` | Base64, string utils, cJSON helpers |
 | C++ | `runtime/cpp/include/jsonarray/codec.hpp` | Header-only base64 |
 | Rust | `runtime/rust/src/lib.rs`, `runtime/rust/Cargo.toml` | serde_json traits, base64 helpers |
@@ -198,7 +198,7 @@ Note: 15 `@ParameterizedTest` methods x 16 languages = 240 expanded invocations 
 | Document | Path | Content |
 |----------|------|---------|
 | Security Assessment | `docs/SECURITY_ASSESSMENT.md` | STRIDE analysis, 9 vulnerabilities, SBOM |
-| Bug Catalog | `BUG_CATALOG.md` | 36 bugs identified and fixed |
+| Bug Catalog | `docs/archive/BUG_CATALOG_v0.1.md` | 36 bugs identified and fixed |
 
 ---
 
@@ -223,8 +223,8 @@ Note: 15 `@ParameterizedTest` methods x 16 languages = 240 expanded invocations 
 | CHANGELOG | `CHANGELOG.md` | Version history |
 | CONTRIBUTING | `CONTRIBUTING.md` | Contribution guidelines |
 | LICENSE | `LICENSE` | Apache 2.0 |
-| Bug Catalog | `BUG_CATALOG.md` | 36 bugs found and fixed |
-| Implementation Plan | `docs/PLAN.md` | Original implementation plan |
+| Bug Catalog | `docs/archive/BUG_CATALOG_v0.1.md` | 36 bugs found and fixed |
+| Implementation Plan | `docs/archive/PLAN.md` | Original implementation plan |
 
 ---
 

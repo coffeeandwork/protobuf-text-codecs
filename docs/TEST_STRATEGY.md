@@ -248,7 +248,6 @@ LIMITATIONS:
 |--------------|--------|
 | `Main.java` (stdin/stdout I/O) | Entry point I/O — tested via integration tests, not unit tests |
 | `toString()` methods in model classes | Cosmetic debug output |
-| `FieldCodecs.java` reflection paths | Depends on actual protobuf well-known type classes at runtime |
 
 ### 5.3 Coverage Gaps (Known)
 

@@ -43,8 +43,7 @@ class Address {
 
         std::string to_json_string() const;
         static Address from_json_string(const std::string& json);
-}
-;
+};
 
 inline nlohmann::json Address::serialize() const {
     nlohmann::json arr = nlohmann::json::array();

@@ -176,7 +176,7 @@ LIMITATIONS:
 - **ID:** FR-017
 - **Type:** Functional
 - **Priority:** Medium
-- **Derived From:** `WellKnownType.java`, `FieldCodecs.java`
+- **Derived From:** `WellKnownType.java`
 - **Statement:** The system SHALL handle Google well-known types with special encoding: Timestamp as RFC 3339 string, Duration as `"Xs.Yns"` string, wrapper types as unwrapped scalars or null, Struct/Value/ListValue as JSON pass-through, FieldMask as comma-separated string, Empty as empty array.
 - **Verification:** Test
 - **Acceptance Criteria:** A Timestamp field serializes as `"2024-01-15T10:30:00Z"`, not as a nested array.

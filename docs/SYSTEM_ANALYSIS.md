@@ -60,9 +60,10 @@ protobuf-text-codecs/
 ├── integration-tests/                # Shell-based integration tests (4 files)
 ├── protoc-gen-jsonarray              # Bash wrapper script
 ├── docs/                             # Documentation
-│   ├── PLAN.md
+│   ├── archive/                      # Historical documents
+│   │   ├── BUG_CATALOG_v0.1.md
+│   │   └── PLAN.md
 │   └── SYSTEM_ANALYSIS.md           # This file
-├── BUG_CATALOG.md                    # Known issues catalog (36 bugs, all fixed)
 ├── build.gradle  settings.gradle     # Groovy DSL build files
 └── LICENSE  README.md  CHANGELOG.md  CONTRIBUTING.md
 ```
@@ -267,7 +268,7 @@ None. The plugin is completely stateless across invocations. Within a single inv
 - `RustGenerator.emittedModFiles` (`HashSet<String>`) and `modulesByDir` (`LinkedHashMap`) — tracks emitted `mod.rs` files
 - Both are instance fields on generator objects created fresh per `PluginRunner.run()` invocation, accessed only from the main thread
 
-**Generated code is NOT thread-safe** (mutable fields, unsynchronized `BitSet` for presence tracking). This matches standard protobuf-generated code behavior and is documented in BUG_CATALOG.md.
+**Generated code is NOT thread-safe** (mutable fields, unsynchronized `BitSet` for presence tracking). This matches standard protobuf-generated code behavior and is documented in `docs/archive/BUG_CATALOG_v0.1.md`.
 
 ## 9. Error Handling Patterns
 
@@ -298,7 +299,7 @@ No environment variables, no config files, no system properties. The plugin's be
 | Flag | Location | Description | Information Needed |
 |------|----------|-------------|-------------------|
 | [UNKNOWN_CRITICALITY] | All 17 generators | Cannot determine which target languages are mission-critical vs. nice-to-have | Which languages will be used in production? |
-| [ASSUMED_BEHAVIOR] | `FieldCodecs.java` reflection | Assumes well-known types have standard getters (`getSeconds()`, `getNanos()`, `getValue()`) | Confirm protobuf-java maintains these across versions |
+| [ASSUMED_BEHAVIOR] | Well-known type getters | Assumes well-known types have standard getters (`getSeconds()`, `getNanos()`, `getValue()`) | Confirm protobuf-java maintains these across versions |
 | [EXTERNAL_DEPENDENCY] | `protoc` compiler | Plugin correctness depends on protoc providing valid CodeGeneratorRequest | protoc version compatibility range (tested: 33.4, claimed: "any") |
 | ~~[EXTERNAL_DEPENDENCY]~~ | ~~Jackson 2.18.2~~ | **Resolved**: Jackson removed in v0.2.0; replaced with built-in JsonArrayWriter/JsonArrayReader | — |
 | [ASSUMED_BEHAVIOR] | Zig generator | Generated Zig uses `std.json`/`std.base64` APIs that change across Zig versions | Target Zig version(s) |

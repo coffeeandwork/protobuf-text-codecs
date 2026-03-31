@@ -346,7 +346,7 @@ public class CppCodeEmitter {
   private void emitClassDeclaration(CodeWriter w, ProtoMessage message) {
     String className = nameResolver.messageClassName(message.getName());
 
-    w.block(
+    w.blockContinue(
         "class " + className,
         () -> {
           // Private fields
@@ -385,7 +385,7 @@ public class CppCodeEmitter {
 
           w.dedent();
         });
-    w.line(";");
+    w.rawLine(";");
   }
 
   private void emitFields(CodeWriter w, ProtoMessage message) {
@@ -466,7 +466,7 @@ public class CppCodeEmitter {
 
   private void emitEnum(CodeWriter w, ProtoEnum protoEnum) {
     String enumName = protoEnum.getName();
-    w.block(
+    w.blockContinue(
         "enum class " + enumName,
         () -> {
           for (int i = 0; i < protoEnum.getValues().size(); i++) {
@@ -475,7 +475,7 @@ public class CppCodeEmitter {
             w.line("%s = %d%s", nameResolver.enumConstantName(val.name()), val.number(), suffix);
           }
         });
-    w.line(";");
+    w.rawLine(";");
 
     // to_number helper
     w.blankLine();

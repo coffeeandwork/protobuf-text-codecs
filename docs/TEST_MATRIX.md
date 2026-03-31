@@ -136,7 +136,7 @@ LIMITATIONS:
 
 | Requirement | Gap | Reason | Mitigation |
 |-------------|-----|--------|------------|
-| PERF-001/002 | No automated benchmark | Benchmarks are flaky in CI | Manual execution; tracked in BUG_CATALOG.md |
+| PERF-001/002 | No automated benchmark | Benchmarks are flaky in CI | Manual execution; tracked in `docs/archive/BUG_CATALOG_v0.1.md` |
 | FR-012 (7 langs) | Only Java↔Python cross-language tested | Requires toolchains for Go, JS, etc. | Pattern tests provide partial coverage |
 | HAZ-006 | No C dynamic analysis | Requires Valgrind/ASan | Static review performed |
 | HAZ-008 | Proto2 defaults in 16 non-Java langs | Only Java audited | Flagged in HAZARD_ANALYSIS.md |

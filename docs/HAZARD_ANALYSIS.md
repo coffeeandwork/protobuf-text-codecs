@@ -52,7 +52,7 @@ LIMITATIONS:
 
 | Runtime | Criticality | Failure Mode | Effect |
 |---------|-------------|--------------|--------|
-| Java FieldCodecs | **Medium** | Reflection failure on WKT | Returns null node — WKT serialized as null instead of formatted value |
+| Java JsonArrayWriter/Reader | **Low** | Incorrect JSON output | Malformed JSON array serialization or deserialization failure |
 | C codec.c | **High** | Buffer overflow in base64, use-after-free | Memory corruption in user's C application |
 | C++ codec.hpp | **Low** | Wrong base64 output | Data corruption for bytes fields |
 | Rust lib.rs | **Low** | Wrong trait implementation | Compilation error (detectable) |

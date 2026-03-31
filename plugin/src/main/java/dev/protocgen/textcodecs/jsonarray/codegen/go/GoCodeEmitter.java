@@ -54,13 +54,13 @@ public class GoCodeEmitter {
     // Imports - collect needed imports
     Set<String> imports = collectImports(message);
     if (!imports.isEmpty()) {
-      w.block(
-          "import",
-          () -> {
-            for (String imp : imports) {
-              w.line("\"%s\"", imp);
-            }
-          });
+      w.line("import (");
+      w.indent();
+      for (String imp : imports) {
+        w.line("\"%s\"", imp);
+      }
+      w.dedent();
+      w.line(")");
       w.blankLine();
     }
 
