@@ -112,6 +112,8 @@ public class PythonSerializerGenerator {
       w.line("result.append(%s)", pyField);
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
       w.line("result.append(base64.b64encode(%s).decode(\"ascii\"))", pyField);
+    } else if (INT64_TYPES.contains(field.getProtoType())) {
+      w.line("result.append(str(%s))", pyField);
     } else {
       w.line("result.append(%s)", pyField);
     }
@@ -133,6 +135,14 @@ public class PythonSerializerGenerator {
     emitScalarAppend(w, field, pyField);
   }
 
+  private static final Set<FieldDescriptorProto.Type> INT64_TYPES =
+      Set.of(
+          FieldDescriptorProto.Type.TYPE_INT64,
+          FieldDescriptorProto.Type.TYPE_SINT64,
+          FieldDescriptorProto.Type.TYPE_SFIXED64,
+          FieldDescriptorProto.Type.TYPE_UINT64,
+          FieldDescriptorProto.Type.TYPE_FIXED64);
+
   private void emitScalarAppend(CodeWriter w, ProtoField field, String pyField) {
     if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
       w.line("result.append(base64.b64encode(%s).decode(\"ascii\"))", pyField);
@@ -141,6 +151,8 @@ public class PythonSerializerGenerator {
       w.line(
           "result.append(None if math.isnan(%s) or math.isinf(%s) else %s)",
           pyField, pyField, pyField);
+    } else if (INT64_TYPES.contains(field.getProtoType())) {
+      w.line("result.append(str(%s))", pyField);
     } else {
       w.line("result.append(%s)", pyField);
     }
@@ -179,6 +191,8 @@ public class PythonSerializerGenerator {
       w.line(
           "result.append([base64.b64encode(%s).decode(\"ascii\") for %s in %s])",
           itemVar, itemVar, pyField);
+    } else if (INT64_TYPES.contains(field.getProtoType())) {
+      w.line("result.append([str(%s) for %s in %s])", itemVar, itemVar, pyField);
     } else {
       w.line("result.append(list(%s))", pyField);
     }

@@ -160,8 +160,22 @@ public class CppDeserializerGenerator {
     return switch (type) {
       case TYPE_DOUBLE -> nodeExpr + ".get<double>()";
       case TYPE_FLOAT -> nodeExpr + ".get<float>()";
-      case TYPE_INT64, TYPE_SINT64, TYPE_SFIXED64 -> nodeExpr + ".get<int64_t>()";
-      case TYPE_UINT64, TYPE_FIXED64 -> nodeExpr + ".get<uint64_t>()";
+      case TYPE_INT64, TYPE_SINT64, TYPE_SFIXED64 ->
+          "("
+              + nodeExpr
+              + ".is_string() ? std::stoll("
+              + nodeExpr
+              + ".get<std::string>()) : "
+              + nodeExpr
+              + ".get<int64_t>())";
+      case TYPE_UINT64, TYPE_FIXED64 ->
+          "("
+              + nodeExpr
+              + ".is_string() ? std::stoull("
+              + nodeExpr
+              + ".get<std::string>()) : "
+              + nodeExpr
+              + ".get<uint64_t>())";
       case TYPE_INT32, TYPE_SINT32, TYPE_SFIXED32 -> nodeExpr + ".get<int32_t>()";
       case TYPE_UINT32, TYPE_FIXED32 -> nodeExpr + ".get<uint32_t>()";
       case TYPE_BOOL -> nodeExpr + ".get<bool>()";

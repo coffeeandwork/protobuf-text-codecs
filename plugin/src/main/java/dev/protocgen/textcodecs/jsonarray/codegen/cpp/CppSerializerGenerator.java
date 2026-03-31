@@ -101,9 +101,19 @@ public class CppSerializerGenerator {
       w.line("arr.push_back(static_cast<int>(%s));", cppField);
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
       w.line("arr.push_back(jsonarray::base64_encode(%s));", cppField);
+    } else if (is64BitType(field.getProtoType())) {
+      w.line("arr.push_back(std::to_string(%s));", cppField);
     } else {
       w.line("arr.push_back(%s);", cppField);
     }
+  }
+
+  private static boolean is64BitType(FieldDescriptorProto.Type type) {
+    return type == FieldDescriptorProto.Type.TYPE_INT64
+        || type == FieldDescriptorProto.Type.TYPE_SINT64
+        || type == FieldDescriptorProto.Type.TYPE_SFIXED64
+        || type == FieldDescriptorProto.Type.TYPE_UINT64
+        || type == FieldDescriptorProto.Type.TYPE_FIXED64;
   }
 
   private void emitScalarSerialize(CodeWriter w, ProtoField field, String cppField) {
@@ -118,6 +128,8 @@ public class CppSerializerGenerator {
               w.line(
                   "arr.push_back(std::isnan(%s.value()) || std::isinf(%s.value()) ? nlohmann::json(nullptr) : nlohmann::json(%s.value()));",
                   cppField, cppField, cppField);
+            } else if (is64BitType(field.getProtoType())) {
+              w.line("arr.push_back(std::to_string(%s.value()));", cppField);
             } else {
               w.line("arr.push_back(%s.value());", cppField);
             }
@@ -132,6 +144,8 @@ public class CppSerializerGenerator {
       w.line(
           "arr.push_back(std::isnan(%s) || std::isinf(%s) ? nlohmann::json(nullptr) : nlohmann::json(%s));",
           cppField, cppField, cppField);
+    } else if (is64BitType(field.getProtoType())) {
+      w.line("arr.push_back(std::to_string(%s));", cppField);
     } else {
       w.line("arr.push_back(%s);", cppField);
     }
@@ -177,6 +191,8 @@ public class CppSerializerGenerator {
                   w.line("list_node.push_back(static_cast<int>(%s));", elemVar);
                 } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
                   w.line("list_node.push_back(jsonarray::base64_encode(%s));", elemVar);
+                } else if (is64BitType(field.getProtoType())) {
+                  w.line("list_node.push_back(std::to_string(%s));", elemVar);
                 } else {
                   w.line("list_node.push_back(%s);", elemVar);
                 }
@@ -222,6 +238,10 @@ public class CppSerializerGenerator {
       w.line("map_node[%s] = %s.serialize();", keyExpr, valueExpr);
     } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
       w.line("map_node[%s] = static_cast<int>(%s);", keyExpr, valueExpr);
+    } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+      w.line("map_node[%s] = jsonarray::base64_encode(%s);", keyExpr, valueExpr);
+    } else if (is64BitType(field.getMapValueType())) {
+      w.line("map_node[%s] = std::to_string(%s);", keyExpr, valueExpr);
     } else {
       w.line("map_node[%s] = %s;", keyExpr, valueExpr);
     }
@@ -232,6 +252,10 @@ public class CppSerializerGenerator {
       w.line("pair.push_back(%s.serialize());", valueExpr);
     } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
       w.line("pair.push_back(static_cast<int>(%s));", valueExpr);
+    } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+      w.line("pair.push_back(jsonarray::base64_encode(%s));", valueExpr);
+    } else if (is64BitType(field.getMapValueType())) {
+      w.line("pair.push_back(std::to_string(%s));", valueExpr);
     } else {
       w.line("pair.push_back(%s);", valueExpr);
     }
