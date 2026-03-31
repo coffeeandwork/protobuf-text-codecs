@@ -216,6 +216,7 @@ public class CCodeEmitter {
     w.line("#include <stdlib.h>");
     w.line("#include <string.h>");
     w.line("#include <stdio.h>");
+    w.line("#include <math.h>");
     w.line("#include \"cjson/cJSON.h\"");
     w.line("#include \"jsonarray/codec.h\"");
   }

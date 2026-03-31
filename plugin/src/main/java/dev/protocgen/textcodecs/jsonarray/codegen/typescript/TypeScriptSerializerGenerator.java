@@ -137,6 +137,11 @@ public class TypeScriptSerializerGenerator {
       emitBytesEncode(w, jsField, "array.push(%s);");
     } else if (isInt64Type(field.getProtoType())) {
       w.line("array.push(String(%s));", jsField);
+    } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_FLOAT
+        || field.getProtoType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+      w.line(
+          "array.push(Number.isNaN(%s) || !Number.isFinite(%s) ? null : %s);",
+          jsField, jsField, jsField);
     } else {
       w.line("array.push(%s);", jsField);
     }

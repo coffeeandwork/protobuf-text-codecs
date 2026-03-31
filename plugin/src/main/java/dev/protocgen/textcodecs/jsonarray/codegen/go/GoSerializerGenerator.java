@@ -132,6 +132,22 @@ public class GoSerializerGenerator {
               w.line("arr[%d] = base64.StdEncoding.EncodeToString(%s)", pos, goField);
             } else if (isInt64Type(field.getProtoType())) {
               w.line("arr[%d] = %s", pos, int64ToStringExpr("*" + goField, field.getProtoType()));
+            } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_FLOAT
+                || field.getProtoType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+              w.block(
+                  "if math.IsNaN(float64(*"
+                      + goField
+                      + ")) || math.IsInf(float64(*"
+                      + goField
+                      + "), 0)",
+                  () -> {
+                    w.line("arr[%d] = nil", pos);
+                  });
+              w.block(
+                  "else",
+                  () -> {
+                    w.line("arr[%d] = *%s", pos, goField);
+                  });
             } else {
               w.line("arr[%d] = *%s", pos, goField);
             }
@@ -152,6 +168,19 @@ public class GoSerializerGenerator {
       case TYPE_UINT64:
       case TYPE_FIXED64:
         w.line("arr[%d] = %s", pos, int64ToStringExpr(goField, field.getProtoType()));
+        break;
+      case TYPE_FLOAT:
+      case TYPE_DOUBLE:
+        w.block(
+            "if math.IsNaN(float64(" + goField + ")) || math.IsInf(float64(" + goField + "), 0)",
+            () -> {
+              w.line("arr[%d] = nil", pos);
+            });
+        w.block(
+            "else",
+            () -> {
+              w.line("arr[%d] = %s", pos, goField);
+            });
         break;
       default:
         w.line("arr[%d] = %s", pos, goField);

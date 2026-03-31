@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
 #include "cjson/cJSON.h"
 #include "jsonarray/codec.h"
 

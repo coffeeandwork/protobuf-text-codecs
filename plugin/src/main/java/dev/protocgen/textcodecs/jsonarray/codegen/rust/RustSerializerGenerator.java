@@ -130,6 +130,10 @@ public class RustSerializerGenerator {
               w.line("Some(v) => arr.push(json!(general_purpose::STANDARD.encode(v))),");
             } else if (isInt64Type(field.getProtoType())) {
               w.line("Some(v) => arr.push(json!(v.to_string())),");
+            } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_FLOAT
+                || field.getProtoType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+              w.line(
+                  "Some(v) => arr.push(if v.is_nan() || v.is_infinite() { json!(null) } else { json!(v) }),");
             } else {
               w.line("Some(v) => arr.push(json!(v)),");
             }
@@ -156,6 +160,12 @@ public class RustSerializerGenerator {
       case TYPE_FIXED64:
         // Serialize 64-bit integers as strings to avoid JSON float64 precision loss
         w.line("arr.push(json!(%s.to_string()));", rustField);
+        break;
+      case TYPE_FLOAT:
+      case TYPE_DOUBLE:
+        w.line(
+            "arr.push(if %s.is_nan() || %s.is_infinite() { json!(null) } else { json!(%s) });",
+            rustField, rustField, rustField);
         break;
       case TYPE_STRING:
         w.line("arr.push(json!(%s));", rustField);

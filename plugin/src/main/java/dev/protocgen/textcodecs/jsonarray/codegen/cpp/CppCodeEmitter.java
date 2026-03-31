@@ -139,6 +139,7 @@ public class CppCodeEmitter {
     List<String> includes = new ArrayList<>();
     includes.add("#include <string>");
     includes.add("#include <cstdint>");
+    includes.add("#include <cmath>");
     includes.add("#include <nlohmann/json.hpp>");
     includes.add("#include <jsonarray/codec.hpp>");
 

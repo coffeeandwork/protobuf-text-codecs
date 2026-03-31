@@ -256,7 +256,14 @@ public class ZigSerializerGenerator {
   /** Convert a Zig scalar expression to a json.Value expression. */
   private String scalarToJson(String expr, FieldDescriptorProto.Type protoType) {
     return switch (protoType) {
-      case TYPE_DOUBLE, TYPE_FLOAT -> "json.Value{ .float = @as(f64, " + expr + ") }";
+      case TYPE_DOUBLE, TYPE_FLOAT ->
+          "if (std.math.isNan(@as(f64, "
+              + expr
+              + ")) or std.math.isInf(@as(f64, "
+              + expr
+              + "))) .null else json.Value{ .float = @as(f64, "
+              + expr
+              + ") }";
       case TYPE_INT32, TYPE_SINT32, TYPE_SFIXED32 ->
           "json.Value{ .integer = @as(i64, @intCast(" + expr + ")) }";
       case TYPE_INT64, TYPE_SINT64, TYPE_SFIXED64 ->

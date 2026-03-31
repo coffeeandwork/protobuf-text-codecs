@@ -138,6 +138,9 @@ public class RubySerializerGenerator {
   private void emitScalarAppend(CodeWriter w, ProtoField field, String rbField) {
     if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
       w.line("result << Base64.strict_encode64(%s)", rbField);
+    } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_FLOAT
+        || field.getProtoType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+      w.line("result << (%s.nan? || %s.infinite? ? nil : %s)", rbField, rbField, rbField);
     } else {
       w.line("result << %s", rbField);
     }

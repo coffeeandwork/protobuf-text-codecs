@@ -136,6 +136,11 @@ public class PythonSerializerGenerator {
   private void emitScalarAppend(CodeWriter w, ProtoField field, String pyField) {
     if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
       w.line("result.append(base64.b64encode(%s).decode(\"ascii\"))", pyField);
+    } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_FLOAT
+        || field.getProtoType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+      w.line(
+          "result.append(None if math.isnan(%s) or math.isinf(%s) else %s)",
+          pyField, pyField, pyField);
     } else {
       w.line("result.append(%s)", pyField);
     }

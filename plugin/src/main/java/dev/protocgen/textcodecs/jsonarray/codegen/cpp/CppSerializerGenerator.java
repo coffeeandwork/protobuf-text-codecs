@@ -113,6 +113,11 @@ public class CppSerializerGenerator {
           () -> {
             if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
               w.line("arr.push_back(jsonarray::base64_encode(%s.value()));", cppField);
+            } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_FLOAT
+                || field.getProtoType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+              w.line(
+                  "arr.push_back(std::isnan(%s.value()) || std::isinf(%s.value()) ? nlohmann::json(nullptr) : nlohmann::json(%s.value()));",
+                  cppField, cppField, cppField);
             } else {
               w.line("arr.push_back(%s.value());", cppField);
             }
@@ -122,6 +127,11 @@ public class CppSerializerGenerator {
     }
     if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
       w.line("arr.push_back(jsonarray::base64_encode(%s));", cppField);
+    } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_FLOAT
+        || field.getProtoType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+      w.line(
+          "arr.push_back(std::isnan(%s) || std::isinf(%s) ? nlohmann::json(nullptr) : nlohmann::json(%s));",
+          cppField, cppField, cppField);
     } else {
       w.line("arr.push_back(%s);", cppField);
     }

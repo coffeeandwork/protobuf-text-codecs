@@ -115,6 +115,7 @@ public class PythonCodeEmitter {
   private void emitImports(CodeWriter w) {
     w.line("import json");
     w.line("import base64");
+    w.line("import math");
   }
 
   /**

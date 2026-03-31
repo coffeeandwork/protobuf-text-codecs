@@ -144,6 +144,11 @@ public class PerlSerializerGenerator {
       w.line("push @result, encode_base64(%s, \"\");", plField);
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BOOL) {
       w.line("push @result, %s ? JSON::true : JSON::false;", plField);
+    } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_FLOAT
+        || field.getProtoType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+      w.line(
+          "push @result, (%s != %s || %s == 9**9**9 || %s == -(9**9**9)) ? undef : %s;",
+          plField, plField, plField, plField, plField);
     } else {
       w.line("push @result, %s;", plField);
     }

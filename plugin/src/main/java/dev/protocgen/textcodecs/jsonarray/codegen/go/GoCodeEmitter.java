@@ -226,6 +226,11 @@ public class GoCodeEmitter {
       imports.add("strconv");
     }
 
+    // Check if we need math for NaN/Infinity checks on float/double fields
+    if (needsFloat(message)) {
+      imports.add("math");
+    }
+
     return imports;
   }
 
@@ -262,6 +267,22 @@ public class GoCodeEmitter {
     }
     for (ProtoMessage nested : message.getNestedMessages()) {
       if (needsBase64(nested)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private boolean needsFloat(ProtoMessage message) {
+    for (ProtoField field : message.getFields()) {
+      com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type t = field.getProtoType();
+      if (t == com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type.TYPE_FLOAT
+          || t == com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type.TYPE_DOUBLE) {
+        return true;
+      }
+    }
+    for (ProtoMessage nested : message.getNestedMessages()) {
+      if (needsFloat(nested)) {
         return true;
       }
     }

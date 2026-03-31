@@ -200,7 +200,9 @@ public class CSerializerGenerator {
         break;
       case TYPE_DOUBLE:
       case TYPE_FLOAT:
-        w.line("cJSON_AddItemToArray(array, cJSON_CreateNumber((double)%s));", accessor);
+        w.line(
+            "cJSON_AddItemToArray(array, isnan((double)%s) || isinf((double)%s) ? cJSON_CreateNull() : cJSON_CreateNumber((double)%s));",
+            accessor, accessor, accessor);
         break;
       case TYPE_INT64:
       case TYPE_SINT64:
