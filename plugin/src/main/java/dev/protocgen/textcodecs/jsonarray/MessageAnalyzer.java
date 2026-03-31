@@ -219,11 +219,6 @@ public class MessageAnalyzer {
   }
 
   private ProtoField analyzeField(
-      FieldDescriptorProto field, DescriptorProto parent, String parentFullName, boolean isProto2) {
-    return analyzeField(field, parent, parentFullName, isProto2, null);
-  }
-
-  private ProtoField analyzeField(
       FieldDescriptorProto field,
       DescriptorProto parent,
       String parentFullName,

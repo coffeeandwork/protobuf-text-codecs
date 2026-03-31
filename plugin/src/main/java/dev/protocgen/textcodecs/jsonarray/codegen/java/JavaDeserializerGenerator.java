@@ -19,7 +19,6 @@ import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoMessage;
-import java.nio.charset.StandardCharsets;
 
 /**
  * Generates static deserialization methods for Java classes. Reads fields positionally from a
@@ -246,14 +245,14 @@ public class JavaDeserializerGenerator {
   }
 
   /**
-   * Convert a proto schema default value string to a Java expression. Proto2 fields can specify
-   * default values like [default = "hello"] or [default = 42].
+   * Convert a proto schema default value string to a Java expression. Delegates to {@link
+   * JavaTypeMapper#formatSchemaDefault} for the core logic and adds extra Unicode line/paragraph
+   * separator escaping for string defaults.
    */
   private String schemaDefaultExpression(ProtoField field, String defaultValue) {
     if (defaultValue == null || defaultValue.isEmpty()) {
       return typeMapper.defaultValue(field);
     }
-    // Enum defaults: validate the constant name is a safe identifier (VULN-003)
     if (field.getKind() == ProtoField.FieldKind.ENUM) {
       if (!defaultValue.matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
         throw new IllegalArgumentException(
@@ -262,57 +261,12 @@ public class JavaDeserializerGenerator {
       String enumType = simpleTypeName(field.getTypeReference());
       return enumType + "." + defaultValue;
     }
-    return switch (field.getProtoType()) {
-      case TYPE_STRING ->
-          "\""
-              + defaultValue
-                  .replace("\\", "\\\\")
-                  .replace("\"", "\\\"")
-                  .replace("\n", "\\n")
-                  .replace("\r", "\\r")
-                  .replace("\t", "\\t")
-                  .replace("\0", "\\0")
-                  .replace("\u2028", "\\u2028")
-                  .replace("\u2029", "\\u2029")
-              + "\"";
-      case TYPE_BOOL -> {
-        if (!"true".equals(defaultValue) && !"false".equals(defaultValue)) {
-          throw new IllegalArgumentException(
-              "Bool default value '" + defaultValue + "' is not 'true' or 'false'");
-        }
-        yield defaultValue;
-      }
-      case TYPE_DOUBLE -> {
-        if ("inf".equals(defaultValue)) yield "Double.POSITIVE_INFINITY";
-        if ("-inf".equals(defaultValue)) yield "Double.NEGATIVE_INFINITY";
-        if ("nan".equals(defaultValue)) yield "Double.NaN";
-        yield defaultValue.contains(".") ? defaultValue : defaultValue + ".0";
-      }
-      case TYPE_FLOAT -> {
-        if ("inf".equals(defaultValue)) yield "Float.POSITIVE_INFINITY";
-        if ("-inf".equals(defaultValue)) yield "Float.NEGATIVE_INFINITY";
-        if ("nan".equals(defaultValue)) yield "Float.NaN";
-        yield (defaultValue.contains(".") ? defaultValue : defaultValue + ".0") + "f";
-      }
-      case TYPE_INT64, TYPE_SINT64, TYPE_SFIXED64, TYPE_UINT64, TYPE_FIXED64 -> defaultValue + "L";
-      case TYPE_BYTES -> {
-        if (defaultValue.isEmpty()) {
-          yield "new byte[0]";
-        }
-        yield "java.util.Base64.getDecoder().decode(\""
-            + java.util.Base64.getEncoder()
-                .encodeToString(defaultValue.getBytes(StandardCharsets.ISO_8859_1))
-            + "\")";
-      }
-      default -> {
-        // Validate numeric defaults are actually numbers (VULN-003)
-        if (!defaultValue.matches("-?[0-9]+")) {
-          throw new IllegalArgumentException(
-              "Numeric default value '" + defaultValue + "' is not a valid integer");
-        }
-        yield defaultValue;
-      }
-    };
+    String expr = typeMapper.formatSchemaDefault(field.getProtoType(), defaultValue);
+    // Add Unicode line/paragraph separator escaping for string defaults
+    if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_STRING) {
+      expr = expr.replace("\u2028", "\\u2028").replace("\u2029", "\\u2029");
+    }
+    return expr;
   }
 
   private String simpleTypeName(String protoFullName) {

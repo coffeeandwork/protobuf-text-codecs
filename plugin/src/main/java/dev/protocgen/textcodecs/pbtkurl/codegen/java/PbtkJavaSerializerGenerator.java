@@ -18,6 +18,7 @@ package dev.protocgen.textcodecs.pbtkurl.codegen.java;
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
 import dev.protocgen.textcodecs.jsonarray.codegen.java.JavaNameResolver;
+import dev.protocgen.textcodecs.jsonarray.codegen.java.JavaTypeMapper;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoMessage;
 
@@ -29,11 +30,12 @@ import dev.protocgen.textcodecs.jsonarray.model.ProtoMessage;
  */
 public class PbtkJavaSerializerGenerator {
 
-  private final dev.protocgen.textcodecs.jsonarray.codegen.java.JavaNameResolver nameResolver;
+  private final JavaNameResolver nameResolver;
+  private final JavaTypeMapper typeMapper;
 
-  public PbtkJavaSerializerGenerator(
-      dev.protocgen.textcodecs.jsonarray.codegen.java.JavaNameResolver nameResolver) {
+  public PbtkJavaSerializerGenerator(JavaNameResolver nameResolver, JavaTypeMapper typeMapper) {
     this.nameResolver = nameResolver;
+    this.typeMapper = typeMapper;
   }
 
   public void generate(CodeWriter w, ProtoMessage message) {
@@ -302,8 +304,7 @@ public class PbtkJavaSerializerGenerator {
         || field.getKind() == ProtoField.FieldKind.ENUM) {
       return simpleTypeName(field.getTypeReference());
     }
-    return new dev.protocgen.textcodecs.jsonarray.codegen.java.JavaTypeMapper()
-        .boxedScalarType(field.getProtoType());
+    return typeMapper.boxedScalarType(field.getProtoType());
   }
 
   static String pbtkTypeChar(FieldDescriptorProto.Type type) {

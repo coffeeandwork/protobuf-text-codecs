@@ -18,6 +18,7 @@ package dev.protocgen.textcodecs.pbtkurl.codegen.java;
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
 import dev.protocgen.textcodecs.jsonarray.codegen.java.JavaNameResolver;
+import dev.protocgen.textcodecs.jsonarray.codegen.java.JavaTypeMapper;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoMessage;
 
@@ -30,12 +31,10 @@ import dev.protocgen.textcodecs.jsonarray.model.ProtoMessage;
  */
 public class PbtkJavaDeserializerGenerator {
 
-  private final dev.protocgen.textcodecs.jsonarray.codegen.java.JavaTypeMapper typeMapper;
-  private final dev.protocgen.textcodecs.jsonarray.codegen.java.JavaNameResolver nameResolver;
+  private final JavaTypeMapper typeMapper;
+  private final JavaNameResolver nameResolver;
 
-  public PbtkJavaDeserializerGenerator(
-      dev.protocgen.textcodecs.jsonarray.codegen.java.JavaTypeMapper typeMapper,
-      dev.protocgen.textcodecs.jsonarray.codegen.java.JavaNameResolver nameResolver) {
+  public PbtkJavaDeserializerGenerator(JavaTypeMapper typeMapper, JavaNameResolver nameResolver) {
     this.typeMapper = typeMapper;
     this.nameResolver = nameResolver;
   }

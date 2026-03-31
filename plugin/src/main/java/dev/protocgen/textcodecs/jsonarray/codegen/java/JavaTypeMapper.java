@@ -99,7 +99,8 @@ public class JavaTypeMapper implements TypeMapper {
    * Format a proto2 schema-specified default value string as a Java expression. The defaultValue is
    * the raw string from the proto file's [default = ...] annotation.
    */
-  private String formatSchemaDefault(FieldDescriptorProto.Type protoType, String defaultValue) {
+  /** Format a proto2 schema-specified default value string as a Java expression (VULN-003). */
+  public String formatSchemaDefault(FieldDescriptorProto.Type protoType, String defaultValue) {
     return switch (protoType) {
       case TYPE_STRING ->
           "\""

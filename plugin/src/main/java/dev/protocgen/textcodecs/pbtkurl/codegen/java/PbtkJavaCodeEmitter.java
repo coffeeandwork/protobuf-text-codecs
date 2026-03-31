@@ -41,7 +41,7 @@ public class PbtkJavaCodeEmitter {
   public PbtkJavaCodeEmitter(JavaTypeMapper typeMapper, JavaNameResolver nameResolver) {
     this.typeMapper = typeMapper;
     this.nameResolver = nameResolver;
-    this.serializerGen = new PbtkJavaSerializerGenerator(nameResolver);
+    this.serializerGen = new PbtkJavaSerializerGenerator(nameResolver, typeMapper);
     this.deserializerGen = new PbtkJavaDeserializerGenerator(typeMapper, nameResolver);
   }
 
