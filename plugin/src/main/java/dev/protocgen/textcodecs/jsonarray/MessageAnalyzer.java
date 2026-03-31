@@ -163,7 +163,7 @@ public class MessageAnalyzer {
 
     // Warn about very sparse field numbering
     if (!fields.isEmpty()) {
-      int maxFieldNumber = fields.stream().mapToInt(ProtoField::getFieldNumber).max().orElse(0);
+      int maxFieldNumber = fields.get(fields.size() - 1).getFieldNumber();
       if (maxFieldNumber > 2 * fields.size()) {
         System.err.println(
             "protoc-gen-jsonarray: warning: message '"

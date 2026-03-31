@@ -31,6 +31,7 @@ public class ProtoMessage {
   private final List<OneofGroup> oneofGroups;
   private final int maxFieldNumber;
   private final ProtoField[] fieldsByPosition; // array-indexed O(1) lookup, no boxing
+  private final Map<Integer, ProtoField> fieldsByPositionMap; // HashMap fallback for large fields
   private final String comment; // leading comment from the proto source, null if none
 
   // Field numbers above this limit use a HashMap fallback instead of a position array,
@@ -75,8 +76,14 @@ public class ProtoMessage {
         posArr[field.getArrayPosition()] = field;
       }
       this.fieldsByPosition = posArr;
+      this.fieldsByPositionMap = null;
     } else {
       this.fieldsByPosition = null;
+      Map<Integer, ProtoField> map = new HashMap<>();
+      for (ProtoField field : fields) {
+        map.put(field.getArrayPosition(), field);
+      }
+      this.fieldsByPositionMap = map;
     }
     this.comment = comment;
   }
@@ -120,9 +127,9 @@ public class ProtoMessage {
       if (position >= fieldsByPosition.length) return null;
       return fieldsByPosition[position];
     }
-    // Fallback for large field numbers: linear scan
-    for (ProtoField f : fields) {
-      if (f.getArrayPosition() == position) return f;
+    // Fallback for large field numbers: HashMap lookup (O(1) amortized)
+    if (fieldsByPositionMap != null) {
+      return fieldsByPositionMap.get(position);
     }
     return null;
   }
@@ -133,6 +140,9 @@ public class ProtoMessage {
    * prefer {@link #fieldAtPosition(int)} for hot paths.
    */
   public Map<Integer, ProtoField> getFieldsByPosition() {
+    if (fieldsByPositionMap != null) {
+      return Collections.unmodifiableMap(fieldsByPositionMap);
+    }
     Map<Integer, ProtoField> map = new HashMap<>();
     if (fieldsByPosition != null) {
       for (int i = 0; i < fieldsByPosition.length; i++) {

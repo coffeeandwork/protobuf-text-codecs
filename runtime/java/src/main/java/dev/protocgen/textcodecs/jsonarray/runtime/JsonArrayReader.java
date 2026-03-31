@@ -31,6 +31,7 @@ public final class JsonArrayReader {
 
   private final String json;
   private int pos;
+  private final StringBuilder sb = new StringBuilder(64);
 
   private JsonArrayReader(String json) {
     this.json = json;
@@ -146,7 +147,7 @@ public final class JsonArrayReader {
 
   private String readString() {
     expect('"');
-    StringBuilder sb = new StringBuilder();
+    sb.setLength(0); // reuse
     while (pos < json.length()) {
       char c = json.charAt(pos++);
       if (c == '"') {
@@ -223,14 +224,13 @@ public final class JsonArrayReader {
       readDigits();
     }
 
-    String raw = json.substring(start, pos);
     try {
       if (isDouble) {
-        return Double.parseDouble(raw);
+        return Double.parseDouble(json.substring(start, pos));
       }
-      return Long.parseLong(raw);
+      return Long.parseLong(json, start, pos, 10);
     } catch (NumberFormatException e) {
-      throw error("invalid number: " + raw);
+      throw error("invalid number: " + json.substring(start, pos));
     }
   }
 

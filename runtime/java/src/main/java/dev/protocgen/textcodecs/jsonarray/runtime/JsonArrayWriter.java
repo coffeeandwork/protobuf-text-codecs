@@ -21,43 +21,51 @@ package dev.protocgen.textcodecs.jsonarray.runtime;
  */
 public final class JsonArrayWriter {
 
+  private static final char[] HEX = "0123456789abcdef".toCharArray();
+
   private JsonArrayWriter() {}
 
   /** Appends a JSON-escaped string (with surrounding quotes) to the StringBuilder. */
   public static void appendQuotedString(StringBuilder sb, String s) {
     sb.append('"');
+    int start = 0;
     for (int i = 0; i < s.length(); i++) {
       char c = s.charAt(i);
+      String escape = null;
       switch (c) {
         case '"':
-          sb.append("\\\"");
+          escape = "\\\"";
           break;
         case '\\':
-          sb.append("\\\\");
-          break;
-        case '\b':
-          sb.append("\\b");
-          break;
-        case '\f':
-          sb.append("\\f");
+          escape = "\\\\";
           break;
         case '\n':
-          sb.append("\\n");
+          escape = "\\n";
           break;
         case '\r':
-          sb.append("\\r");
+          escape = "\\r";
           break;
         case '\t':
-          sb.append("\\t");
+          escape = "\\t";
+          break;
+        case '\b':
+          escape = "\\b";
+          break;
+        case '\f':
+          escape = "\\f";
           break;
         default:
           if (c < 0x20) {
-            sb.append(String.format("\\u%04x", (int) c));
-          } else {
-            sb.append(c);
+            escape = "\\u00" + HEX[c >> 4] + HEX[c & 0xF];
           }
       }
+      if (escape != null) {
+        sb.append(s, start, i); // bulk copy safe segment
+        sb.append(escape);
+        start = i + 1;
+      }
     }
+    sb.append(s, start, s.length()); // final safe segment
     sb.append('"');
   }
 }
