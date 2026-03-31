@@ -39,6 +39,7 @@ import dev.protocgen.textcodecs.pbtkurl.codegen.rust.PbtkRustGenerator;
 import dev.protocgen.textcodecs.pbtkurl.codegen.swift.PbtkSwiftGenerator;
 import dev.protocgen.textcodecs.pbtkurl.codegen.typescript.PbtkTypeScriptGenerator;
 import dev.protocgen.textcodecs.pbtkurl.codegen.zig.PbtkZigGenerator;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -51,34 +52,35 @@ import java.util.Set;
  */
 public class PbtkPluginRunner {
 
-  private static final Map<String, java.util.function.Supplier<LanguageGenerator>> GENERATORS =
-      new HashMap<>();
+  private static final Map<String, java.util.function.Supplier<LanguageGenerator>> GENERATORS;
 
   static {
-    GENERATORS.put("c", PbtkCGenerator::new);
-    GENERATORS.put("cpp", PbtkCppGenerator::new);
-    GENERATORS.put("c++", PbtkCppGenerator::new);
-    GENERATORS.put("csharp", PbtkCSharpGenerator::new);
-    GENERATORS.put("c#", PbtkCSharpGenerator::new);
-    GENERATORS.put("dart", PbtkDartGenerator::new);
-    GENERATORS.put("go", PbtkGoGenerator::new);
-    GENERATORS.put("java", PbtkJavaGenerator::new);
-    GENERATORS.put("javascript", PbtkJavaScriptGenerator::new);
-    GENERATORS.put("js", PbtkJavaScriptGenerator::new);
-    GENERATORS.put("kotlin", PbtkKotlinGenerator::new);
-    GENERATORS.put("kt", PbtkKotlinGenerator::new);
-    GENERATORS.put("objc", PbtkObjCGenerator::new);
-    GENERATORS.put("objective-c", PbtkObjCGenerator::new);
-    GENERATORS.put("perl", PbtkPerlGenerator::new);
-    GENERATORS.put("php", PbtkPhpGenerator::new);
-    GENERATORS.put("python", PbtkPythonGenerator::new);
-    GENERATORS.put("ruby", PbtkRubyGenerator::new);
-    GENERATORS.put("rb", PbtkRubyGenerator::new);
-    GENERATORS.put("rust", PbtkRustGenerator::new);
-    GENERATORS.put("swift", PbtkSwiftGenerator::new);
-    GENERATORS.put("typescript", PbtkTypeScriptGenerator::new);
-    GENERATORS.put("ts", PbtkTypeScriptGenerator::new);
-    GENERATORS.put("zig", PbtkZigGenerator::new);
+    Map<String, java.util.function.Supplier<LanguageGenerator>> map = new HashMap<>();
+    map.put("c", PbtkCGenerator::new);
+    map.put("cpp", PbtkCppGenerator::new);
+    map.put("c++", PbtkCppGenerator::new);
+    map.put("csharp", PbtkCSharpGenerator::new);
+    map.put("c#", PbtkCSharpGenerator::new);
+    map.put("dart", PbtkDartGenerator::new);
+    map.put("go", PbtkGoGenerator::new);
+    map.put("java", PbtkJavaGenerator::new);
+    map.put("javascript", PbtkJavaScriptGenerator::new);
+    map.put("js", PbtkJavaScriptGenerator::new);
+    map.put("kotlin", PbtkKotlinGenerator::new);
+    map.put("kt", PbtkKotlinGenerator::new);
+    map.put("objc", PbtkObjCGenerator::new);
+    map.put("objective-c", PbtkObjCGenerator::new);
+    map.put("perl", PbtkPerlGenerator::new);
+    map.put("php", PbtkPhpGenerator::new);
+    map.put("python", PbtkPythonGenerator::new);
+    map.put("ruby", PbtkRubyGenerator::new);
+    map.put("rb", PbtkRubyGenerator::new);
+    map.put("rust", PbtkRustGenerator::new);
+    map.put("swift", PbtkSwiftGenerator::new);
+    map.put("typescript", PbtkTypeScriptGenerator::new);
+    map.put("ts", PbtkTypeScriptGenerator::new);
+    map.put("zig", PbtkZigGenerator::new);
+    GENERATORS = Collections.unmodifiableMap(map);
   }
 
   /** Process a CodeGeneratorRequest and produce a CodeGeneratorResponse. */

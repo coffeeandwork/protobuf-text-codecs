@@ -56,10 +56,26 @@ class PerformanceBenchmarkTest {
   private static CodeGeneratorRequest simplePbtkJavaRequest;
   private static CodeGeneratorRequest complexPbtkJavaRequest;
 
-  // -- Language names (9 canonical languages, no aliases) --
+  // -- Language names (17 canonical languages, no aliases) --
 
   private static final String[] ALL_LANGUAGES = {
-    "java", "python", "javascript", "typescript", "c", "cpp", "rust", "zig", "go"
+    "java",
+    "python",
+    "javascript",
+    "typescript",
+    "c",
+    "cpp",
+    "rust",
+    "zig",
+    "go",
+    "csharp",
+    "kotlin",
+    "swift",
+    "dart",
+    "php",
+    "ruby",
+    "objc",
+    "perl"
   };
 
   @BeforeAll

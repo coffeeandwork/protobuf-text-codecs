@@ -404,6 +404,14 @@ Each generated class/struct provides serialization and deserialization methods. 
 | C++ | `user.toJsonString()` | `User::fromJsonString(s)` |
 | Rust | `user.to_json_string()` | `User::from_json_string(s)?` |
 | Zig | `user.toJsonString(alloc)` | `User.fromJsonString(s, alloc)` |
+| C# | `user.ToJsonString()` | `User.FromJsonString(s)` |
+| Kotlin | `user.toJsonString()` | `User.fromJsonString(s)` |
+| Swift | `user.toJsonString()` | `User.fromJsonString(s)` |
+| Dart | `user.toJsonString()` | `User.fromJsonString(s)` |
+| PHP | `$user->toJsonString()` | `User::fromJsonString($s)` |
+| Ruby | `user.to_json_string` | `User.from_json_string(s)` |
+| Objective-C | `[user toJsonString]` | `[User fromJsonString:s]` |
+| Perl | `$user->to_json_string()` | `User->from_json_string($s)` |
 
 All languages also expose lower-level `serialize()`/`deserialize()` methods that work with the language's native JSON type (e.g., `serde_json::Value` in Rust, `cJSON*` in C). C requires explicit memory management via `user_free()` and `free()`.
 
@@ -419,6 +427,14 @@ All languages also expose lower-level `serialize()`/`deserialize()` methods that
 | C++ | `user.to_pbtk_url()` | `User::from_pbtk_url(s)` |
 | Rust | `user.to_pbtk_url()` | `User::from_pbtk_url(s)?` |
 | Zig | `user.toPbtkUrl(alloc)` | `User.fromPbtkUrl(s, alloc)` |
+| C# | `user.ToPbtkUrl()` | `User.FromPbtkUrl(s)` |
+| Kotlin | `user.toPbtkUrl()` | `User.fromPbtkUrl(s)` |
+| Swift | `user.toPbtkUrl()` | `User.fromPbtkUrl(s)` |
+| Dart | `user.toPbtkUrl()` | `User.fromPbtkUrl(s)` |
+| PHP | `$user->toPbtkUrl()` | `User::fromPbtkUrl($s)` |
+| Ruby | `user.to_pbtk_url` | `User.from_pbtk_url(s)` |
+| Objective-C | `[user toPbtkUrl]` | `[User fromPbtkUrl:s]` |
+| Perl | `$user->to_pbtk_url()` | `User->from_pbtk_url($s)` |
 
 No JSON library dependency — pure string manipulation. Generated classes have the same field accessors as the JSON array versions.
 

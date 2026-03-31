@@ -38,6 +38,7 @@ import dev.protocgen.textcodecs.jsonarray.codegen.swift.SwiftGenerator;
 import dev.protocgen.textcodecs.jsonarray.codegen.typescript.TypeScriptGenerator;
 import dev.protocgen.textcodecs.jsonarray.codegen.zig.ZigGenerator;
 import dev.protocgen.textcodecs.jsonarray.model.TypeRegistry;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -59,34 +60,35 @@ import java.util.Set;
  */
 public class PluginRunner {
 
-  private static final Map<String, java.util.function.Supplier<LanguageGenerator>> GENERATORS =
-      new HashMap<>();
+  private static final Map<String, java.util.function.Supplier<LanguageGenerator>> GENERATORS;
 
   static {
-    GENERATORS.put("java", JavaGenerator::new);
-    GENERATORS.put("python", PythonGenerator::new);
-    GENERATORS.put("javascript", JavaScriptGenerator::new);
-    GENERATORS.put("js", JavaScriptGenerator::new);
-    GENERATORS.put("typescript", TypeScriptGenerator::new);
-    GENERATORS.put("ts", TypeScriptGenerator::new);
-    GENERATORS.put("c", CGenerator::new);
-    GENERATORS.put("cpp", CppGenerator::new);
-    GENERATORS.put("c++", CppGenerator::new);
-    GENERATORS.put("csharp", CSharpGenerator::new);
-    GENERATORS.put("c#", CSharpGenerator::new);
-    GENERATORS.put("dart", DartGenerator::new);
-    GENERATORS.put("go", GoGenerator::new);
-    GENERATORS.put("kotlin", KotlinGenerator::new);
-    GENERATORS.put("kt", KotlinGenerator::new);
-    GENERATORS.put("objc", ObjCGenerator::new);
-    GENERATORS.put("objective-c", ObjCGenerator::new);
-    GENERATORS.put("perl", PerlGenerator::new);
-    GENERATORS.put("php", PhpGenerator::new);
-    GENERATORS.put("ruby", RubyGenerator::new);
-    GENERATORS.put("rb", RubyGenerator::new);
-    GENERATORS.put("rust", RustGenerator::new);
-    GENERATORS.put("swift", SwiftGenerator::new);
-    GENERATORS.put("zig", ZigGenerator::new);
+    Map<String, java.util.function.Supplier<LanguageGenerator>> map = new HashMap<>();
+    map.put("java", JavaGenerator::new);
+    map.put("python", PythonGenerator::new);
+    map.put("javascript", JavaScriptGenerator::new);
+    map.put("js", JavaScriptGenerator::new);
+    map.put("typescript", TypeScriptGenerator::new);
+    map.put("ts", TypeScriptGenerator::new);
+    map.put("c", CGenerator::new);
+    map.put("cpp", CppGenerator::new);
+    map.put("c++", CppGenerator::new);
+    map.put("csharp", CSharpGenerator::new);
+    map.put("c#", CSharpGenerator::new);
+    map.put("dart", DartGenerator::new);
+    map.put("go", GoGenerator::new);
+    map.put("kotlin", KotlinGenerator::new);
+    map.put("kt", KotlinGenerator::new);
+    map.put("objc", ObjCGenerator::new);
+    map.put("objective-c", ObjCGenerator::new);
+    map.put("perl", PerlGenerator::new);
+    map.put("php", PhpGenerator::new);
+    map.put("ruby", RubyGenerator::new);
+    map.put("rb", RubyGenerator::new);
+    map.put("rust", RustGenerator::new);
+    map.put("swift", SwiftGenerator::new);
+    map.put("zig", ZigGenerator::new);
+    GENERATORS = Collections.unmodifiableMap(map);
   }
 
   /** Process a CodeGeneratorRequest and produce a CodeGeneratorResponse. */

@@ -508,7 +508,23 @@ class IndexingAuditTest {
             .build();
 
     String[] languages = {
-      "java", "python", "javascript", "typescript", "go", "rust", "cpp", "c", "zig"
+      "java",
+      "python",
+      "javascript",
+      "typescript",
+      "go",
+      "rust",
+      "cpp",
+      "c",
+      "zig",
+      "csharp",
+      "kotlin",
+      "swift",
+      "dart",
+      "php",
+      "ruby",
+      "objc",
+      "perl"
     };
 
     for (String lang : languages) {

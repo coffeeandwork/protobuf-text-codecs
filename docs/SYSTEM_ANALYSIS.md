@@ -436,4 +436,4 @@ Integration tests (not in JUnit):
 4. **Zig standard library instability.** Generated Zig code may break with future Zig releases.
 5. **int64 string encoding may surprise users.** Correct per protobuf JSON spec but breaks expectations of tools expecting numeric JSON values.
 6. **Proto2 default value escaping only validated for Java.** Other generators may not properly escape special characters in schema-specified defaults.
-7. ~~No golden-file/snapshot tests.~~ **Resolved.** GoldenFileTest.java provides exact output comparison for all 17 languages against checked-in golden files.
+7. ~~No golden-file/snapshot tests.~~ **Resolved.** GoldenFileTest.java provides exact output comparison for 9 languages (Java, Python, JavaScript, TypeScript, C, C++, Rust, Zig, Go) against checked-in golden files.
