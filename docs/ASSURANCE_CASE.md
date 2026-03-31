@@ -172,6 +172,16 @@ LIMITATIONS:
   - Extension warning
 - **Evidence Strength:** Strong — comprehensive coverage of plugin protocol interactions
 
+### E12: Schema Evolution Compatibility
+
+- **Claim Supported:** C1 (field positioning), C2 (type encoding consistency)
+- **Requirements:** FR-001, FR-002, SR-001
+- **Test Files:**
+  - `SchemaEvolutionTest.java` (119 tests) — forward/backward compatibility across languages, field addition/removal, renumbering
+  - `JavaSchemaEvolutionTest.java` (11 tests) — Java-specific round-trip schema evolution verification
+- **Coverage:** 130 tests total covering schema evolution scenarios
+- **Evidence Strength:** Strong — systematic verification of positional encoding stability under schema changes across all supported languages
+
 ---
 
 ## 4. Coverage Summary
@@ -180,20 +190,20 @@ LIMITATIONS:
 
 | Metric | Value |
 |--------|-------|
-| Total tests | 929 |
-| Tests passing | 929 (100%) |
+| Total tests | 1,059 |
+| Tests passing | 1,059 (100%) |
 | Tests failing | 0 |
-| Test files | 17 classes |
+| Test files | 19 classes |
 | Parameterized test methods | 25+ (expanding to ~500+ test invocations across 16-17 languages) |
-| Golden file snapshots | 9+ (one per language) |
+| Golden file snapshots | 17 (one per language) |
 | Integration test scripts | 2 (cross-language, schema-evolution) |
 
 ### JaCoCo Coverage (current HEAD)
 
 | Metric | Percentage |
 |--------|------------|
-| Instruction coverage | 74.0% |
-| Line coverage | 76.5% |
+| Instruction coverage | 73.9% |
+| Line coverage | 76.6% |
 
 ### Coverage by Component
 
@@ -257,13 +267,18 @@ LIMITATIONS:
 - **Mitigation:** The C runtime includes bounds-checked array access (`jsonarray_array_get`). The risk requires maliciously crafted JSON input at runtime.
 - **Recommendation:** Add size validation in generated C deserializer code templates.
 
+### Resolved: Schema Evolution (previously unverified)
+- **Status:** Resolved with 130 tests (SchemaEvolutionTest: 119, JavaSchemaEvolutionTest: 11)
+- **Coverage:** Forward/backward compatibility, field addition/removal, renumbering verified across all supported languages.
+- **Evidence:** E12
+
 ---
 
 ## 6. Assurance Level Assessment
 
 | Aspect | Level | Justification |
 |--------|-------|---------------|
-| Functional correctness | **Moderate-High** | 929 tests, 76.5% line coverage, all 17 languages tested via parameterized framework |
+| Functional correctness | **Moderate-High** | 1,059 tests, 76.6% line coverage, all 17 languages tested via parameterized framework |
 | Safety (data integrity) | **High** | Core positioning invariant verified by dedicated audit tests; int64 string encoding verified in all generators |
 | Security (code injection) | **Moderate-High** | 9 vulnerabilities identified and fixed; defense-in-depth validation; no fuzz testing |
 | Protocol compliance | **High** | 22 plugin runner tests cover parameter parsing, error handling, feature flags |

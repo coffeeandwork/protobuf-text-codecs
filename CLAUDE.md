@@ -65,7 +65,7 @@ The plugin is implemented in Java 17 and uses the standard protoc plugin protoco
 - `ProtoFileProcessor.java` — per-file code generation dispatch
 - `CodeWriter.java` — indented source code output utility
 - `model/` — language-neutral model: ProtoField, ProtoMessage, ProtoEnum, ProtoFile, TypeRegistry, WellKnownType
-- `codegen/` — shared interfaces (LanguageGenerator, NameResolver, TypeMapper) and KeywordUtil (~950 lines, 16 keyword sets: 14 in KeywordUtil, 2 delegated from NameResolvers)
+- `codegen/` — shared interfaces (LanguageGenerator, NameResolver, TypeMapper) and KeywordUtil (951 lines, 16 keyword sets: 14 in KeywordUtil, 2 delegated from NameResolvers)
 
 ### JSON Array Generators (`dev.protocgen.textcodecs.jsonarray.codegen.<lang>`)
 
@@ -90,15 +90,16 @@ Each language has 6 classes: Generator, CodeEmitter, SerializerGenerator, Deseri
 ## Testing
 
 ```bash
-./gradlew :plugin:test                    # All tests (929 tests)
+./gradlew :plugin:test                    # All tests (1,059 tests)
 ./gradlew :plugin:test --tests "*.PbtkJavaCodeGenTest"  # pbtk tests only
 ./gradlew :plugin:jacocoTestReport        # Coverage report
 ./gradlew spotlessCheck                   # Code formatting
 ```
 
-- 17 test classes covering JSON array generators, 3 for pbtk
+- 19 test classes covering JSON array generators, 3 for pbtk, 2 for schema evolution
 - Parameterized tests across 16 non-Java languages
 - Golden-file snapshot tests for all 17 languages
+- Schema evolution tests: 130 tests across all 17 languages (forward/backward compat, field removal, gap handling)
 - Safety/security tests (SR-001–004, SEC-001–004) for both JSON array and pbtk formats
 - Integration tests (Java ↔ Python cross-language round-trip)
 

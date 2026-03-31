@@ -119,7 +119,9 @@ LIMITATIONS:
 | PbtkJavaCodeGenTest | `plugin/src/test/java/.../pbtkurl/PbtkJavaCodeGenTest.java` | 27 | FR-011 (pbtk) |
 | PbtkMultiLanguageCodeGenTest | `plugin/src/test/java/.../pbtkurl/PbtkMultiLanguageCodeGenTest.java` | 144 | FR-011, FR-013 (pbtk) |
 | PbtkSafetySecurityTest | `plugin/src/test/java/.../pbtkurl/PbtkSafetySecurityTest.java` | 70 | SR-001-SR-004, SEC-001-SEC-004 (pbtk) |
-| | | **Total: 929** | |
+| SchemaEvolutionTest | `plugin/src/test/java/.../jsonarray/SchemaEvolutionTest.java` | 119 | FR-001, FR-002, SR-001 |
+| JavaSchemaEvolutionTest | `plugin/src/test/java/.../jsonarray/JavaSchemaEvolutionTest.java` | 11 | FR-001, FR-002, SR-001 |
+| | | **Total: 1,059** | |
 
 Note: 15 `@ParameterizedTest` methods x 16 languages = 240 expanded invocations for MultiLanguageCodeGenTest.
 
@@ -170,8 +172,8 @@ Note: 15 `@ParameterizedTest` methods x 16 languages = 240 expanded invocations 
 
 | Metric | Value |
 |--------|-------|
-| Instruction coverage | 74.0% |
-| Line coverage | 76.5% |
+| Instruction coverage | 73.9% |
+| Line coverage | 76.6% |
 
 ---
 

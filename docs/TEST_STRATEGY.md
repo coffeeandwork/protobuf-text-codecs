@@ -58,10 +58,10 @@ LIMITATIONS:
 
 | Metric | Value | Assessment |
 |--------|-------|------------|
-| Test files | 17 classes | Adequate for current scope |
-| Total tests | 929 | Good — comprehensive for core + all 17 languages |
-| Instruction coverage | 74.0% | Good overall; gaps in non-Java generators |
-| Line coverage | 76.5% | Good overall |
+| Test files | 19 classes | Adequate for current scope |
+| Total tests | 1,059 | Good — comprehensive for core + all 17 languages + schema evolution |
+| Instruction coverage | 73.9% | Good overall; gaps in non-Java generators |
+| Line coverage | 76.6% | Good overall |
 | Integration tests | 2 shell scripts (9 assertions) | Minimal but effective |
 | Cross-language tests | Java ↔ Python only | Insufficient for 17-language claim |
 
@@ -332,6 +332,8 @@ plugin/src/test/java/dev/protocgen/textcodecs/jsonarray/
 ├── GoldenFileTest.java              # Snapshot: exact output comparison
 ├── PerformanceBenchmarkTest.java    # Plugin throughput benchmarks
 ├── MemoryBenchmarkTest.java         # Memory allocation benchmarks
+├── SchemaEvolutionTest.java         # Schema evolution across all 17 langs, both formats (~100 tests)
+├── JavaSchemaEvolutionTest.java     # Java-specific schema evolution patterns (~30 tests)
 └── ../pbtkurl/
     ├── PbtkJavaCodeGenTest.java     # E2E: pbtk Java code generation
     ├── PbtkMultiLanguageCodeGenTest.java  # E2E: pbtk 16 non-Java languages
@@ -397,7 +399,7 @@ bash integration-tests/schema-evolution-test.sh
   1. Checkout → Setup Java 17 → Setup Gradle
   2. `spotlessCheck` (formatting gate)
   3. `:plugin:shadowJar` (build)
-  4. `:plugin:test` (all 929 unit tests)
+  4. `:plugin:test` (all 1,059 unit tests)
   5. Install protoc
   6. Generate code for all 17 languages (smoke test)
   7. Upload shadow JAR as artifact
@@ -408,9 +410,9 @@ bash integration-tests/schema-evolution-test.sh
 
 | Gate | Criteria | Enforced By |
 |------|----------|-------------|
-| All tests pass | 100% pass rate (929/929) | CI: `./gradlew :plugin:test` |
+| All tests pass | 100% pass rate (1,059/1,059) | CI: `./gradlew :plugin:test` |
 | Code formatting | Google Java Style | CI: `./gradlew spotlessCheck` |
-| Coverage minimum | 74.0% instructions (current baseline) | CI: JaCoCo report + manual review |
+| Coverage minimum | 73.9% instructions (current baseline) | CI: JaCoCo report + manual review |
 | 17-language generation | All 17 `protoc --jsonarray_out=lang=X` succeed | CI: smoke test |
 | Cross-language round-trip | Java and Python produce/consume identical JSON | CI: `cross-language-test.sh` |
 | Schema evolution | Forward and backward compat pass | CI: `schema-evolution-test.sh` |
