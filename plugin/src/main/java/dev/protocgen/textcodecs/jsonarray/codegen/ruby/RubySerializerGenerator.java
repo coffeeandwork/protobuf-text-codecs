@@ -174,9 +174,7 @@ public class RubySerializerGenerator {
     } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
       w.line("result << %s.dup", rbField);
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
-      w.line(
-          "result << %s.map { |%s| Base64.strict_encode64(%s) }",
-          rbField, itemVar, itemVar);
+      w.line("result << %s.map { |%s| Base64.strict_encode64(%s) }", rbField, itemVar, itemVar);
     } else {
       w.line("result << %s.dup", rbField);
     }
@@ -187,9 +185,7 @@ public class RubySerializerGenerator {
     if (stringKey) {
       // String-keyed maps serialize as a hash
       if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE) {
-        w.line(
-            "result << %s.transform_values { |v| v.nil? ? nil : v.serialize }",
-            rbField);
+        w.line("result << %s.transform_values { |v| v.nil? ? nil : v.serialize }", rbField);
       } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
         w.line("result << %s.dup", rbField);
       } else {
@@ -198,9 +194,7 @@ public class RubySerializerGenerator {
     } else {
       // Non-string-keyed maps serialize as list of [k, v] pairs
       if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE) {
-        w.line(
-            "result << %s.map { |k, v| [k, v.nil? ? nil : v.serialize] }",
-            rbField);
+        w.line("result << %s.map { |k, v| [k, v.nil? ? nil : v.serialize] }", rbField);
       } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
         w.line("result << %s.map { |k, v| [k, v] }", rbField);
       } else {

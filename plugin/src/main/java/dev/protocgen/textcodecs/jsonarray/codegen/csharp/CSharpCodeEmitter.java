@@ -298,8 +298,7 @@ public class CSharpCodeEmitter {
             }
           }
           if (hasPresenceTrackedFields(message)) {
-            w.line(
-                "this.presentFields_ = (bool[])builder.presentFields_.Clone();");
+            w.line("this.presentFields_ = (bool[])builder.presentFields_.Clone();");
           }
           for (ProtoMessage.OneofGroup group : message.getOneofGroups()) {
             String caseName = nameResolver.fieldName(group.name()) + "Case_";
@@ -395,8 +394,7 @@ public class CSharpCodeEmitter {
     w.blankLine();
     emitDocComment(w, field.getComment());
     w.line(
-        "public %s %s => this.%s ?? %s.GetDefaultInstance();",
-        csType, pascalName, csName, csType);
+        "public %s %s => this.%s ?? %s.GetDefaultInstance();", csType, pascalName, csName, csType);
   }
 
   // ---------------------------------------------------------------------------
@@ -442,18 +440,19 @@ public class CSharpCodeEmitter {
                 for (ProtoField field : message.getFields()) {
                   String csName = nameResolver.fieldName(field.getName());
                   if (field.isRepeated()) {
-                    w.line("this.%s = new List<%s>(from.%s);", csName,
-                        repeatedElementType(field), csName);
+                    w.line(
+                        "this.%s = new List<%s>(from.%s);",
+                        csName, repeatedElementType(field), csName);
                   } else if (field.isMap()) {
-                    w.line("this.%s = new Dictionary<%s>(from.%s);", csName,
-                        mapGenericArgs(field), csName);
+                    w.line(
+                        "this.%s = new Dictionary<%s>(from.%s);",
+                        csName, mapGenericArgs(field), csName);
                   } else {
                     w.line("this.%s = from.%s;", csName, csName);
                   }
                 }
                 if (hasPresenceTrackedFields(message)) {
-                  w.line(
-                      "this.presentFields_ = (bool[])from.presentFields_.Clone();");
+                  w.line("this.presentFields_ = (bool[])from.presentFields_.Clone();");
                 }
                 for (ProtoMessage.OneofGroup group : message.getOneofGroups()) {
                   String caseName = nameResolver.fieldName(group.name()) + "Case_";
@@ -733,9 +732,7 @@ public class CSharpCodeEmitter {
     w.block(
         "public " + csType + " Get" + pascalName + "()",
         () -> {
-          w.line(
-              "return this.%s ?? %s.GetDefaultInstance();",
-              csName, csType);
+          w.line("return this.%s ?? %s.GetDefaultInstance();", csName, csType);
         });
 
     // Has
@@ -861,19 +858,13 @@ public class CSharpCodeEmitter {
               sb.append(" && ");
             }
             if (isByteArrayField(field)) {
-              sb.append(
-                  String.format(
-                      "this.%s.SequenceEqual(that.%s)", csName, csName));
+              sb.append(String.format("this.%s.SequenceEqual(that.%s)", csName, csName));
             } else if (isFloatField(field) || isDoubleField(field)) {
-              sb.append(
-                  String.format(
-                      "this.%s.Equals(that.%s)", csName, csName));
+              sb.append(String.format("this.%s.Equals(that.%s)", csName, csName));
             } else if (isPrimitiveField(field)) {
               sb.append(String.format("this.%s == that.%s", csName, csName));
             } else {
-              sb.append(
-                  String.format(
-                      "object.Equals(this.%s, that.%s)", csName, csName));
+              sb.append(String.format("object.Equals(this.%s, that.%s)", csName, csName));
             }
           }
           sb.append(";");

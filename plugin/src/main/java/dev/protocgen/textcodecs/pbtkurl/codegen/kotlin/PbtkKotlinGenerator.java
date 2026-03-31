@@ -216,8 +216,7 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
             }
           }
           if (hasPresenceTrackedFields(message)) {
-            w.line(
-                "this.presentFields_ = builder.presentFields_.clone() as java.util.BitSet");
+            w.line("this.presentFields_ = builder.presentFields_.clone() as java.util.BitSet");
           }
           for (ProtoMessage.OneofGroup group : message.getOneofGroups()) {
             String caseName = nameResolver.fieldName(group.name()) + "Case_";
@@ -238,8 +237,7 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
       if (field.isRepeated()) {
         w.blankLine();
         w.block(
-            "fun get" + pascalName + "Count(): Int",
-            () -> w.line("return this.%s.size", ktName));
+            "fun get" + pascalName + "Count(): Int", () -> w.line("return this.%s.size", ktName));
         w.blankLine();
         w.block(
             "fun get" + pascalName + "(index: Int): " + elementType(field),
@@ -251,8 +249,7 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
         String valueType = mapValueType(field);
         w.blankLine();
         w.block(
-            "fun get" + pascalName + "Count(): Int",
-            () -> w.line("return this.%s.size", ktName));
+            "fun get" + pascalName + "Count(): Int", () -> w.line("return this.%s.size", ktName));
         w.blankLine();
         w.block(
             "fun contains" + pascalName + "(key: " + keyType + "): Boolean",
@@ -323,10 +320,7 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
               ProtoField member = group.members().get(i);
               String suffix = i < group.members().size() - 1 ? "," : ";";
               w.line(
-                  "%s(%d)%s",
-                  snakeToUpperSnake(member.getName()),
-                  member.getFieldNumber(),
-                  suffix);
+                  "%s(%d)%s", snakeToUpperSnake(member.getName()), member.getFieldNumber(), suffix);
             }
 
             w.blankLine();
@@ -340,9 +334,7 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
                       () -> {
                         w.block(
                             "for (v in entries)",
-                            () ->
-                                w.block(
-                                    "if (v.number == number)", () -> w.line("return v")));
+                            () -> w.block("if (v.number == number)", () -> w.line("return v")));
                         w.line("return %s_NOT_SET", snakeToUpperSnake(group.name()));
                       });
                 });
@@ -437,8 +429,7 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
     }
   }
 
-  private void emitScalarSerialize(
-      CodeWriter w, ProtoField field, String ktField, int fieldNum) {
+  private void emitScalarSerialize(CodeWriter w, ProtoField field, String ktField, int fieldNum) {
     if (field.hasExplicitPresence() && !field.isRequired()) {
       String bitCheck = "presentFields_.get(" + field.getArrayPosition() + ")";
       w.block("if (" + bitCheck + ")", () -> emitScalarAppend(w, field, ktField, fieldNum));
@@ -447,16 +438,14 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
     emitScalarAppend(w, field, ktField, fieldNum);
   }
 
-  private void emitScalarAppend(
-      CodeWriter w, ProtoField field, String ktField, int fieldNum) {
+  private void emitScalarAppend(CodeWriter w, ProtoField field, String ktField, int fieldNum) {
     FieldDescriptorProto.Type type = field.getProtoType();
     String typeChar = pbtkTypeChar(type);
 
     switch (type) {
       case TYPE_BOOL:
         w.line(
-            "sb.append(\"!%d%s\").append(if (%s) \"1\" else \"0\")",
-            fieldNum, typeChar, ktField);
+            "sb.append(\"!%d%s\").append(if (%s) \"1\" else \"0\")", fieldNum, typeChar, ktField);
         break;
       case TYPE_BYTES:
         w.line(
@@ -480,8 +469,7 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
         break;
       case TYPE_UINT32, TYPE_FIXED32:
         w.line(
-            "sb.append(\"!%d%s\").append(Integer.toUnsignedLong(%s))",
-            fieldNum, typeChar, ktField);
+            "sb.append(\"!%d%s\").append(Integer.toUnsignedLong(%s))", fieldNum, typeChar, ktField);
         break;
       case TYPE_UINT64, TYPE_FIXED64:
         w.line(
@@ -494,22 +482,18 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
     }
   }
 
-  private void emitEnumSerialize(
-      CodeWriter w, ProtoField field, String ktField, int fieldNum) {
+  private void emitEnumSerialize(CodeWriter w, ProtoField field, String ktField, int fieldNum) {
     if (field.hasExplicitPresence() && !field.isRequired()) {
       String bitCheck = "presentFields_.get(" + field.getArrayPosition() + ")";
       w.block(
           "if (" + bitCheck + ")",
-          () ->
-              w.line(
-                  "sb.append(\"!%de\").append(%s?.getNumber() ?: 0)", fieldNum, ktField));
+          () -> w.line("sb.append(\"!%de\").append(%s?.getNumber() ?: 0)", fieldNum, ktField));
     } else {
       w.line("sb.append(\"!%de\").append(%s?.getNumber() ?: 0)", fieldNum, ktField);
     }
   }
 
-  private void emitMessageSerialize(
-      CodeWriter w, ProtoField field, String ktField, int fieldNum) {
+  private void emitMessageSerialize(CodeWriter w, ProtoField field, String ktField, int fieldNum) {
     w.block(
         "if (" + ktField + " != null)",
         () -> {
@@ -518,8 +502,7 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
         });
   }
 
-  private void emitRepeatedSerialize(
-      CodeWriter w, ProtoField field, String ktField, int fieldNum) {
+  private void emitRepeatedSerialize(CodeWriter w, ProtoField field, String ktField, int fieldNum) {
     String boxedType = elementType(field);
     w.block(
         "for (__item in " + ktField + ")",
@@ -532,16 +515,14 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
                   w.line("__item.appendPbtkFields(sb)");
                 });
           } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
-            w.line(
-                "sb.append(\"!%de\").append(__item?.getNumber() ?: 0)", fieldNum);
+            w.line("sb.append(\"!%de\").append(__item?.getNumber() ?: 0)", fieldNum);
           } else {
             emitScalarAppend(w, field, "__item", fieldNum);
           }
         });
   }
 
-  private void emitMapSerialize(
-      CodeWriter w, ProtoField field, String ktField, int fieldNum) {
+  private void emitMapSerialize(CodeWriter w, ProtoField field, String ktField, int fieldNum) {
     w.block(
         "for ((__key, __value) in " + ktField + ")",
         () -> {
@@ -555,8 +536,7 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
                 keyTypeChar);
           } else if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_BOOL) {
             w.line(
-                "sb.append(\"!1%s\").append(if (__key as Boolean) \"1\" else \"0\")",
-                keyTypeChar);
+                "sb.append(\"!1%s\").append(if (__key as Boolean) \"1\" else \"0\")", keyTypeChar);
           } else {
             w.line("sb.append(\"!1%s\").append(__key)", keyTypeChar);
           }
@@ -579,8 +559,7 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
             w.line(
                 "sb.append(\"!2z\").append(java.util.Base64.getEncoder().encodeToString(__value as ByteArray))");
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BOOL) {
-            w.line(
-                "sb.append(\"!2b\").append(if (__value as Boolean) \"1\" else \"0\")");
+            w.line("sb.append(\"!2b\").append(if (__value as Boolean) \"1\" else \"0\")");
           } else {
             String valTypeChar = pbtkTypeChar(field.getMapValueType());
             w.line("sb.append(\"!2%s\").append(__value)", valTypeChar);
@@ -611,11 +590,9 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
     } else if (field.hasExplicitPresence() && !field.isRequired()) {
       w.line("if (presentFields_.get(%d)) count++", field.getArrayPosition());
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
-      w.line(
-          "if (!(%s).isNaN() && !(%s).isInfinite()) count++", ktField, ktField);
+      w.line("if (!(%s).isNaN() && !(%s).isInfinite()) count++", ktField, ktField);
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_FLOAT) {
-      w.line(
-          "if (!(%s).isNaN() && !(%s).isInfinite()) count++", ktField, ktField);
+      w.line("if (!(%s).isNaN() && !(%s).isInfinite()) count++", ktField, ktField);
     } else {
       w.line("count++");
     }
@@ -639,8 +616,7 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
               () -> {
                 w.line("val token = tokens[offset[0]]");
                 w.line("var numEnd = 0");
-                w.line(
-                    "while (numEnd < token.length && token[numEnd].isDigit()) numEnd++");
+                w.line("while (numEnd < token.length && token[numEnd].isDigit()) numEnd++");
                 w.line(
                     "if (numEnd == 0 || numEnd >= token.length) { offset[0]++; consumed++; continue }");
                 w.line("val fieldNum = token.substring(0, numEnd).toInt()");
@@ -665,8 +641,7 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
     w.block(
         "fun fromPbtkUrl(input: String): " + className,
         () -> {
-          w.line(
-              "if (input.isEmpty()) return %s.getDefaultInstance()", className);
+          w.line("if (input.isEmpty()) return %s.getDefaultInstance()", className);
           w.line("val tokens = tokenizePbtk(input)");
           w.line("val offset = intArrayOf(0)");
           w.line("return parsePbtkTokens(tokens, tokens.size, offset)");
@@ -738,8 +713,7 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
   }
 
   private void emitRepeatedDeserialize(CodeWriter w, ProtoField field) {
-    String addCall =
-        "builder.add" + KotlinNameResolver.snakeToPascal(field.getName());
+    String addCall = "builder.add" + KotlinNameResolver.snakeToPascal(field.getName());
     if (field.getKind() == ProtoField.FieldKind.MESSAGE) {
       String msgType = simpleTypeName(field.getTypeReference());
       w.line("val subCount = value.toInt()");
@@ -756,8 +730,7 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
   }
 
   private void emitMapDeserialize(CodeWriter w, ProtoField field) {
-    String putCall =
-        "builder.put" + KotlinNameResolver.snakeToPascal(field.getName());
+    String putCall = "builder.put" + KotlinNameResolver.snakeToPascal(field.getName());
     w.line("val entryCount = value.toInt()");
     w.line("offset[0]++");
     w.line("var entryKey: Any? = null");
@@ -768,8 +741,7 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
           w.line("if (offset[0] >= tokens.size) break");
           w.line("val mapToken = tokens[offset[0]]");
           w.line("var mne = 0");
-          w.line(
-              "while (mne < mapToken.length && mapToken[mne].isDigit()) mne++");
+          w.line("while (mne < mapToken.length && mapToken[mne].isDigit()) mne++");
           w.line("if (mne == 0 || mne >= mapToken.length) { offset[0]++; continue }");
           w.line("val mfn = mapToken.substring(0, mne).toInt()");
           w.line("val mval = mapToken.substring(mne + 1)");
@@ -815,10 +787,8 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
   private String mapKeyCast(FieldDescriptorProto.Type keyType) {
     return switch (keyType) {
       case TYPE_STRING -> "entryKey as String";
-      case TYPE_INT32, TYPE_SINT32, TYPE_SFIXED32, TYPE_UINT32, TYPE_FIXED32 ->
-          "entryKey as Int";
-      case TYPE_INT64, TYPE_SINT64, TYPE_SFIXED64, TYPE_UINT64, TYPE_FIXED64 ->
-          "entryKey as Long";
+      case TYPE_INT32, TYPE_SINT32, TYPE_SFIXED32, TYPE_UINT32, TYPE_FIXED32 -> "entryKey as Int";
+      case TYPE_INT64, TYPE_SINT64, TYPE_SFIXED64, TYPE_UINT64, TYPE_FIXED64 -> "entryKey as Long";
       case TYPE_BOOL -> "entryKey as Boolean";
       default -> "entryKey";
     };
@@ -835,10 +805,8 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
     }
     return switch (field.getMapValueType()) {
       case TYPE_STRING -> "entryVal as String";
-      case TYPE_INT32, TYPE_SINT32, TYPE_SFIXED32, TYPE_UINT32, TYPE_FIXED32 ->
-          "entryVal as Int";
-      case TYPE_INT64, TYPE_SINT64, TYPE_SFIXED64, TYPE_UINT64, TYPE_FIXED64 ->
-          "entryVal as Long";
+      case TYPE_INT32, TYPE_SINT32, TYPE_SFIXED32, TYPE_UINT32, TYPE_FIXED32 -> "entryVal as Int";
+      case TYPE_INT64, TYPE_SINT64, TYPE_SFIXED64, TYPE_UINT64, TYPE_FIXED64 -> "entryVal as Long";
       case TYPE_DOUBLE -> "entryVal as Double";
       case TYPE_FLOAT -> "entryVal as Float";
       case TYPE_BOOL -> "entryVal as Boolean";
@@ -852,16 +820,12 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
       case TYPE_DOUBLE -> valueVar + ".toDouble()";
       case TYPE_FLOAT -> valueVar + ".toFloat()";
       case TYPE_INT64, TYPE_SINT64, TYPE_SFIXED64 -> valueVar + ".toLong()";
-      case TYPE_UINT64, TYPE_FIXED64 ->
-          "java.lang.Long.parseUnsignedLong(" + valueVar + ")";
+      case TYPE_UINT64, TYPE_FIXED64 -> "java.lang.Long.parseUnsignedLong(" + valueVar + ")";
       case TYPE_INT32, TYPE_SINT32, TYPE_SFIXED32 -> valueVar + ".toInt()";
-      case TYPE_UINT32, TYPE_FIXED32 ->
-          "Integer.parseUnsignedInt(" + valueVar + ")";
+      case TYPE_UINT32, TYPE_FIXED32 -> "Integer.parseUnsignedInt(" + valueVar + ")";
       case TYPE_BOOL -> valueVar + " == \"1\"";
-      case TYPE_STRING ->
-          "java.net.URLDecoder.decode(" + valueVar + ", Charsets.UTF_8)";
-      case TYPE_BYTES ->
-          "java.util.Base64.getDecoder().decode(" + valueVar + ")";
+      case TYPE_STRING -> "java.net.URLDecoder.decode(" + valueVar + ", Charsets.UTF_8)";
+      case TYPE_BYTES -> "java.util.Base64.getDecoder().decode(" + valueVar + ")";
       default -> valueVar;
     };
   }
@@ -913,14 +877,11 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
             String ktName = nameResolver.fieldName(field.getName());
             if (i > 0) sb.append(" && ");
             if (isByteArrayField(field)) {
-              sb.append(
-                  String.format("this.%s.contentEquals(other.%s)", ktName, ktName));
+              sb.append(String.format("this.%s.contentEquals(other.%s)", ktName, ktName));
             } else if (isFloatField(field)) {
-              sb.append(
-                  String.format("this.%s.compareTo(other.%s) == 0", ktName, ktName));
+              sb.append(String.format("this.%s.compareTo(other.%s) == 0", ktName, ktName));
             } else if (isDoubleField(field)) {
-              sb.append(
-                  String.format("this.%s.compareTo(other.%s) == 0", ktName, ktName));
+              sb.append(String.format("this.%s.compareTo(other.%s) == 0", ktName, ktName));
             } else {
               sb.append(String.format("this.%s == other.%s", ktName, ktName));
             }
@@ -1106,9 +1067,7 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
 
           // build()
           w.blankLine();
-          w.block(
-              "fun build(): " + className,
-              () -> w.line("return %s(this)", className));
+          w.block("fun build(): " + className, () -> w.line("return %s(this)", className));
         });
   }
 
@@ -1144,8 +1103,7 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
           w.blankLine();
           w.line("@JvmStatic");
           w.block(
-              "fun getDefaultInstance(): " + className,
-              () -> w.line("return DEFAULT_INSTANCE"));
+              "fun getDefaultInstance(): " + className, () -> w.line("return DEFAULT_INSTANCE"));
 
           // newBuilder()
           w.blankLine();
@@ -1211,9 +1169,7 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
                     () -> {
                       w.block(
                           "for (v in entries)",
-                          () ->
-                              w.block(
-                                  "if (v.number == number)", () -> w.line("return v")));
+                          () -> w.block("if (v.number == number)", () -> w.line("return v")));
                       w.line("return null");
                     });
               });

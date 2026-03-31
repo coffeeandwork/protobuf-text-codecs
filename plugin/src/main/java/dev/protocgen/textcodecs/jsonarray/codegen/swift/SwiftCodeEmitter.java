@@ -22,8 +22,8 @@ import dev.protocgen.textcodecs.jsonarray.model.ProtoFile;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoMessage;
 
 /**
- * Generates complete Swift source files for proto messages and enums. Swift uses 4-space indentation,
- * structs with properties, and static factory methods.
+ * Generates complete Swift source files for proto messages and enums. Swift uses 4-space
+ * indentation, structs with properties, and static factory methods.
  */
 public class SwiftCodeEmitter {
 
@@ -186,9 +186,7 @@ public class SwiftCodeEmitter {
     return typeMapper.languageType(field);
   }
 
-  /**
-   * Resolve the default value for a field, handling nested message references.
-   */
+  /** Resolve the default value for a field, handling nested message references. */
   private String resolveDefaultValue(
       ProtoField field, String parentStructName, ProtoMessage parentMessage) {
     if (isNestedMessageRef(field, parentMessage)) {

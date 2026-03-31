@@ -111,8 +111,7 @@ public class PbtkRubyGenerator implements LanguageGenerator {
     w.blankLine();
     w.line("class %s", className);
     w.indent();
-    w.line("# Generated from proto message %s.",
-        message.getFullName().replace("\"", "\\\""));
+    w.line("# Generated from proto message %s.", message.getFullName().replace("\"", "\\\""));
 
     // Nested enum/message class references as class attributes
     for (ProtoEnum protoEnum : message.getEnums()) {
@@ -437,14 +436,10 @@ public class PbtkRubyGenerator implements LanguageGenerator {
         w.line("parts << \"!%d%s\" + (%s ? \"1\" : \"0\")", fieldNum, typeChar, rbField);
         break;
       case TYPE_BYTES:
-        w.line(
-            "parts << \"!%d%s\" + Base64.strict_encode64(%s)",
-            fieldNum, typeChar, rbField);
+        w.line("parts << \"!%d%s\" + Base64.strict_encode64(%s)", fieldNum, typeChar, rbField);
         break;
       case TYPE_STRING:
-        w.line(
-            "parts << \"!%d%s\" + CGI.escape(%s)",
-            fieldNum, typeChar, rbField);
+        w.line("parts << \"!%d%s\" + CGI.escape(%s)", fieldNum, typeChar, rbField);
         break;
       case TYPE_DOUBLE:
         w.line("unless %s.nan? || %s.infinite?", rbField, rbField);
@@ -718,7 +713,8 @@ public class PbtkRubyGenerator implements LanguageGenerator {
   }
 
   private void emitScalarDeserialize(CodeWriter w, ProtoField field) {
-    String rbField = "obj.instance_variable_set(:@" + nameResolver.fieldName(field.getName()) + ", ";
+    String rbField =
+        "obj.instance_variable_set(:@" + nameResolver.fieldName(field.getName()) + ", ";
     String readExpr = scalarReadExpr(field.getProtoType(), "value");
     w.line("%s%s)", rbField, readExpr);
     if (field.isProto3Optional()) {
@@ -751,7 +747,9 @@ public class PbtkRubyGenerator implements LanguageGenerator {
     String msgType = simpleTypeName(field.getTypeReference());
     w.line("sub_count = value.to_i");
     w.line("offset[0] += 1");
-    w.line("obj.instance_variable_set(:@%s, %s._parse_pbtk_tokens(tokens, sub_count, offset))", fieldNameStr, msgType);
+    w.line(
+        "obj.instance_variable_set(:@%s, %s._parse_pbtk_tokens(tokens, sub_count, offset))",
+        fieldNameStr, msgType);
     if (field.isOneofMember()) {
       String caseName = nameResolver.fieldName(field.getOneofName()) + "_case";
       w.line("obj.instance_variable_set(:@%s, %d)", caseName, field.getFieldNumber());
@@ -768,7 +766,9 @@ public class PbtkRubyGenerator implements LanguageGenerator {
       String msgType = simpleTypeName(field.getTypeReference());
       w.line("sub_count = value.to_i");
       w.line("offset[0] += 1");
-      w.line("obj.instance_variable_get(:@%s) << %s._parse_pbtk_tokens(tokens, sub_count, offset)", fieldNameStr, msgType);
+      w.line(
+          "obj.instance_variable_get(:@%s) << %s._parse_pbtk_tokens(tokens, sub_count, offset)",
+          fieldNameStr, msgType);
       w.line("consumed += 1");
     } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
       w.line("obj.instance_variable_get(:@%s) << value.to_i", fieldNameStr);

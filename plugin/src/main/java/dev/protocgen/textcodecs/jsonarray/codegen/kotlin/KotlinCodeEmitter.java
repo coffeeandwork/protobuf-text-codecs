@@ -180,20 +180,15 @@ public class KotlinCodeEmitter {
           for (ProtoField field : message.getFields()) {
             String ktName = nameResolver.fieldName(field.getName());
             if (field.isRepeated()) {
-              w.line(
-                  "this.%s = builder.%s.toList()",
-                  ktName, ktName);
+              w.line("this.%s = builder.%s.toList()", ktName, ktName);
             } else if (field.isMap()) {
-              w.line(
-                  "this.%s = builder.%s.toMap()",
-                  ktName, ktName);
+              w.line("this.%s = builder.%s.toMap()", ktName, ktName);
             } else {
               w.line("this.%s = builder.%s", ktName, ktName);
             }
           }
           if (hasPresenceTrackedFields(message)) {
-            w.line(
-                "this.presentFields_ = builder.presentFields_.clone() as java.util.BitSet");
+            w.line("this.presentFields_ = builder.presentFields_.clone() as java.util.BitSet");
           }
           for (ProtoMessage.OneofGroup group : message.getOneofGroups()) {
             String caseName = nameResolver.fieldName(group.name()) + "Case_";
@@ -321,11 +316,7 @@ public class KotlinCodeEmitter {
   }
 
   private void emitMessageFieldGetters(
-      CodeWriter w,
-      ProtoField field,
-      String ktType,
-      String ktName,
-      String pascalName) {
+      CodeWriter w, ProtoField field, String ktType, String ktName, String pascalName) {
     // has*
     w.blankLine();
     w.block(
@@ -350,17 +341,12 @@ public class KotlinCodeEmitter {
       w.block(
           "enum class " + enumName + "(val number: Int)",
           () -> {
-            w.line(
-                "%s_NOT_SET(0),",
-                snakeToUpperSnake(group.name()));
+            w.line("%s_NOT_SET(0),", snakeToUpperSnake(group.name()));
             for (int i = 0; i < group.members().size(); i++) {
               ProtoField member = group.members().get(i);
               String suffix = i < group.members().size() - 1 ? "," : ";";
               w.line(
-                  "%s(%d)%s",
-                  snakeToUpperSnake(member.getName()),
-                  member.getFieldNumber(),
-                  suffix);
+                  "%s(%d)%s", snakeToUpperSnake(member.getName()), member.getFieldNumber(), suffix);
             }
 
             w.blankLine();
@@ -458,11 +444,9 @@ public class KotlinCodeEmitter {
             if (isByteArrayField(field)) {
               sb.append(String.format("this.%s.contentEquals(other.%s)", ktName, ktName));
             } else if (isFloatField(field)) {
-              sb.append(
-                  String.format("this.%s.compareTo(other.%s) == 0", ktName, ktName));
+              sb.append(String.format("this.%s.compareTo(other.%s) == 0", ktName, ktName));
             } else if (isDoubleField(field)) {
-              sb.append(
-                  String.format("this.%s.compareTo(other.%s) == 0", ktName, ktName));
+              sb.append(String.format("this.%s.compareTo(other.%s) == 0", ktName, ktName));
             } else {
               sb.append(String.format("this.%s == other.%s", ktName, ktName));
             }
@@ -757,13 +741,7 @@ public class KotlinCodeEmitter {
     // putAllXxx(Map)
     w.blankLine();
     w.block(
-        "fun putAll"
-            + pascalName
-            + "(values: Map<"
-            + keyType
-            + ", "
-            + valueType
-            + ">): Builder",
+        "fun putAll" + pascalName + "(values: Map<" + keyType + ", " + valueType + ">): Builder",
         () -> {
           w.line("this.%s.putAll(values)", ktName);
           w.line("return this");
@@ -814,9 +792,7 @@ public class KotlinCodeEmitter {
 
           // DEFAULT_INSTANCE
           w.blankLine();
-          w.line(
-              "private val DEFAULT_INSTANCE: %s = Builder().build()",
-              className);
+          w.line("private val DEFAULT_INSTANCE: %s = Builder().build()", className);
 
           // getDefaultInstance()
           w.blankLine();
@@ -941,8 +917,7 @@ public class KotlinCodeEmitter {
     if (field.isOneofMember()) {
       w.line(
           "this.%sCase_ = %sCase_",
-          nameResolver.fieldName(field.getOneofName()),
-          field.getName().toUpperCase());
+          nameResolver.fieldName(field.getOneofName()), field.getName().toUpperCase());
     }
   }
 

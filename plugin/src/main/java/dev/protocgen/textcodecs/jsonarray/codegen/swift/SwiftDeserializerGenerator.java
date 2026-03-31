@@ -226,8 +226,8 @@ public class SwiftDeserializerGenerator {
     w.block(
         "else if let subArr = " + elemExpr + " as? [Any]",
         () -> {
-          w.line("%s = %s.deserialize(subArr.map { $0 is NSNull ? nil : $0 })", swiftField,
-              msgType);
+          w.line(
+              "%s = %s.deserialize(subArr.map { $0 is NSNull ? nil : $0 })", swiftField, msgType);
         });
   }
 
@@ -344,8 +344,7 @@ public class SwiftDeserializerGenerator {
     }
   }
 
-  private void emitMapKeyDeserialize(
-      CodeWriter w, FieldDescriptorProto.Type keyType, String expr) {
+  private void emitMapKeyDeserialize(CodeWriter w, FieldDescriptorProto.Type keyType, String expr) {
     String swiftType = typeMapper.scalarType(keyType);
     String castType = swiftAssertType(keyType);
     if (castType.equals(swiftType)) {
@@ -372,8 +371,7 @@ public class SwiftDeserializerGenerator {
           "else if let subArr = " + valueExpr + " as? [Any]",
           () -> {
             w.line(
-                "%s = %s.deserialize(subArr.map { $0 is NSNull ? nil : $0 })",
-                targetExpr, msgType);
+                "%s = %s.deserialize(subArr.map { $0 is NSNull ? nil : $0 })", targetExpr, msgType);
           });
     } else if (valType == FieldDescriptorProto.Type.TYPE_ENUM) {
       String enumType = typeMapper.simpleTypeName(field.getMapValueTypeReference());

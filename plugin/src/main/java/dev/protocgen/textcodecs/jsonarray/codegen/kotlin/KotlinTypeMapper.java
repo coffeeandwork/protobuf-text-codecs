@@ -22,8 +22,8 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * Maps proto types to Kotlin types, nullable types, and default value expressions. Kotlin has no
- * primitive/boxed distinction -- Int, Long, Double etc. are always the same type but can be nullable
- * (Int?).
+ * primitive/boxed distinction -- Int, Long, Double etc. are always the same type but can be
+ * nullable (Int?).
  */
 public class KotlinTypeMapper implements TypeMapper {
 

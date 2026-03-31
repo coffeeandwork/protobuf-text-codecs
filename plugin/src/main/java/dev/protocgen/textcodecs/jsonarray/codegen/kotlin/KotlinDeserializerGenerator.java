@@ -30,8 +30,7 @@ public class KotlinDeserializerGenerator {
   private final KotlinTypeMapper typeMapper;
   private final KotlinNameResolver nameResolver;
 
-  public KotlinDeserializerGenerator(
-      KotlinTypeMapper typeMapper, KotlinNameResolver nameResolver) {
+  public KotlinDeserializerGenerator(KotlinTypeMapper typeMapper, KotlinNameResolver nameResolver) {
     this.typeMapper = typeMapper;
     this.nameResolver = nameResolver;
   }
@@ -118,8 +117,7 @@ public class KotlinDeserializerGenerator {
     w.line("%s(%s)", setter, readExpr);
   }
 
-  private void emitEnumDeserialize(
-      CodeWriter w, ProtoField field, String setter, String elemExpr) {
+  private void emitEnumDeserialize(CodeWriter w, ProtoField field, String setter, String elemExpr) {
     String enumType = simpleTypeName(field.getTypeReference());
     w.line("%s(%s.forNumber((%s as Number).toInt()))", setter, enumType, elemExpr);
   }
@@ -148,8 +146,7 @@ public class KotlinDeserializerGenerator {
                 listVar, elemVar, msgType, elemVar);
           } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
             String enumType = simpleTypeName(field.getTypeReference());
-            w.line(
-                "%s.add(%s.forNumber((%s as Number).toInt()))", listVar, enumType, elemVar);
+            w.line("%s.add(%s.forNumber((%s as Number).toInt()))", listVar, enumType, elemVar);
           } else {
             String readExpr = scalarReadExpr(field.getProtoType(), elemVar);
             w.line("%s.add(%s)", listVar, readExpr);
@@ -210,8 +207,7 @@ public class KotlinDeserializerGenerator {
           "(" + elemExpr + " as Number).toInt()";
       case TYPE_BOOL -> elemExpr + " as Boolean";
       case TYPE_STRING -> elemExpr + " as String";
-      case TYPE_BYTES ->
-          "java.util.Base64.getDecoder().decode(" + elemExpr + " as String)";
+      case TYPE_BYTES -> "java.util.Base64.getDecoder().decode(" + elemExpr + " as String)";
       default -> elemExpr + " as String";
     };
   }
@@ -282,8 +278,7 @@ public class KotlinDeserializerGenerator {
         if ("nan".equals(defaultValue)) yield "Float.NaN";
         yield (defaultValue.contains(".") ? defaultValue : defaultValue + ".0") + "f";
       }
-      case TYPE_INT64, TYPE_SINT64, TYPE_SFIXED64, TYPE_UINT64, TYPE_FIXED64 ->
-          defaultValue + "L";
+      case TYPE_INT64, TYPE_SINT64, TYPE_SFIXED64, TYPE_UINT64, TYPE_FIXED64 -> defaultValue + "L";
       case TYPE_BYTES -> {
         if (defaultValue.isEmpty()) {
           yield "byteArrayOf()";

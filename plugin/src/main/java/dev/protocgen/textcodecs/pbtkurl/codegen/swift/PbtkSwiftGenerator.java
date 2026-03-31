@@ -30,9 +30,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Swift language code generator for pbtk URL encoding. Produces Swift source files with
- * toPbtkUrl() and fromPbtkUrl() methods. Generated code uses only Foundation (String manipulation,
- * percent encoding, Data for base64).
+ * Swift language code generator for pbtk URL encoding. Produces Swift source files with toPbtkUrl()
+ * and fromPbtkUrl() methods. Generated code uses only Foundation (String manipulation, percent
+ * encoding, Data for base64).
  *
  * <p>The pbtk format encodes protobuf messages as URL strings: {@code
  * !<fieldNumber><typeChar><value>} where type chars are: b=bool(0/1), i=integer, f=float, d=double,
@@ -164,8 +164,7 @@ public class PbtkSwiftGenerator implements LanguageGenerator {
           // Nested message structs
           for (ProtoMessage nested : message.getNestedMessages()) {
             w.blankLine();
-            String nestedName =
-                structName + "_" + nameResolver.messageClassName(nested.getName());
+            String nestedName = structName + "_" + nameResolver.messageClassName(nested.getName());
             // Emit placeholder for nested struct (actual struct is top-level)
           }
 
@@ -497,8 +496,7 @@ public class PbtkSwiftGenerator implements LanguageGenerator {
     }
   }
 
-  private void emitEnumSerialize(
-      CodeWriter w, ProtoField field, String swiftField, int fieldNum) {
+  private void emitEnumSerialize(CodeWriter w, ProtoField field, String swiftField, int fieldNum) {
     if (field.isProto3Optional()) {
       w.block(
           "if let val = " + swiftField,
@@ -543,8 +541,7 @@ public class PbtkSwiftGenerator implements LanguageGenerator {
         });
   }
 
-  private void emitMapSerialize(
-      CodeWriter w, ProtoField field, String swiftField, int fieldNum) {
+  private void emitMapSerialize(CodeWriter w, ProtoField field, String swiftField, int fieldNum) {
     w.block(
         "for (key, val) in " + swiftField,
         () -> {
@@ -736,9 +733,7 @@ public class PbtkSwiftGenerator implements LanguageGenerator {
         w.line("%s = value == \"1\"", swiftField);
         break;
       case TYPE_STRING:
-        w.line(
-            "%s = value.removingPercentEncoding ?? value",
-            swiftField);
+        w.line("%s = value.removingPercentEncoding ?? value", swiftField);
         break;
       case TYPE_BYTES:
         w.block(
@@ -848,8 +843,7 @@ public class PbtkSwiftGenerator implements LanguageGenerator {
     }
   }
 
-  private void emitRepeatedScalarDeserialize(
-      CodeWriter w, ProtoField field, String swiftField) {
+  private void emitRepeatedScalarDeserialize(CodeWriter w, ProtoField field, String swiftField) {
     FieldDescriptorProto.Type type = field.getProtoType();
     switch (type) {
       case TYPE_BOOL:
@@ -922,25 +916,23 @@ public class PbtkSwiftGenerator implements LanguageGenerator {
   private void emitMapDeserialize(CodeWriter w, ProtoField field, String swiftField) {
     String mapType = typeMapper.languageType(field);
     // Initialize map if empty
-    w.block(
-        "if " + swiftField + ".isEmpty",
-        () -> w.line("// map already initialized as empty"));
+    w.block("if " + swiftField + ".isEmpty", () -> w.line("// map already initialized as empty"));
 
     w.block(
         "if let entryCount = Int(value)",
         () -> {
           w.line("offset += 1");
 
-          w.line("var mapKey: %s = %s", typeMapper.scalarType(field.getMapKeyType()),
+          w.line(
+              "var mapKey: %s = %s",
+              typeMapper.scalarType(field.getMapKeyType()),
               scalarZeroLiteral(field.getMapKeyType()));
           emitMapValueVarDecl(w, field);
 
           w.block(
               "for _ in 0..<entryCount",
               () -> {
-                w.block(
-                    "if offset >= tokens.count",
-                    () -> w.line("break"));
+                w.block("if offset >= tokens.count", () -> w.line("break"));
                 w.line("let mapToken = tokens[offset]");
                 w.line("var mne = mapToken.startIndex");
                 w.block(
@@ -981,8 +973,7 @@ public class PbtkSwiftGenerator implements LanguageGenerator {
     }
   }
 
-  private void emitMapKeyParse(
-      CodeWriter w, FieldDescriptorProto.Type keyType, String valExpr) {
+  private void emitMapKeyParse(CodeWriter w, FieldDescriptorProto.Type keyType, String valExpr) {
     switch (keyType) {
       case TYPE_STRING:
         w.line("mapKey = %s.removingPercentEncoding ?? %s", valExpr, valExpr);
@@ -1086,13 +1077,10 @@ public class PbtkSwiftGenerator implements LanguageGenerator {
     w.block(
         "public static func fromPbtkUrl(_ input: String) -> " + structName,
         () -> {
-          w.block(
-              "if input.isEmpty",
-              () -> w.line("return %s()", structName));
+          w.block("if input.isEmpty", () -> w.line("return %s()", structName));
           w.line("let tokens = pbtkTokenize(input)");
           w.line("var offset = 0");
-          w.line(
-              "return parsePbtkTokens(tokens, fieldCount: tokens.count, offset: &offset)");
+          w.line("return parsePbtkTokens(tokens, fieldCount: tokens.count, offset: &offset)");
         });
   }
 
@@ -1104,9 +1092,7 @@ public class PbtkSwiftGenerator implements LanguageGenerator {
         () -> {
           w.line("var tokens: [String] = []");
           w.line("var s = input");
-          w.block(
-              "if s.hasPrefix(\"!\")",
-              () -> w.line("s = String(s.dropFirst())"));
+          w.block("if s.hasPrefix(\"!\")", () -> w.line("s = String(s.dropFirst())"));
           w.block(
               "while !s.isEmpty",
               () -> {

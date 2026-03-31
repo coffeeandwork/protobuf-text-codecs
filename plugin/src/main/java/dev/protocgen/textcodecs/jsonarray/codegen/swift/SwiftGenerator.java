@@ -25,8 +25,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Swift language code generator. Produces Swift source files with Foundation JSONSerialization-based
- * JSON array serialization. Generated code uses only Foundation (JSONSerialization, Data).
+ * Swift language code generator. Produces Swift source files with Foundation
+ * JSONSerialization-based JSON array serialization. Generated code uses only Foundation
+ * (JSONSerialization, Data).
  */
 public class SwiftGenerator implements LanguageGenerator {
 

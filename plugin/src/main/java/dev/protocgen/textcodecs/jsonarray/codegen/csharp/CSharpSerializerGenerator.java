@@ -64,9 +64,7 @@ public class CSharpSerializerGenerator {
     w.block(
         "public string ToJsonString()",
         () -> {
-          w.line(
-              "var sb = new StringBuilder(%d);",
-              Math.max(64, message.getMaxFieldNumber() * 32));
+          w.line("var sb = new StringBuilder(%d);", Math.max(64, message.getMaxFieldNumber() * 32));
           w.line("AppendJsonArray(sb);");
           w.line("return sb.ToString();");
         });
@@ -274,8 +272,7 @@ public class CSharpSerializerGenerator {
                   w.line("if (%s > 0) sb.Append(',');", indexVar);
                   // Key: always a quoted string
                   w.line("sb.Append('\"');");
-                  w.line(
-                      "sb.Append(JsonEncodedText.Encode(%s.Key).ToString());", entryVar);
+                  w.line("sb.Append(JsonEncodedText.Encode(%s.Key).ToString());", entryVar);
                   w.line("sb.Append('\"');");
                   w.line("sb.Append(':');");
                   // Value

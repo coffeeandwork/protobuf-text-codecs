@@ -62,8 +62,9 @@ public class SwiftSerializerGenerator {
         "public func toJsonString() throws -> String",
         () -> {
           w.line("let arr = serialize()");
-          w.line("let data = try JSONSerialization.data(withJSONObject: arr.map { $0 ?? NSNull() "
-              + "}, options: [])");
+          w.line(
+              "let data = try JSONSerialization.data(withJSONObject: arr.map { $0 ?? NSNull() "
+                  + "}, options: [])");
           w.line("return String(data: data, encoding: .utf8)!");
         });
   }

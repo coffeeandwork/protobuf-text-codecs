@@ -63,9 +63,7 @@ public class KotlinSerializerGenerator {
     w.block(
         "fun toJsonString(): String",
         () -> {
-          w.line(
-              "val sb = StringBuilder(%d)",
-              Math.max(64, message.getMaxFieldNumber() * 32));
+          w.line("val sb = StringBuilder(%d)", Math.max(64, message.getMaxFieldNumber() * 32));
           w.line("appendJsonArray(sb)");
           w.line("return sb.toString()");
         });

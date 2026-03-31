@@ -71,8 +71,7 @@ public class RubyCodeEmitter {
     w.blankLine();
     w.line("class %s", className);
     w.indent();
-    w.line("# Generated from proto message %s.",
-        message.getFullName().replace("\"", "\\\""));
+    w.line("# Generated from proto message %s.", message.getFullName().replace("\"", "\\\""));
 
     // attr_accessor for fields
     emitAttrAccessors(w, message);

@@ -302,27 +302,22 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
     }
   }
 
-  private void emitScalarSerialize(
-      CodeWriter w, ProtoField field, String csField, int fieldNum) {
+  private void emitScalarSerialize(CodeWriter w, ProtoField field, String csField, int fieldNum) {
     if (field.hasExplicitPresence() && !field.isRequired()) {
       String bitCheck = "presentFields_[" + field.getArrayPosition() + "]";
-      w.block(
-          "if (" + bitCheck + ")",
-          () -> emitScalarAppend(w, field, csField, fieldNum));
+      w.block("if (" + bitCheck + ")", () -> emitScalarAppend(w, field, csField, fieldNum));
       return;
     }
     emitScalarAppend(w, field, csField, fieldNum);
   }
 
-  private void emitScalarAppend(
-      CodeWriter w, ProtoField field, String csField, int fieldNum) {
+  private void emitScalarAppend(CodeWriter w, ProtoField field, String csField, int fieldNum) {
     FieldDescriptorProto.Type type = field.getProtoType();
     String typeChar = pbtkTypeChar(type);
 
     switch (type) {
       case TYPE_BOOL:
-        w.line(
-            "sb.Append(\"!%d%s\").Append(%s ? \"1\" : \"0\");", fieldNum, typeChar, csField);
+        w.line("sb.Append(\"!%d%s\").Append(%s ? \"1\" : \"0\");", fieldNum, typeChar, csField);
         break;
       case TYPE_BYTES:
         w.line(
@@ -331,8 +326,7 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
         break;
       case TYPE_STRING:
         w.line(
-            "sb.Append(\"!%d%s\").Append(Uri.EscapeDataString(%s));",
-            fieldNum, typeChar, csField);
+            "sb.Append(\"!%d%s\").Append(Uri.EscapeDataString(%s));", fieldNum, typeChar, csField);
         break;
       case TYPE_DOUBLE:
         w.block(
@@ -350,8 +344,7 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
     }
   }
 
-  private void emitEnumSerialize(
-      CodeWriter w, ProtoField field, String csField, int fieldNum) {
+  private void emitEnumSerialize(CodeWriter w, ProtoField field, String csField, int fieldNum) {
     if (field.hasExplicitPresence() && !field.isRequired()) {
       String bitCheck = "presentFields_[" + field.getArrayPosition() + "]";
       w.block(
@@ -362,8 +355,7 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
     }
   }
 
-  private void emitMessageSerialize(
-      CodeWriter w, ProtoField field, String csField, int fieldNum) {
+  private void emitMessageSerialize(CodeWriter w, ProtoField field, String csField, int fieldNum) {
     w.block(
         "if (" + csField + " != null)",
         () -> {
@@ -372,8 +364,7 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
         });
   }
 
-  private void emitRepeatedSerialize(
-      CodeWriter w, ProtoField field, String csField, int fieldNum) {
+  private void emitRepeatedSerialize(CodeWriter w, ProtoField field, String csField, int fieldNum) {
     String elementVar = "__" + nameResolver.fieldName(field.getName()) + "Item";
     String boxedType = elementType(field);
     w.block(
@@ -383,9 +374,7 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
             w.block(
                 "if (" + elementVar + " != null)",
                 () -> {
-                  w.line(
-                      "sb.Append(\"!%dm\").Append(%s.CountPbtkFields());",
-                      fieldNum, elementVar);
+                  w.line("sb.Append(\"!%dm\").Append(%s.CountPbtkFields());", fieldNum, elementVar);
                   w.line("%s.AppendPbtkFields(sb);", elementVar);
                 });
           } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
@@ -396,8 +385,7 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
         });
   }
 
-  private void emitMapSerialize(
-      CodeWriter w, ProtoField field, String csField, int fieldNum) {
+  private void emitMapSerialize(CodeWriter w, ProtoField field, String csField, int fieldNum) {
     String entryVar = "__" + nameResolver.fieldName(field.getName()) + "Entry";
     w.block(
         "foreach (var " + entryVar + " in " + csField + ")",
@@ -408,12 +396,9 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
           String keyTypeChar = pbtkTypeChar(field.getMapKeyType());
           if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_STRING) {
             w.line(
-                "sb.Append(\"!1%s\").Append(Uri.EscapeDataString(%s.Key));",
-                keyTypeChar, entryVar);
+                "sb.Append(\"!1%s\").Append(Uri.EscapeDataString(%s.Key));", keyTypeChar, entryVar);
           } else if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_BOOL) {
-            w.line(
-                "sb.Append(\"!1%s\").Append(%s.Key ? \"1\" : \"0\");",
-                keyTypeChar, entryVar);
+            w.line("sb.Append(\"!1%s\").Append(%s.Key ? \"1\" : \"0\");", keyTypeChar, entryVar);
           } else {
             w.line("sb.Append(\"!1%s\").Append(%s.Key);", keyTypeChar, entryVar);
           }
@@ -427,11 +412,9 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
             w.line("sb.Append(\"!2e\").Append((int)%s.Value);", entryVar);
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_STRING) {
-            w.line(
-                "sb.Append(\"!2s\").Append(Uri.EscapeDataString(%s.Value));", entryVar);
+            w.line("sb.Append(\"!2s\").Append(Uri.EscapeDataString(%s.Value));", entryVar);
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
-            w.line(
-                "sb.Append(\"!2z\").Append(Convert.ToBase64String(%s.Value));", entryVar);
+            w.line("sb.Append(\"!2z\").Append(Convert.ToBase64String(%s.Value));", entryVar);
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BOOL) {
             w.line("sb.Append(\"!2b\").Append(%s.Value ? \"1\" : \"0\");", entryVar);
           } else {
@@ -464,8 +447,7 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
     } else if (field.hasExplicitPresence() && !field.isRequired()) {
       w.line("if (presentFields_[%d]) count++;", field.getArrayPosition());
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
-      w.line(
-          "if (!double.IsNaN(%s) && !double.IsInfinity(%s)) count++;", csField, csField);
+      w.line("if (!double.IsNaN(%s) && !double.IsInfinity(%s)) count++;", csField, csField);
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_FLOAT) {
       w.line("if (!float.IsNaN(%s) && !float.IsInfinity(%s)) count++;", csField, csField);
     } else {
@@ -486,8 +468,7 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
     w.block(
         "public static " + className + " FromPbtkUrl(string input)",
         () -> {
-          w.line(
-              "if (string.IsNullOrEmpty(input)) return %s.GetDefaultInstance();", className);
+          w.line("if (string.IsNullOrEmpty(input)) return %s.GetDefaultInstance();", className);
           w.line("var tokens = TokenizePbtk(input);");
           w.line("int[] offset = {0};");
           w.line("return ParsePbtkTokens(tokens, tokens.Count, offset);");
@@ -532,8 +513,7 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
               () -> {
                 w.line("string token = tokens[offset[0]];");
                 w.line("int numEnd = 0;");
-                w.line(
-                    "while (numEnd < token.Length && char.IsDigit(token[numEnd])) numEnd++;");
+                w.line("while (numEnd < token.Length && char.IsDigit(token[numEnd])) numEnd++;");
                 w.line(
                     "if (numEnd == 0 || numEnd >= token.Length) { offset[0]++; consumed++; continue; }");
                 w.line("int fieldNum = int.Parse(token.Substring(0, numEnd));");
@@ -624,8 +604,7 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
           w.line("string mapToken = tokens[offset[0]];");
           w.line("int mne = 0;");
           w.line("while (mne < mapToken.Length && char.IsDigit(mapToken[mne])) mne++;");
-          w.line(
-              "if (mne == 0 || mne >= mapToken.Length) { offset[0]++; continue; }");
+          w.line("if (mne == 0 || mne >= mapToken.Length) { offset[0]++; continue; }");
           w.line("int mfn = int.Parse(mapToken.Substring(0, mne));");
           w.line("string mval = mapToken.Substring(mne + 1);");
           w.block(
@@ -641,9 +620,7 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
                   String msgType = simpleTypeName(field.getMapValueTypeReference());
                   w.line("int valSubCount = int.Parse(mval);");
                   w.line("offset[0]++;");
-                  w.line(
-                      "entryVal = %s.ParsePbtkTokens(tokens, valSubCount, offset);",
-                      msgType);
+                  w.line("entryVal = %s.ParsePbtkTokens(tokens, valSubCount, offset);", msgType);
                   w.line("offset[0]--;");
                 } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
                   String enumType = simpleTypeName(field.getMapValueTypeReference());
@@ -795,8 +772,8 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
                   String csName = nameResolver.fieldName(field.getName());
                   if (field.isRepeated()) {
                     w.line(
-                        "this.%s = new List<%s>(prototype.%s);", csName,
-                        elementType(field), csName);
+                        "this.%s = new List<%s>(prototype.%s);",
+                        csName, elementType(field), csName);
                   } else if (field.isMap()) {
                     w.line(
                         "this.%s = new Dictionary<%s>(prototype.%s);",
@@ -827,8 +804,7 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
                 () -> {
                   w.line("this.%s = %s;", csName, csName);
                   if (field.hasExplicitPresence()) {
-                    w.line(
-                        "this.presentFields_[%d] = true;", field.getArrayPosition());
+                    w.line("this.presentFields_[%d] = true;", field.getArrayPosition());
                   }
                   if (field.isOneofMember()) {
                     w.line(
@@ -847,8 +823,7 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
                   String defaultVal = typeMapper.defaultValue(field);
                   w.line("this.%s = %s;", csName, defaultVal);
                   if (field.hasExplicitPresence()) {
-                    w.line(
-                        "this.presentFields_[%d] = false;", field.getArrayPosition());
+                    w.line("this.presentFields_[%d] = false;", field.getArrayPosition());
                   }
                   if (field.isOneofMember()) {
                     String caseN = nameResolver.fieldName(field.getOneofName()) + "Case_";
@@ -871,15 +846,9 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
                   });
               w.blankLine();
               w.block(
-                  "public Builder AddAll"
-                      + pascalName
-                      + "(IEnumerable<"
-                      + elemType
-                      + "> values)",
+                  "public Builder AddAll" + pascalName + "(IEnumerable<" + elemType + "> values)",
                   () -> {
-                    w.block(
-                        "foreach (var v in values)",
-                        () -> w.line("this.%s.Add(v);", csName));
+                    w.block("foreach (var v in values)", () -> w.line("this.%s.Add(v);", csName));
                     w.line("return this;");
                   });
             }
@@ -937,8 +906,7 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
                   w.line("this.%s = %s;", csName, defaultVal);
                 }
                 if (hasPresenceTrackedFields(message)) {
-                  w.line(
-                      "Array.Clear(this.presentFields_, 0, this.presentFields_.Length);");
+                  w.line("Array.Clear(this.presentFields_, 0, this.presentFields_.Length);");
                 }
                 for (ProtoMessage.OneofGroup group : message.getOneofGroups()) {
                   String caseName = nameResolver.fieldName(group.name()) + "Case_";
@@ -950,17 +918,14 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
           // Build
           w.blankLine();
           w.block(
-              "public " + className + " Build()",
-              () -> w.line("return new %s(this);", className));
+              "public " + className + " Build()", () -> w.line("return new %s(this);", className));
         });
   }
 
   private void emitNestedMessage(CodeWriter w, ProtoMessage nested, ProtoFile file) {
     String className = nameResolver.messageClassName(nested.getName());
     emitDocComment(w, nested.getComment());
-    w.block(
-        "public sealed class " + className,
-        () -> emitMessageBody(w, nested, className, file));
+    w.block("public sealed class " + className, () -> emitMessageBody(w, nested, className, file));
   }
 
   private void emitEnum(CodeWriter w, ProtoEnum protoEnum) {

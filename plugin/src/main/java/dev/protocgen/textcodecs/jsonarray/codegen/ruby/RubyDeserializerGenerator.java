@@ -80,7 +80,8 @@ public class RubyDeserializerGenerator {
   }
 
   private void emitFieldDeserialize(CodeWriter w, ProtoField field, int pos) {
-    String rbField = "obj.instance_variable_set(:@" + nameResolver.fieldName(field.getName()) + ", ";
+    String rbField =
+        "obj.instance_variable_set(:@" + nameResolver.fieldName(field.getName()) + ", ";
     String rbFieldDirect = "@" + nameResolver.fieldName(field.getName());
 
     w.line("if size > %d && !data[%d].nil?", pos, pos);
@@ -118,18 +119,23 @@ public class RubyDeserializerGenerator {
   private void emitScalarDeserialize(
       CodeWriter w, ProtoField field, String rbField, String elemExpr) {
     String readExpr = scalarReadExpr(field.getProtoType(), elemExpr);
-    w.line("obj.instance_variable_set(:@%s, %s)", nameResolver.fieldName(field.getName()), readExpr);
+    w.line(
+        "obj.instance_variable_set(:@%s, %s)", nameResolver.fieldName(field.getName()), readExpr);
   }
 
   private void emitEnumDeserialize(
       CodeWriter w, ProtoField field, String rbField, String elemExpr) {
-    w.line("obj.instance_variable_set(:@%s, %s.to_i)", nameResolver.fieldName(field.getName()), elemExpr);
+    w.line(
+        "obj.instance_variable_set(:@%s, %s.to_i)",
+        nameResolver.fieldName(field.getName()), elemExpr);
   }
 
   private void emitMessageDeserialize(
       CodeWriter w, ProtoField field, String rbField, String elemExpr) {
     String msgType = simpleTypeName(field.getTypeReference());
-    w.line("obj.instance_variable_set(:@%s, %s.deserialize(%s))", nameResolver.fieldName(field.getName()), msgType, elemExpr);
+    w.line(
+        "obj.instance_variable_set(:@%s, %s.deserialize(%s))",
+        nameResolver.fieldName(field.getName()), msgType, elemExpr);
   }
 
   private void emitRepeatedDeserialize(
@@ -142,13 +148,18 @@ public class RubyDeserializerGenerator {
           "obj.instance_variable_set(:@%s, %s.map { |elem| elem.nil? ? nil : %s.deserialize(elem) })",
           fieldNameStr, elemExpr, msgType);
     } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
-      w.line("obj.instance_variable_set(:@%s, %s.map { |elem| elem.to_i })", fieldNameStr, elemExpr);
+      w.line(
+          "obj.instance_variable_set(:@%s, %s.map { |elem| elem.to_i })", fieldNameStr, elemExpr);
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
-      w.line("obj.instance_variable_set(:@%s, %s.map { |elem| Base64.strict_decode64(elem) })", fieldNameStr, elemExpr);
+      w.line(
+          "obj.instance_variable_set(:@%s, %s.map { |elem| Base64.strict_decode64(elem) })",
+          fieldNameStr, elemExpr);
     } else {
       String readExpr = scalarListReadExpr(field.getProtoType());
       if (readExpr != null) {
-        w.line("obj.instance_variable_set(:@%s, %s.map { |elem| %s })", fieldNameStr, elemExpr, readExpr);
+        w.line(
+            "obj.instance_variable_set(:@%s, %s.map { |elem| %s })",
+            fieldNameStr, elemExpr, readExpr);
       } else {
         w.line("obj.instance_variable_set(:@%s, Array(%s))", fieldNameStr, elemExpr);
       }
@@ -167,9 +178,13 @@ public class RubyDeserializerGenerator {
             "obj.instance_variable_set(:@%s, %s.transform_values { |v| v.nil? ? nil : %s.deserialize(v) })",
             fieldNameStr, elemExpr, msgType);
       } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
-        w.line("obj.instance_variable_set(:@%s, %s.transform_values { |v| v.to_i })", fieldNameStr, elemExpr);
+        w.line(
+            "obj.instance_variable_set(:@%s, %s.transform_values { |v| v.to_i })",
+            fieldNameStr, elemExpr);
       } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
-        w.line("obj.instance_variable_set(:@%s, %s.transform_values { |v| Base64.strict_decode64(v) })", fieldNameStr, elemExpr);
+        w.line(
+            "obj.instance_variable_set(:@%s, %s.transform_values { |v| Base64.strict_decode64(v) })",
+            fieldNameStr, elemExpr);
       } else {
         w.line("obj.instance_variable_set(:@%s, Hash[%s])", fieldNameStr, elemExpr);
       }

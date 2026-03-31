@@ -30,8 +30,7 @@ public class CSharpDeserializerGenerator {
   private final CSharpTypeMapper typeMapper;
   private final CSharpNameResolver nameResolver;
 
-  public CSharpDeserializerGenerator(
-      CSharpTypeMapper typeMapper, CSharpNameResolver nameResolver) {
+  public CSharpDeserializerGenerator(CSharpTypeMapper typeMapper, CSharpNameResolver nameResolver) {
     this.typeMapper = typeMapper;
     this.nameResolver = nameResolver;
   }
@@ -81,11 +80,7 @@ public class CSharpDeserializerGenerator {
     String setter = "builder.Set" + CSharpNameResolver.snakeToPascal(field.getName());
 
     w.block(
-        "if (size > "
-            + pos
-            + " && array["
-            + pos
-            + "].ValueKind != JsonValueKind.Null)",
+        "if (size > " + pos + " && array[" + pos + "].ValueKind != JsonValueKind.Null)",
         () -> {
           String elemExpr = "array[" + pos + "]";
 
@@ -194,11 +189,21 @@ public class CSharpDeserializerGenerator {
       case TYPE_DOUBLE -> elemExpr + ".GetDouble()";
       case TYPE_FLOAT -> "(float)" + elemExpr + ".GetDouble()";
       case TYPE_INT64, TYPE_SINT64, TYPE_SFIXED64 ->
-          "(" + elemExpr + ".ValueKind == JsonValueKind.String ? long.Parse(" + elemExpr
-              + ".GetString()) : " + elemExpr + ".GetInt64())";
+          "("
+              + elemExpr
+              + ".ValueKind == JsonValueKind.String ? long.Parse("
+              + elemExpr
+              + ".GetString()) : "
+              + elemExpr
+              + ".GetInt64())";
       case TYPE_UINT64, TYPE_FIXED64 ->
-          "(" + elemExpr + ".ValueKind == JsonValueKind.String ? ulong.Parse(" + elemExpr
-              + ".GetString()) : " + elemExpr + ".GetUInt64())";
+          "("
+              + elemExpr
+              + ".ValueKind == JsonValueKind.String ? ulong.Parse("
+              + elemExpr
+              + ".GetString()) : "
+              + elemExpr
+              + ".GetUInt64())";
       case TYPE_INT32, TYPE_SINT32, TYPE_SFIXED32 -> elemExpr + ".GetInt32()";
       case TYPE_UINT32, TYPE_FIXED32 -> elemExpr + ".GetUInt32()";
       case TYPE_BOOL -> elemExpr + ".GetBoolean()";
@@ -272,8 +277,7 @@ public class CSharpDeserializerGenerator {
         if ("nan".equals(defaultValue)) yield "float.NaN";
         yield (defaultValue.contains(".") ? defaultValue : defaultValue + ".0") + "f";
       }
-      case TYPE_INT64, TYPE_SINT64, TYPE_SFIXED64, TYPE_UINT64, TYPE_FIXED64 ->
-          defaultValue + "L";
+      case TYPE_INT64, TYPE_SINT64, TYPE_SFIXED64, TYPE_UINT64, TYPE_FIXED64 -> defaultValue + "L";
       case TYPE_BYTES -> {
         if (defaultValue.isEmpty()) {
           yield "Array.Empty<byte>()";
