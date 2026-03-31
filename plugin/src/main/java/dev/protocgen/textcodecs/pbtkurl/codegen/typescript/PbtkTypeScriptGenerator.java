@@ -19,6 +19,7 @@ import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse;
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
 import dev.protocgen.textcodecs.jsonarray.codegen.LanguageGenerator;
+import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.codegen.javascript.JavaScriptNameResolver;
 import dev.protocgen.textcodecs.jsonarray.codegen.typescript.TypeScriptNameResolver;
 import dev.protocgen.textcodecs.jsonarray.codegen.typescript.TypeScriptTypeMapper;
@@ -719,14 +720,14 @@ public class PbtkTypeScriptGenerator implements LanguageGenerator {
       }
       if (isNested) continue;
 
-      String simpleName = typeRef.substring(typeRef.lastIndexOf('.') + 1);
+      String simpleName = ProtoTypeUtil.simpleTypeName(typeRef);
       if (typeRef.startsWith(currentPrefix)) {
         names.add(simpleName);
       }
 
       if (field.isMap() && field.getMapValueTypeReference() != null) {
         String valRef = field.getMapValueTypeReference();
-        String valName = valRef.substring(valRef.lastIndexOf('.') + 1);
+        String valName = ProtoTypeUtil.simpleTypeName(valRef);
         if (valRef.startsWith(currentPrefix)) {
           names.add(valName);
         }

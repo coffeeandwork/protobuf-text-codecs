@@ -186,7 +186,7 @@ public class PbtkZigGenerator implements LanguageGenerator {
       if (typeRef.equals(message.getFullName() + "." + nestedEnum.getName())) return;
     }
     if (typeRef.startsWith(currentPrefix)) {
-      String simpleName = typeRef.substring(typeRef.lastIndexOf('.') + 1);
+      String simpleName = ProtoTypeUtil.simpleTypeName(typeRef);
       String moduleName = zigToSnakeCase(simpleName);
       imports.add(
           "const " + simpleName + " = @import(\"" + moduleName + ".zig\")." + simpleName + ";");

@@ -16,6 +16,7 @@
 package dev.protocgen.textcodecs.jsonarray.codegen.dart;
 
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
+import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoEnum;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoFile;
@@ -121,7 +122,7 @@ public class DartCodeEmitter {
       if (isNested) continue;
 
       // Extract the simple name
-      String simpleName = typeRef.substring(typeRef.lastIndexOf('.') + 1);
+      String simpleName = ProtoTypeUtil.simpleTypeName(typeRef);
 
       // Check if this is a type in the same package but different file
       if (typeRef.startsWith(currentPrefix)) {
@@ -131,7 +132,7 @@ public class DartCodeEmitter {
       // For map value types
       if (field.isMap() && field.getMapValueTypeReference() != null) {
         String valRef = field.getMapValueTypeReference();
-        String valName = valRef.substring(valRef.lastIndexOf('.') + 1);
+        String valName = ProtoTypeUtil.simpleTypeName(valRef);
         if (valRef.startsWith(currentPrefix)) {
           names.add(valName);
         }

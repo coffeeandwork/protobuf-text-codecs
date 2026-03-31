@@ -290,7 +290,7 @@ public class PbtkCppGenerator implements LanguageGenerator {
     }
 
     if (typeRef.startsWith(currentPrefix)) {
-      String simpleName = typeRef.substring(typeRef.lastIndexOf('.') + 1);
+      String simpleName = ProtoTypeUtil.simpleTypeName(typeRef);
       if (simpleName.equals(message.getName())) return;
       String dir = pkg.isEmpty() ? "" : pkg.replace('.', '/') + "/";
       includes.add("#include \"" + dir + simpleName + ".hpp\"");
@@ -344,7 +344,7 @@ public class PbtkCppGenerator implements LanguageGenerator {
     }
 
     if (typeRef.startsWith(currentPrefix)) {
-      String simpleName = typeRef.substring(typeRef.lastIndexOf('.') + 1);
+      String simpleName = ProtoTypeUtil.simpleTypeName(typeRef);
       if (simpleName.equals(message.getName())) return;
       forwardDecls.add("class " + simpleName + ";");
     }

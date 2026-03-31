@@ -16,6 +16,7 @@
 package dev.protocgen.textcodecs.jsonarray.codegen.zig;
 
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
+import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoEnum;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoFile;
@@ -160,7 +161,7 @@ public class ZigCodeEmitter {
 
     // Check if this is a type in the same package but different file
     if (typeRef.startsWith(currentPrefix)) {
-      String simpleName = typeRef.substring(typeRef.lastIndexOf('.') + 1);
+      String simpleName = ProtoTypeUtil.simpleTypeName(typeRef);
       String moduleName = ZigNameResolver.toSnakeCase(simpleName);
       imports.add(
           "const " + simpleName + " = @import(\"" + moduleName + ".zig\")." + simpleName + ";");

@@ -938,7 +938,7 @@ public class PbtkRubyGenerator implements LanguageGenerator {
       }
       if (isNested) continue;
 
-      String simpleName = typeRef.substring(typeRef.lastIndexOf('.') + 1);
+      String simpleName = ProtoTypeUtil.simpleTypeName(typeRef);
       if (typeRef.startsWith(currentPrefix)) {
         String moduleName = pascalToSnake(simpleName);
         imports.add("require_relative '" + moduleName + "'");
@@ -948,7 +948,7 @@ public class PbtkRubyGenerator implements LanguageGenerator {
       if (field.isMap() && field.getMapValueTypeReference() != null) {
         String valRef = field.getMapValueTypeReference();
         if (registry != null && registry.isMapEntry(valRef)) continue;
-        String valName = valRef.substring(valRef.lastIndexOf('.') + 1);
+        String valName = ProtoTypeUtil.simpleTypeName(valRef);
         if (valRef.startsWith(currentPrefix)) {
           String moduleName = pascalToSnake(valName);
           imports.add("require_relative '" + moduleName + "'");

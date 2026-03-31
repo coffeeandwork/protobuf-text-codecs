@@ -19,6 +19,7 @@ import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse;
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
 import dev.protocgen.textcodecs.jsonarray.codegen.LanguageGenerator;
+import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.codegen.c.CNameResolver;
 import dev.protocgen.textcodecs.jsonarray.codegen.c.CTypeMapper;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoEnum;
@@ -1567,7 +1568,7 @@ public class PbtkCGenerator implements LanguageGenerator {
     }
 
     if (typeRef.startsWith(currentPrefix)) {
-      String simpleName = typeRef.substring(typeRef.lastIndexOf('.') + 1);
+      String simpleName = ProtoTypeUtil.simpleTypeName(typeRef);
       if (simpleName.equals(message.getName())) return;
       String snakeName = pascalToSnake(simpleName);
       String dir = pkg.isEmpty() ? "" : pkg.replace('.', '/') + "/";

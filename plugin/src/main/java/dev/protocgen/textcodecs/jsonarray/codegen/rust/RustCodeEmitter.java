@@ -16,6 +16,7 @@
 package dev.protocgen.textcodecs.jsonarray.codegen.rust;
 
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
+import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoEnum;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoFile;
@@ -184,7 +185,7 @@ public class RustCodeEmitter {
 
     // Check if this is a type in the same package but different file
     if (typeRef.startsWith(currentPrefix)) {
-      String simpleName = typeRef.substring(typeRef.lastIndexOf('.') + 1);
+      String simpleName = ProtoTypeUtil.simpleTypeName(typeRef);
       String moduleName = RustNameResolver.toSnakeCase(simpleName);
       imports.add("use super::" + moduleName + "::" + simpleName + ";");
     }

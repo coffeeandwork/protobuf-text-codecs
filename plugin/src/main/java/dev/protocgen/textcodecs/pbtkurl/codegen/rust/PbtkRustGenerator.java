@@ -249,7 +249,7 @@ public class PbtkRustGenerator implements LanguageGenerator {
       if (typeRef.equals(message.getFullName() + "." + nestedEnum.getName())) return;
     }
     if (typeRef.startsWith(currentPrefix)) {
-      String simpleName = typeRef.substring(typeRef.lastIndexOf('.') + 1);
+      String simpleName = ProtoTypeUtil.simpleTypeName(typeRef);
       String moduleName = toSnakeCase(simpleName);
       imports.add("use super::" + moduleName + "::" + simpleName + ";");
     }

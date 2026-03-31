@@ -19,6 +19,7 @@ import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse;
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
 import dev.protocgen.textcodecs.jsonarray.codegen.LanguageGenerator;
+import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.codegen.objc.ObjCNameResolver;
 import dev.protocgen.textcodecs.jsonarray.codegen.objc.ObjCTypeMapper;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoEnum;
@@ -1033,8 +1034,7 @@ public class PbtkObjCGenerator implements LanguageGenerator {
       if (isNested) continue;
 
       if (field.getTypeReference().startsWith(currentPrefix)) {
-        String simpleName =
-            field.getTypeReference().substring(field.getTypeReference().lastIndexOf('.') + 1);
+        String simpleName = ProtoTypeUtil.simpleTypeName(field.getTypeReference());
         if (!simpleName.equals(message.getName())) {
           String className = nameResolver.resolveTypeReference(field.getTypeReference(), file);
           imports.add("#import \"" + className + ".h\"");

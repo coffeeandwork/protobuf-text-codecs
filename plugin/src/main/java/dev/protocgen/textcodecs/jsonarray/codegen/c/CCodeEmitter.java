@@ -17,6 +17,7 @@ package dev.protocgen.textcodecs.jsonarray.codegen.c;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
+import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoEnum;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoFile;
@@ -279,7 +280,7 @@ public class CCodeEmitter {
 
     // Check if this is a type in the same package but different file
     if (typeRef.startsWith(currentPrefix)) {
-      String simpleName = typeRef.substring(typeRef.lastIndexOf('.') + 1);
+      String simpleName = ProtoTypeUtil.simpleTypeName(typeRef);
       if (simpleName.equals(message.getName())) return;
 
       String cTypeName = nameResolver.resolveTypeReference(typeRef, null);
@@ -343,7 +344,7 @@ public class CCodeEmitter {
 
     // Check if this is a type in the same package but different file
     if (typeRef.startsWith(currentPrefix)) {
-      String simpleName = typeRef.substring(typeRef.lastIndexOf('.') + 1);
+      String simpleName = ProtoTypeUtil.simpleTypeName(typeRef);
       // Skip if this is the same message we're generating
       if (simpleName.equals(message.getName())) return;
 
