@@ -110,7 +110,7 @@ LIMITATIONS:
 | TypeRegistryTest | `plugin/src/test/java/.../jsonarray/TypeRegistryTest.java` | 14 | SEC-001 (VULN-002) |
 | CodeWriterTest | `plugin/src/test/java/.../jsonarray/CodeWriterTest.java` | 14 | -- (utility) |
 | IndexingAuditTest | `plugin/src/test/java/.../jsonarray/IndexingAuditTest.java` | 12 | SR-001, FR-001, FR-002 |
-| GoldenFileTest | `plugin/src/test/java/.../jsonarray/GoldenFileTest.java` | 9 | FR-011, SR-002 |
+| GoldenFileTest | `plugin/src/test/java/.../jsonarray/GoldenFileTest.java` | 17 | FR-011, SR-002 |
 | JavaNameResolverTest | `plugin/src/test/java/.../jsonarray/JavaNameResolverTest.java` | 5 | SEC-003, SEC-004 |
 | WellKnownTypeTest | `plugin/src/test/java/.../jsonarray/WellKnownTypeTest.java` | 3 | FR-017 |
 | MultiLanguageCodeGenTest | `plugin/src/test/java/.../jsonarray/MultiLanguageCodeGenTest.java` | 240 | FR-011, FR-013, SR-001, SR-002 |
@@ -119,7 +119,7 @@ LIMITATIONS:
 | PbtkJavaCodeGenTest | `plugin/src/test/java/.../pbtkurl/PbtkJavaCodeGenTest.java` | 27 | FR-011 (pbtk) |
 | PbtkMultiLanguageCodeGenTest | `plugin/src/test/java/.../pbtkurl/PbtkMultiLanguageCodeGenTest.java` | 144 | FR-011, FR-013 (pbtk) |
 | PbtkSafetySecurityTest | `plugin/src/test/java/.../pbtkurl/PbtkSafetySecurityTest.java` | 70 | SR-001-SR-004, SEC-001-SEC-004 (pbtk) |
-| | | **Total: 921** | |
+| | | **Total: 929** | |
 
 Note: 15 `@ParameterizedTest` methods x 16 languages = 240 expanded invocations for MultiLanguageCodeGenTest.
 

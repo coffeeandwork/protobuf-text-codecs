@@ -69,7 +69,7 @@ protobuf-text-codecs/
 
 Key directories:
 - `plugin/src/main/`: Plugin source code — the core product
-- `plugin/src/test/`: Unit and code generation tests (921 tests)
+- `plugin/src/test/`: Unit and code generation tests (929 tests)
 - `runtime/`: Thin runtime libraries for languages that need them (Java, C, C++, Rust)
 - `test-protos/`: Proto definitions for testing (user.proto, address.proto, kitchen_sink.proto, edge_cases.proto, proto2_test.proto)
 - `integration-tests/`: Cross-language round-trip and schema evolution tests
@@ -81,7 +81,7 @@ Key directories:
 | `main()` | CLI (protoc plugin) | `Main.java:12` | Reads CodeGeneratorRequest from stdin, writes CodeGeneratorResponse to stdout |
 | `--version` flag | CLI | `Main.java:14-18` | Prints `protoc-gen-jsonarray 0.2.0` to stdout and exits |
 | `protoc-gen-jsonarray` | Shell wrapper | `protoc-gen-jsonarray:1` | Validates java/JAR existence, delegates to Main |
-| `PluginRunner.run()` | Internal API | `PluginRunner.java:44` | Core orchestration — can be called programmatically (used by 921 unit tests) |
+| `PluginRunner.run()` | Internal API | `PluginRunner.java:44` | Core orchestration — can be called programmatically (used by 929 unit tests) |
 | `LanguageGenerator.generate()` | Internal API | `LanguageGenerator.java:15` | Per-language code generation interface (17 implementations) |
 
 ## 4. Components
@@ -405,14 +405,14 @@ The core encoding format that all generated code must implement:
 | JavaNameResolverTest | 5 | Naming conventions |
 | WellKnownTypeTest | 3 | WKT lookup and classification |
 | SafetySecurityTest | 180 | Safety (SR-001–004), security (SEC-001–004), fault injection for jsonarray |
-| GoldenFileTest | 9+ | @ParameterizedTest — exact output comparison against golden files |
+| GoldenFileTest | 17 | @ParameterizedTest — exact output comparison against golden files |
 | PerformanceBenchmarkTest | 8 | Plugin throughput benchmarks |
 | MemoryBenchmarkTest | 4 | Memory allocation benchmarks |
 | PbtkJavaCodeGenTest | 27 | pbtk URL format Java code generation |
 | PbtkMultiLanguageCodeGenTest | 144 | pbtk URL format across 16 non-Java languages |
 | PbtkSafetySecurityTest | 70 | Safety/security tests for pbtk format |
 
-**Total: 921 tests. Overall coverage: 74.0% instructions, 76.5% lines.**
+**Total: 929 tests. Overall coverage: 74.0% instructions, 76.5% lines.**
 
 Integration tests (not in JUnit):
 - Cross-language round-trip (Java ↔ Python): 5 assertions
@@ -423,7 +423,7 @@ Integration tests (not in JUnit):
 
 ### Strengths
 1. **Clean architecture:** Language-neutral model layer cleanly separates proto analysis from code generation. Adding a new language requires implementing 6 classes with no changes to the core.
-2. **Thorough testing:** 921 tests (74.0% instruction coverage, 76.5% line coverage) + integration tests + 71 end-to-end code generation tests verifying actual generated source code.
+2. **Thorough testing:** 929 tests (74.0% instruction coverage, 76.5% line coverage) + integration tests + 71 end-to-end code generation tests verifying actual generated source code.
 3. **Immutable model:** All model objects use `List.copyOf()` — no accidental mutation.
 4. **Defense-in-depth:** Field name validation, path traversal, keyword escaping, collision detection — even though protoc validates most inputs upstream.
 5. **Zero runtime dependencies:** The plugin itself only needs `protobuf-java`. No network, no disk, no state.
@@ -436,4 +436,4 @@ Integration tests (not in JUnit):
 4. **Zig standard library instability.** Generated Zig code may break with future Zig releases.
 5. **int64 string encoding may surprise users.** Correct per protobuf JSON spec but breaks expectations of tools expecting numeric JSON values.
 6. **Proto2 default value escaping only validated for Java.** Other generators may not properly escape special characters in schema-specified defaults.
-7. ~~No golden-file/snapshot tests.~~ **Resolved.** GoldenFileTest.java provides exact output comparison for 9 languages (Java, Python, JavaScript, TypeScript, C, C++, Rust, Zig, Go) against checked-in golden files.
+7. ~~No golden-file/snapshot tests.~~ **Resolved.** GoldenFileTest.java provides exact output comparison for all 17 languages against checked-in golden files.

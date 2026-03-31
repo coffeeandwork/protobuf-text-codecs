@@ -90,7 +90,7 @@ Each language has 6 classes: Generator, CodeEmitter, SerializerGenerator, Deseri
 ## Testing
 
 ```bash
-./gradlew :plugin:test                    # All tests (921 tests)
+./gradlew :plugin:test                    # All tests (929 tests)
 ./gradlew :plugin:test --tests "*.PbtkJavaCodeGenTest"  # pbtk tests only
 ./gradlew :plugin:jacocoTestReport        # Coverage report
 ./gradlew spotlessCheck                   # Code formatting
@@ -98,7 +98,7 @@ Each language has 6 classes: Generator, CodeEmitter, SerializerGenerator, Deseri
 
 - 17 test classes covering JSON array generators, 3 for pbtk
 - Parameterized tests across 16 non-Java languages
-- Golden-file snapshot tests for 9 languages (Java, Python, JavaScript, TypeScript, C, C++, Rust, Zig, Go)
+- Golden-file snapshot tests for all 17 languages
 - Safety/security tests (SR-001–004, SEC-001–004) for both JSON array and pbtk formats
 - Integration tests (Java ↔ Python cross-language round-trip)
 

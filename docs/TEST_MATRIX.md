@@ -106,7 +106,7 @@ LIMITATIONS:
 | Security (SEC) | 4 | ~48 | 0 | ~48 |
 | Performance (PERF) | 2 | 0 (manual only) | 0 | 0 |
 | Interface (IF) | 3 | ~25 | 0 | ~25 |
-| **Total** | **31** | **~781** | **~2** | **921** |
+| **Total** | **31** | **~781** | **~2** | **929** |
 
 ## Test Files
 
@@ -128,7 +128,7 @@ LIMITATIONS:
 | PbtkMultiLanguageCodeGenTest.java | E2E: pbtk URL format across 16 non-Java languages | 144 | Implemented |
 | PbtkSafetySecurityTest.java | Safety/security tests for pbtk format | 70 | Implemented |
 | SafetySecurityTest.java | Safety/security/fault injection (39 @Test + 9 @ParameterizedTest = 180 invocations) | 180 | Implemented |
-| GoldenFileTest.java | Snapshot: exact output comparison | 9 | Implemented |
+| GoldenFileTest.java | Snapshot: exact output comparison | 17 | Implemented |
 
 ## Missing Coverage
 

@@ -180,7 +180,15 @@ class GoldenFileTest {
         Arguments.of("cpp"),
         Arguments.of("rust"),
         Arguments.of("zig"),
-        Arguments.of("go"));
+        Arguments.of("go"),
+        Arguments.of("csharp"),
+        Arguments.of("kotlin"),
+        Arguments.of("swift"),
+        Arguments.of("dart"),
+        Arguments.of("php"),
+        Arguments.of("ruby"),
+        Arguments.of("objc"),
+        Arguments.of("perl"));
   }
 
   @ParameterizedTest(name = "golden-{0}")

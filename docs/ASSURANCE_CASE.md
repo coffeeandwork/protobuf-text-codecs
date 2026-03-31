@@ -180,8 +180,8 @@ LIMITATIONS:
 
 | Metric | Value |
 |--------|-------|
-| Total tests | 921 |
-| Tests passing | 921 (100%) |
+| Total tests | 929 |
+| Tests passing | 929 (100%) |
 | Tests failing | 0 |
 | Test files | 17 classes |
 | Parameterized test methods | 25+ (expanding to ~500+ test invocations across 16-17 languages) |
@@ -263,7 +263,7 @@ LIMITATIONS:
 
 | Aspect | Level | Justification |
 |--------|-------|---------------|
-| Functional correctness | **Moderate-High** | 921 tests, 76.5% line coverage, all 17 languages tested via parameterized framework |
+| Functional correctness | **Moderate-High** | 929 tests, 76.5% line coverage, all 17 languages tested via parameterized framework |
 | Safety (data integrity) | **High** | Core positioning invariant verified by dedicated audit tests; int64 string encoding verified in all generators |
 | Security (code injection) | **Moderate-High** | 9 vulnerabilities identified and fixed; defense-in-depth validation; no fuzz testing |
 | Protocol compliance | **High** | 22 plugin runner tests cover parameter parsing, error handling, feature flags |
