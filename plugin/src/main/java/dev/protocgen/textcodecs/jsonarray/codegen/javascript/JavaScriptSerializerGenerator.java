@@ -264,8 +264,8 @@ public class JavaScriptSerializerGenerator {
     String encodeExpr =
         String.format(
             "(typeof Buffer !== 'undefined' ? Buffer.from(%s).toString('base64') "
-                + ": btoa(String.fromCharCode.apply(null, %s)))",
-            fieldExpr, fieldExpr);
+                + ": (() => { let binary = ''; for (let i = 0; i < %s.length; i++) binary += String.fromCharCode(%s[i]); return btoa(binary); })())",
+            fieldExpr, fieldExpr, fieldExpr);
     w.line(pushTemplate, encodeExpr);
   }
 

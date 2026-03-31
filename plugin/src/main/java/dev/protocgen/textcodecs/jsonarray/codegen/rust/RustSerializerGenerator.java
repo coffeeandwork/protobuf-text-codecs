@@ -40,9 +40,8 @@ public class RustSerializerGenerator {
     w.block(
         "pub fn serialize(&self) -> Value",
         () -> {
-          w.line("let mut arr: Vec<Value> = Vec::new();");
-
           int maxPos = message.getMaxFieldNumber();
+          w.line("let mut arr: Vec<Value> = Vec::with_capacity(%d);", maxPos);
           for (int pos = 0; pos < maxPos; pos++) {
             ProtoField field = message.fieldAtPosition(pos);
             if (field == null) {
@@ -206,7 +205,7 @@ public class RustSerializerGenerator {
     w.block(
         "",
         () -> {
-          w.line("let mut list_arr: Vec<Value> = Vec::new();");
+          w.line("let mut list_arr: Vec<Value> = Vec::with_capacity(%s.len());", rustField);
           String elemVar = nameResolver.fieldName(field.getName()) + "_item";
           w.block(
               "for " + elemVar + " in &" + rustField,
@@ -243,11 +242,11 @@ public class RustSerializerGenerator {
                 });
             w.line("arr.push(Value::Object(map_obj));");
           } else {
-            w.line("let mut map_arr: Vec<Value> = Vec::new();");
+            w.line("let mut map_arr: Vec<Value> = Vec::with_capacity(%s.len());", rustField);
             w.block(
                 "for (k, v) in &" + rustField,
                 () -> {
-                  w.line("let mut pair: Vec<Value> = Vec::new();");
+                  w.line("let mut pair: Vec<Value> = Vec::with_capacity(2);");
                   emitMapKeyAdd(w, field, "k");
                   emitMapValueAdd(w, field, "v");
                   w.line("map_arr.push(Value::Array(pair));");

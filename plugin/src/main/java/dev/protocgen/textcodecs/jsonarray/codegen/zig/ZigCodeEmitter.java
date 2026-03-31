@@ -15,6 +15,7 @@
  */
 package dev.protocgen.textcodecs.jsonarray.codegen.zig;
 
+import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
 import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoEnum;
@@ -299,9 +300,33 @@ public class ZigCodeEmitter {
             String zigName = "self." + nameResolver.fieldName(field.getName());
 
             if (field.isMap()) {
+              // Free allocator-owned string keys
+              if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_STRING) {
+                w.block(
+                    "var key_it = " + zigName + ".keyIterator(); while (key_it.next()) |key|",
+                    () -> {
+                      w.line("allocator.free(key.*);");
+                    });
+              }
+              // Free allocator-owned string values
+              if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_STRING) {
+                w.block(
+                    "var val_it = " + zigName + ".valueIterator(); while (val_it.next()) |val|",
+                    () -> {
+                      w.line("allocator.free(val.*);");
+                    });
+              }
               w.line("%s.deinit();", zigName);
               hasCleanup = true;
             } else if (field.isRepeated()) {
+              // Free allocator-owned string elements in the list
+              if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_STRING) {
+                w.block(
+                    "for (" + zigName + ".items) |item|",
+                    () -> {
+                      w.line("allocator.free(item);");
+                    });
+              }
               w.line("%s.deinit();", zigName);
               hasCleanup = true;
             } else if (field.getKind() == ProtoField.FieldKind.MESSAGE
@@ -311,6 +336,10 @@ public class ZigCodeEmitter {
                   () -> {
                     w.line("val.deinit(allocator);");
                   });
+              hasCleanup = true;
+            } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_STRING) {
+              // Free allocator-owned string slice
+              w.line("allocator.free(%s);", zigName);
               hasCleanup = true;
             }
           }
@@ -329,6 +358,9 @@ public class ZigCodeEmitter {
                           if (member.getKind() == ProtoField.FieldKind.MESSAGE
                               || member.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
                             w.line(".%s => |*msg| msg.deinit(allocator),", tagName);
+                          } else if (member.getProtoType()
+                              == FieldDescriptorProto.Type.TYPE_STRING) {
+                            w.line(".%s => |str| allocator.free(str),", tagName);
                           } else {
                             w.line(".%s => {},", tagName);
                           }

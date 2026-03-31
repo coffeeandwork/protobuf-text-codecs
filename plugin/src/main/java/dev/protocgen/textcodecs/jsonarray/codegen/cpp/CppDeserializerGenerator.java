@@ -166,7 +166,7 @@ public class CppDeserializerGenerator {
               + nodeExpr
               + ".is_string() ? std::stoll("
               + nodeExpr
-              + ".get<std::string>()) : "
+              + ".get_ref<const std::string&>()) : "
               + nodeExpr
               + ".get<int64_t>())";
       case TYPE_UINT64, TYPE_FIXED64 ->
@@ -174,7 +174,7 @@ public class CppDeserializerGenerator {
               + nodeExpr
               + ".is_string() ? std::stoull("
               + nodeExpr
-              + ".get<std::string>()) : "
+              + ".get_ref<const std::string&>()) : "
               + nodeExpr
               + ".get<uint64_t>())";
       case TYPE_INT32, TYPE_SINT32, TYPE_SFIXED32 -> nodeExpr + ".get<int32_t>()";

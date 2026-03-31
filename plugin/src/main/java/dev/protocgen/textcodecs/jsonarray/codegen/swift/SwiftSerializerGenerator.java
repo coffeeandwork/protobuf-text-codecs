@@ -37,13 +37,13 @@ public class SwiftSerializerGenerator {
   }
 
   public void generate(CodeWriter w, ProtoMessage message, String structName) {
-    // serialize method: returns [Any?]
+    // serialize method: returns [Any] with NSNull() for absent fields
     w.blankLine();
     w.block(
-        "public func serialize() -> [Any?]",
+        "public func serialize() -> [Any]",
         () -> {
           int maxPos = message.getMaxFieldNumber();
-          w.line("var arr: [Any?] = Array(repeating: nil, count: %d)", maxPos);
+          w.line("var arr: [Any] = Array(repeating: NSNull(), count: %d)", maxPos);
 
           for (int pos = 0; pos < maxPos; pos++) {
             ProtoField field = message.fieldAtPosition(pos);
@@ -63,9 +63,7 @@ public class SwiftSerializerGenerator {
         "public func toJsonString() throws -> String",
         () -> {
           w.line("let arr = serialize()");
-          w.line(
-              "let data = try JSONSerialization.data(withJSONObject: arr.map { $0 ?? NSNull() "
-                  + "}, options: [])");
+          w.line("let data = try JSONSerialization.data(withJSONObject: arr, options: [])");
           w.line("return String(data: data, encoding: .utf8)!");
         });
   }

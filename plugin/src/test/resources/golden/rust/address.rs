@@ -46,7 +46,7 @@ impl Address {
     }
 
     pub fn serialize(&self) -> Value {
-        let mut arr: Vec<Value> = Vec::new();
+        let mut arr: Vec<Value> = Vec::with_capacity(4);
         arr.push(json!(self.street));
         arr.push(json!(self.city));
         arr.push(json!(self.state));

@@ -137,7 +137,7 @@ public class RustDeserializerGenerator {
     w.block(
         "if let Some(list) = " + nodeExpr + ".as_array()",
         () -> {
-          w.line("let mut result = Vec::new();");
+          w.line("let mut result = Vec::with_capacity(list.len());");
           w.block(
               "for elem in list",
               () -> {

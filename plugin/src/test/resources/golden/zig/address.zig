@@ -34,13 +34,13 @@ pub const Address = struct {
         obj.zip = 0;
 
         if (size > 0 and arr[0] != .null) {
-            obj.street = arr[0].string;
+            obj.street = try allocator.dupe(u8, arr[0].string);
         }
         if (size > 1 and arr[1] != .null) {
-            obj.city = arr[1].string;
+            obj.city = try allocator.dupe(u8, arr[1].string);
         }
         if (size > 2 and arr[2] != .null) {
-            obj.state = arr[2].string;
+            obj.state = try allocator.dupe(u8, arr[2].string);
         }
         if (size > 3 and arr[3] != .null) {
             obj.zip = @as(i32, @intCast(arr[3].integer));
@@ -55,6 +55,8 @@ pub const Address = struct {
     }
 
     pub fn deinit(self: *Address, allocator: std.mem.Allocator) void {
-        _ = allocator;
+        allocator.free(self.street);
+        allocator.free(self.city);
+        allocator.free(self.state);
     }
 };

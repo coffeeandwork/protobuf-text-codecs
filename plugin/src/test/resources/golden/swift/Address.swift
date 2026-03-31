@@ -9,8 +9,8 @@ public struct Address {
     public init() {
     }
 
-    public func serialize() -> [Any?] {
-        var arr: [Any?] = Array(repeating: nil, count: 4)
+    public func serialize() -> [Any] {
+        var arr: [Any] = Array(repeating: NSNull(), count: 4)
         arr[0] = street
         arr[1] = city
         arr[2] = state
@@ -20,7 +20,7 @@ public struct Address {
 
     public func toJsonString() throws -> String {
         let arr = serialize()
-        let data = try JSONSerialization.data(withJSONObject: arr.map { $0 ?? NSNull() }, options: [])
+        let data = try JSONSerialization.data(withJSONObject: arr, options: [])
         return String(data: data, encoding: .utf8)!
     }
 

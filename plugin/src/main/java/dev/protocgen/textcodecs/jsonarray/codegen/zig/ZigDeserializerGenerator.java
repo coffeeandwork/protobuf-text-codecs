@@ -174,7 +174,7 @@ public class ZigDeserializerGenerator {
           "var it = obj_map.iterator(); while (it.next()) |entry|",
           () -> {
             String valueRead = mapValueReadExpr(field, "entry.value_ptr.*");
-            w.line("try %s.put(entry.key_ptr.*, %s);", zigField, valueRead);
+            w.line("try %s.put(try allocator.dupe(u8, entry.key_ptr.*), %s);", zigField, valueRead);
           });
     } else {
       w.line("const pairs = %s.array.items;", elemExpr);
@@ -225,12 +225,12 @@ public class ZigDeserializerGenerator {
       case TYPE_INT32, TYPE_SINT32, TYPE_SFIXED32 -> "@as(i32, @intCast(" + elemExpr + ".integer))";
       case TYPE_UINT32, TYPE_FIXED32 -> "@as(u32, @intCast(" + elemExpr + ".integer))";
       case TYPE_BOOL -> elemExpr + ".bool";
-      case TYPE_STRING -> elemExpr + ".string";
+      case TYPE_STRING -> "try allocator.dupe(u8, " + elemExpr + ".string)";
       case TYPE_BYTES ->
           "blk: { const src = "
               + elemExpr
               + ".string; const size = std.base64.standard.Decoder.calcSizeForSlice(src.len) catch 0; const dest = try allocator.alloc(u8, size); std.base64.standard.Decoder.decode(dest, src) catch {}; break :blk dest; }";
-      default -> elemExpr + ".string";
+      default -> "try allocator.dupe(u8, " + elemExpr + ".string)";
     };
   }
 
