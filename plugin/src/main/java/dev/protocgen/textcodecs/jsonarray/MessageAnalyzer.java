@@ -39,6 +39,9 @@ import java.util.stream.Collectors;
  */
 public class MessageAnalyzer {
 
+  /** Maximum allowed nesting depth for recursive message analysis. */
+  private static final int MAX_NESTING_DEPTH = 64;
+
   /** Regex for valid proto identifiers (field names, message names, enum names). */
   private static final String SAFE_IDENTIFIER = "[a-zA-Z_][a-zA-Z0-9_]*";
 
@@ -88,6 +91,26 @@ public class MessageAnalyzer {
       String syntax,
       Map<List<Integer>, String> commentMap,
       List<Integer> messagePath) {
+    return analyzeWithDepth(descriptor, parentFullName, syntax, commentMap, messagePath, 0);
+  }
+
+  private ProtoMessage analyzeWithDepth(
+      DescriptorProto descriptor,
+      String parentFullName,
+      String syntax,
+      Map<List<Integer>, String> commentMap,
+      List<Integer> messagePath,
+      int depth) {
+    if (depth > MAX_NESTING_DEPTH) {
+      throw new IllegalArgumentException(
+          "Message nesting depth exceeds maximum of "
+              + MAX_NESTING_DEPTH
+              + " at '"
+              + parentFullName
+              + descriptor.getName()
+              + "'. This may indicate a circular or excessively deep message definition.");
+    }
+
     // Validate message name is a safe identifier (defense-in-depth, VULN-001)
     if (!SAFE_IDENTIFIER_PATTERN.matcher(descriptor.getName()).matches()) {
       throw new IllegalArgumentException(
@@ -115,7 +138,8 @@ public class MessageAnalyzer {
         List<Integer> nestedPath = new ArrayList<>(messagePath);
         nestedPath.add(3);
         nestedPath.add(nestedIndex);
-        nestedMessages.add(analyze(nested, fullName + ".", syntax, commentMap, nestedPath));
+        nestedMessages.add(
+            analyzeWithDepth(nested, fullName + ".", syntax, commentMap, nestedPath, depth + 1));
       }
       nestedIndex++;
     }

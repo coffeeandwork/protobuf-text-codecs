@@ -75,7 +75,8 @@ public final class FieldCodecs {
       if (nanos == 0) {
         dur = seconds + "s";
       } else {
-        dur = seconds + "." + String.format("%09d", Math.abs(nanos)).replaceAll("0+$", "") + "s";
+        String prefix = (seconds == 0 && nanos < 0) ? "-0" : String.valueOf(seconds);
+        dur = prefix + "." + String.format("%09d", Math.abs(nanos)).replaceAll("0+$", "") + "s";
       }
       JsonArrayWriter.appendQuotedString(sb, dur);
     } catch (Exception e) {

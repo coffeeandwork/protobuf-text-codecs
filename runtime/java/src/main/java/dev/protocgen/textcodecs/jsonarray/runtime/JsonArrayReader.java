@@ -200,6 +200,10 @@ public final class JsonArrayReader {
     // integer part
     if (pos < json.length() && json.charAt(pos) == '0') {
       pos++;
+      // Leading zeros are not permitted in JSON numbers (RFC 8259 section 6)
+      if (pos < json.length() && json.charAt(pos) >= '0' && json.charAt(pos) <= '9') {
+        throw error("leading zeros not permitted in JSON numbers");
+      }
     } else {
       readDigits();
     }

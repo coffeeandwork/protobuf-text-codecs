@@ -27,6 +27,9 @@ import java.util.Map;
  */
 public class TypeRegistry {
 
+  /** Maximum allowed nesting depth for recursive message registration. */
+  private static final int MAX_NESTING_DEPTH = 64;
+
   private final Map<String, DescriptorProto> messageTypes = new HashMap<>();
   private final Map<String, EnumDescriptorProto> enumTypes = new HashMap<>();
   private final Map<String, FileDescriptorProto> filesByName = new HashMap<>();
@@ -37,7 +40,7 @@ public class TypeRegistry {
     String prefix = file.getPackage().isEmpty() ? "." : "." + file.getPackage() + ".";
 
     for (DescriptorProto message : file.getMessageTypeList()) {
-      registerMessage(prefix, message);
+      registerMessage(prefix, message, 0);
     }
     for (EnumDescriptorProto enumType : file.getEnumTypeList()) {
       enumTypes.put(prefix + enumType.getName(), enumType);
@@ -47,7 +50,17 @@ public class TypeRegistry {
   private static final java.util.regex.Pattern SAFE_IDENTIFIER =
       java.util.regex.Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*");
 
-  private void registerMessage(String prefix, DescriptorProto message) {
+  private void registerMessage(String prefix, DescriptorProto message, int depth) {
+    if (depth > MAX_NESTING_DEPTH) {
+      throw new IllegalArgumentException(
+          "Message nesting depth exceeds maximum of "
+              + MAX_NESTING_DEPTH
+              + " at '"
+              + prefix
+              + message.getName()
+              + "'. This may indicate a circular or excessively deep message definition.");
+    }
+
     // Validate message name at registration time (defense-in-depth, VULN-002)
     validateIdentifier(message.getName(), "message");
     String fullName = prefix + message.getName();
@@ -55,7 +68,7 @@ public class TypeRegistry {
 
     // Register nested types
     for (DescriptorProto nested : message.getNestedTypeList()) {
-      registerMessage(fullName + ".", nested);
+      registerMessage(fullName + ".", nested, depth + 1);
     }
     for (EnumDescriptorProto enumType : message.getEnumTypeList()) {
       validateIdentifier(enumType.getName(), "enum");
