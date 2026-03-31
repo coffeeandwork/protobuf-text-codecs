@@ -61,15 +61,15 @@ LIMITATIONS:
 
 | ID | Hazard | Severity | Likelihood | Risk Level | Mitigation |
 |----|--------|----------|------------|------------|------------|
-| HAZ-001 | Silent data corruption via wrong field position | Major | Unlikely | **High** | 12 indexing audit tests, 71 Java codegen tests, 120 multi-lang tests |
+| HAZ-001 | Silent data corruption via wrong field position | Major | Unlikely | **High** | 12 indexing audit tests, 71 Java codegen tests, 240 multi-lang tests |
 | HAZ-002 | Silent data corruption via wrong type encoding | Major | Unlikely | **High** | Type mapper tests (61), codegen pattern assertions |
 | HAZ-003 | Cross-language encoding incompatibility | Moderate | Possible | **Medium** | Cross-language round-trip tests (Java↔Python), encoding spec |
 | HAZ-004 | Code injection via crafted proto field/type names | Major | Rare | **Medium** | Field name regex validation, keyword escaping, protoc upstream validation |
 | HAZ-005 | Path traversal writing files outside output directory | Moderate | Rare | **Low** | `..` path rejection in PluginRunner |
 | HAZ-006 | Memory corruption in generated C code | Major | Unlikely | **Medium** | Static review only; no dynamic analysis (Valgrind/ASan) |
 | HAZ-007 | int64/uint64 precision loss across JSON intermediaries | Moderate | Possible | **Medium** | Mitigated: int64 encoded as JSON string; backward-compat parsing |
-| HAZ-008 | Proto2 schema defaults not properly escaped in non-Java generators | Moderate | Possible | **Medium** | Only Java generator validated; 8 others [INCOMPLETE_ANALYSIS] |
-| HAZ-009 | Generated code breaks with future language/library versions | Minor | Likely | **Medium** | Zig stdlib unstable; Jackson API may change; Go generics evolution |
+| HAZ-008 | Proto2 schema defaults not properly escaped in non-Java generators | Moderate | Possible | **Medium** | Only Java generator validated; 16 others [INCOMPLETE_ANALYSIS] |
+| HAZ-009 | Generated code breaks with future language/library versions | Minor | Likely | **Medium** | Zig stdlib unstable; Go generics evolution; new language dependencies: System.Text.Json (C#), Foundation (ObjC/Swift), kotlinx.serialization (Kotlin), dart:convert (Dart), JSON CPAN (Perl), json stdlib (Ruby), json built-in (PHP) |
 | HAZ-010 | Schema evolution breaks positional encoding | Major | Unlikely | **Medium** | Field-number-based positioning; forward/backward compat tests |
 | HAZ-011 | Denial of service via extremely sparse field numbers | Minor | Rare | **Low** | Warning emitted for sparse numbering; no hard limit |
 | HAZ-012 | NaN/Infinity produce invalid JSON | Moderate | Unlikely | **Low** | Mitigated: NaN/Infinity serialize as null; tested |
@@ -79,21 +79,21 @@ LIMITATIONS:
 #### HAZ-001: Silent data corruption via wrong field position
 - **Description:** A bug in any SerializerGenerator or DeserializerGenerator that places a field value at the wrong array position. The generated code compiles and runs, but serialized data has fields swapped or shifted.
 - **Causal Chain:** Bug in field-number-to-position mapping → serializer emits `array.add(field)` at wrong index → deserialized message has field A's value in field B's slot → user application reads wrong data
-- **Affected Components:** All 9 SerializerGenerators, all 9 DeserializerGenerators, MessageAnalyzer (position calculation)
-- **Current Safeguards:** 12 IndexingAuditTest cases verify position = fieldNumber - 1; 71 JavaCodeGenTest cases verify generated patterns; 120 MultiLanguageCodeGenTest cases verify all 8 other languages; cross-language round-trip tests verify Java↔Python produce identical JSON
+- **Affected Components:** All 17 SerializerGenerators, all 17 DeserializerGenerators, MessageAnalyzer (position calculation)
+- **Current Safeguards:** 12 IndexingAuditTest cases verify position = fieldNumber - 1; 71 JavaCodeGenTest cases verify generated patterns; 240 MultiLanguageCodeGenTest cases verify all 16 other languages; cross-language round-trip tests verify Java↔Python produce identical JSON
 - **Additional Mitigation:** Golden-file snapshot tests would catch regressions. Per-language compilation + execution tests (not just pattern matching) would catch runtime issues.
 
 #### HAZ-002: Silent data corruption via wrong type encoding
 - **Description:** A TypeMapper bug maps a proto type to the wrong target-language type, or a SerializerGenerator encodes a value incorrectly (e.g., int64 as numeric instead of string, bytes without base64).
 - **Causal Chain:** Wrong type mapping → generated code compiles (types compatible enough) → serialized JSON has wrong representation → deserializer misinterprets or loses precision
-- **Affected Components:** All 9 TypeMappers, all 9 SerializerGenerators/DeserializerGenerators
+- **Affected Components:** All 17 TypeMappers, all 17 SerializerGenerators/DeserializerGenerators
 - **Current Safeguards:** 61 JavaTypeMapperTest cases cover all 15 scalar types; codegen tests verify int64→string, bytes→base64, enum→integer patterns across all languages
 - **Additional Mitigation:** Round-trip tests that verify `deserialize(serialize(X)) == X` for all field types in all languages.
 
 #### HAZ-003: Cross-language encoding incompatibility
 - **Description:** Java serializer and Python serializer produce semantically different JSON for the same proto message, breaking interoperability.
 - **Causal Chain:** Different number formatting (`3.0` vs `3`), different base64 padding, different null handling → JSON differs → deserialization in language B fails or produces wrong values
-- **Affected Components:** All 9 SerializerGenerators
+- **Affected Components:** All 17 SerializerGenerators
 - **Current Safeguards:** Cross-language round-trip test (Java→Python→compare); encoding specification in SYSTEM_ANALYSIS.md Section 15
 - **Additional Mitigation:** Extend round-trip tests to all language pairs (currently only Java↔Python). Define canonical JSON output format.
 
@@ -114,9 +114,9 @@ LIMITATIONS:
 #### HAZ-008: Proto2 defaults not escaped in non-Java generators
 - **Description:** A proto2 file with `string name = 1 [default = "hello\nworld"]` generates code in Python/JS/C/etc. where the newline is not properly escaped, causing syntax errors or wrong default values.
 - **Causal Chain:** Proto2 default value with special chars → generator emits raw string into target language source → generated code has syntax error or interprets escape differently
-- **Affected Components:** Python, JS, TS, C, C++, Rust, Zig, Go SerializerGenerators/DeserializerGenerators
+- **Affected Components:** Python, JS, TS, C, C++, Rust, Zig, Go, C#, Kotlin, Swift, Dart, PHP, Ruby, Objective-C, Perl SerializerGenerators/DeserializerGenerators
 - **Current Safeguards:** Java generator escapes `\n`, `\r`, `\t`, `\0`, `\`, `"` and handles `inf`/`nan`. Other generators: [INCOMPLETE_ANALYSIS]
-- **Additional Mitigation:** Audit and fix proto2 default escaping in all 8 non-Java generators.
+- **Additional Mitigation:** Audit and fix proto2 default escaping in all 16 non-Java generators.
 
 #### HAZ-010: Schema evolution breaks positional encoding
 - **Description:** A user removes a field and later reuses the same field number for a different type, causing old serialized data to be misinterpreted at that position.
@@ -139,7 +139,7 @@ LIMITATIONS:
 |-----------------|-------------------|---------------|-------------------|
 | MessageAnalyzer + TypeRegistry | **High** | Exhaustive (all field types, all cardinalities, all edge cases) | Yes — field position correctness proof |
 | Java Generator (reference impl) | **High** | Exhaustive (71 dedicated tests + shared) | Yes — generated code compilation + round-trip |
-| Other 8 Generators | **High** | Thorough (parameterized tests + language-specific edge cases) | Yes — generated code compilation |
+| Other 16 Generators | **High** | Thorough (parameterized tests + language-specific edge cases) | Yes — generated code compilation |
 | Runtime Libraries | **Medium** | Thorough (unit tests for each helper function) | Yes — C memory safety dynamic analysis |
 | PluginRunner / Main | **Medium** | Basic (parameter parsing, error handling) | No |
 | CodeWriter / KeywordUtil | **Low** | Basic (correctness of output formatting) | No |
@@ -148,10 +148,10 @@ LIMITATIONS:
 
 | Flag | Item | Required Information |
 |------|------|---------------------|
-| [UNKNOWN_CRITICALITY] | All 9 language generators | Which languages will be used in production vs. experimental? This affects testing rigor allocation. |
+| [UNKNOWN_CRITICALITY] | All 17 language generators | Which languages will be used in production vs. experimental? This affects testing rigor allocation. |
 | [UNKNOWN_CRITICALITY] | Generated code deployment context | Will generated code handle sensitive data (PII, financial, medical)? This affects severity of data corruption hazards. |
 | [INCOMPLETE_ANALYSIS] | C/C++ memory safety | No dynamic analysis performed. Severity of HAZ-006 may be higher if generated C code is used in security-sensitive contexts. |
-| [INCOMPLETE_ANALYSIS] | Proto2 default escaping (8 languages) | HAZ-008 scope unknown — only Java generator audited. |
+| [INCOMPLETE_ANALYSIS] | Proto2 default escaping (16 languages) | HAZ-008 scope unknown — only Java generator audited. |
 | [ASSUMED_BEHAVIOR] | protoc input validation | Severity of HAZ-004 depends on whether protoc can be bypassed. Assumed it cannot in normal usage. |
 
 ## 7. Approval

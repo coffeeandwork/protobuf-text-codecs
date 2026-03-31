@@ -84,7 +84,7 @@ protoc \
 ls out-jsonarray/ out-pbtkurl/
 ```
 
-Replace `lang=java` with any supported language identifier: `java`, `python`, `javascript`, `typescript`, `c`, `cpp`, `rust`, `zig`, `go`.
+Replace `lang=java` with any supported language identifier: `java`, `python`, `javascript` (alias: `js`), `typescript` (alias: `ts`), `c`, `cpp` (alias: `c++`), `rust`, `zig`, `go`, `csharp` (alias: `c#`), `kotlin` (alias: `kt`), `swift`, `dart`, `php`, `ruby` (alias: `rb`), `objc` (alias: `objective-c`), `perl`.
 
 ## Adding a New Language Generator
 

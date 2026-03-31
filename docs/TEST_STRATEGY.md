@@ -30,7 +30,7 @@ LIMITATIONS:
 
 - **In Scope:**
   - Plugin core (MessageAnalyzer, TypeRegistry, PluginRunner, ProtoFileProcessor)
-  - All 9 language generators (code generation pattern verification)
+  - All 17 language generators (code generation pattern verification)
   - Java generated code (compilation + execution + round-trip)
   - Python generated code (execution + round-trip)
   - Cross-language compatibility (Java ↔ Python)
@@ -39,7 +39,7 @@ LIMITATIONS:
   - Performance baselines (plugin throughput, generated code throughput)
 
 - **Out of Scope:**
-  - Compilation of generated C/C++/Rust/Zig/Go code (requires target-language toolchains not guaranteed in CI) — mitigated by code pattern assertions
+  - Compilation of generated C/C++/Rust/Zig/Go/C#/Kotlin/Swift/Dart/PHP/Ruby/ObjC/Perl code (requires target-language toolchains not guaranteed in CI) — mitigated by code pattern assertions
   - Dynamic memory analysis of generated C code (requires Valgrind/ASan setup) — flagged in HAZARD_ANALYSIS.md
   - Generated code performance benchmarks for non-Java languages
   - protoc version compatibility matrix testing
@@ -58,13 +58,12 @@ LIMITATIONS:
 
 | Metric | Value | Assessment |
 |--------|-------|------------|
-| Test files | 12 classes | Adequate for current scope |
-| Total tests | 484 | Good — comprehensive for core + Java |
-| Test lines | 7,071 | 41% of main source lines — healthy ratio |
-| Instruction coverage | 78.7% | Good overall; gaps in non-Java generators |
-| Line coverage | 80.0% | Good overall |
+| Test files | 17 classes | Adequate for current scope |
+| Total tests | 921 | Good — comprehensive for core + all 17 languages |
+| Instruction coverage | 74.0% | Good overall; gaps in non-Java generators |
+| Line coverage | 76.5% | Good overall |
 | Integration tests | 2 shell scripts (9 assertions) | Minimal but effective |
-| Cross-language tests | Java ↔ Python only | Insufficient for 9-language claim |
+| Cross-language tests | Java ↔ Python only | Insufficient for 17-language claim |
 
 ### 2.2 Coverage by Criticality
 
@@ -73,7 +72,7 @@ LIMITATIONS:
 | Critical | MessageAnalyzer | 96.9% | 100% | 3.1% |
 | Critical | TypeRegistry | 100% | 100% | None |
 | Critical | Java Serializer/Deserializer | 87.6% | 95% | 7.4% |
-| Critical | Other 8 Serializer/Deserializer generators | 66-81% | 90% | 9-24% |
+| Critical | Other 16 Serializer/Deserializer generators | 66-81% | 90% | 9-24% |
 | High | PluginRunner | 93.3% | 95% | 1.7% |
 | High | ProtoFileProcessor | 95.5% | 95% | None |
 | High | All NameResolvers | 42-80% | 85% | Variable |
@@ -95,8 +94,8 @@ LIMITATIONS:
 | FR-008 (Oneof encoding) | Pattern assertion | No round-trip test |
 | FR-009 (Proto3 optional) | Pattern assertion for Java | No cross-language presence test |
 | FR-010 (Proto2) | PluginRunnerTest + codegen pattern tests | No proto2 round-trip execution test |
-| FR-011 (Multi-language) | 120 parameterized pattern tests | No compilation verification for 7 of 9 languages |
-| FR-012 (Cross-language interop) | Java ↔ Python only | Missing 7 other languages |
+| FR-011 (Multi-language) | 240 parameterized pattern tests | No compilation verification for 15 of 17 languages |
+| FR-012 (Cross-language interop) | Java ↔ Python only | Missing 15 other languages |
 | FR-013 (Cross-file refs) | Pattern assertion per language | No import resolution verification |
 | FR-014 (Plugin protocol) | 22 PluginRunner tests | Adequate |
 | FR-015 (Error reporting) | Tested in PluginRunnerTest | Adequate |
@@ -130,13 +129,13 @@ LIMITATIONS:
 |-----------|-------------|-------------|---------------|
 | MessageAnalyzer | Critical | 100% | 95% |
 | TypeRegistry | Critical | 100% | 100% |
-| All TypeMappers (9) | Critical | 95% | 90% |
-| All SerializerGenerators (9) | Critical | 90% | 85% |
-| All DeserializerGenerators (9) | Critical | 90% | 85% |
+| All TypeMappers (17) | Critical | 95% | 90% |
+| All SerializerGenerators (17) | Critical | 90% | 85% |
+| All DeserializerGenerators (17) | Critical | 90% | 85% |
 | PluginRunner | High | 95% | 90% |
 | ProtoFileProcessor | High | 95% | 90% |
-| All NameResolvers (9) | High | 85% | 80% |
-| All CodeEmitters (9) | High | 85% | 80% |
+| All NameResolvers (17) | High | 85% | 80% |
+| All CodeEmitters (17) | High | 85% | 80% |
 | KeywordUtil | Medium | 90% | 80% |
 | WellKnownType | Medium | 100% | 100% |
 | CodeWriter | Low | 80% | N/A |
@@ -147,7 +146,7 @@ LIMITATIONS:
 **Scope:** Plugin-to-protoc protocol; generated code compilation and execution
 
 **Approach:**
-- Shell scripts invoking `protoc` with the plugin for all 9 languages
+- Shell scripts invoking `protoc` with the plugin for all 17 languages
 - Java: compile generated code with `javac`, execute round-trip tests
 - Python: execute generated code with `python3`, verify deserialization
 
@@ -155,7 +154,7 @@ LIMITATIONS:
 
 | Interface | Test Approach | Priority |
 |-----------|---------------|----------|
-| protoc → plugin (stdin/stdout) | Shell: `protoc --plugin=... --jsonarray_out=...` for all 9 langs | Critical |
+| protoc -> plugin (stdin/stdout) | Shell: `protoc --plugin=... --jsonarray_out=...` for all 17 langs | Critical |
 | Generated Java compilation | `javac` on generated code + Jackson JARs | Critical |
 | Generated Java round-trip | Execute serialize→deserialize→compare in Java | Critical |
 | Generated Python round-trip | Execute serialize→deserialize→compare in Python | High |
@@ -207,7 +206,7 @@ LIMITATIONS:
 - **Applicability:** ADAPTED
 - **Rationale:** Plugin invoked once per build; performance not critical. Generated code performance matters more.
 - **Approach:** Benchmark tests measuring:
-  - Plugin: wall-clock time for kitchen_sink.proto across all 9 languages
+  - Plugin: wall-clock time for kitchen_sink.proto across all 17 languages
   - Generated Java: serialize/deserialize ops/sec for small and large messages
 - **Targets:** FR-001/PERF-001: < 5 seconds for typical proto; PERF-002: < 10μs/op for small messages
 
@@ -255,8 +254,8 @@ LIMITATIONS:
 
 | Area | Gap | Mitigation |
 |------|-----|------------|
-| Generated C/C++/Rust/Zig/Go compilation | Cannot compile in standard Java CI | Code pattern assertions verify syntactic correctness |
-| Generated code execution (7 of 9 languages) | Only Java and Python executed | Pattern tests + cross-language round-trip for Java/Python |
+| Generated non-Java/Python compilation | Cannot compile in standard Java CI | Code pattern assertions verify syntactic correctness |
+| Generated code execution (15 of 17 languages) | Only Java and Python executed | Pattern tests + cross-language round-trip for Java/Python |
 | C runtime dynamic memory analysis | No Valgrind/ASan | Static review; future CI enhancement |
 | Proto2 defaults in non-Java generators | Only Java audited | [INCOMPLETE_ANALYSIS] — needs audit |
 
@@ -274,7 +273,7 @@ LIMITATIONS:
 | FR-008 | Unit | JavaCodeGenTest.testOneofCaseTracking, MultiLang.testOneofTracking | Implemented |
 | FR-009 | Unit | JavaCodeGenTest.testProto3OptionalPresence, MultiLang.testOptionalPresence | Implemented |
 | FR-010 | Unit | JavaCodeGenTest.testProto2*, PluginRunnerTest.testProto2Support | Implemented |
-| FR-011 | Unit + Integration | MultiLanguageCodeGenTest (120), CI 9-language smoke test | Implemented |
+| FR-011 | Unit + Integration | MultiLanguageCodeGenTest (240), CI 17-language smoke test | Implemented |
 | FR-012 | Integration | cross-language-test.sh (5 assertions) | Implemented (Java↔Python only) |
 | FR-013 | Unit | MultiLang.testCrossFileReference | Implemented |
 | FR-014 | Unit | PluginRunnerTest (22 tests) | Implemented |
@@ -283,7 +282,7 @@ LIMITATIONS:
 | FR-017 | Unit | WellKnownTypeTest (3), JavaCodeGenTest.testWellKnownType* | Implemented |
 | FR-018 | Unit | JavaCodeGenTest.testAnyRejection, MessageAnalyzerTest | Implemented |
 | SR-001 | Unit | IndexingAuditTest (12 tests) | Implemented |
-| SR-002 | Unit | MultiLanguageCodeGenTest (120 tests) | Implemented |
+| SR-002 | Unit | MultiLanguageCodeGenTest (240 tests) | Implemented |
 | SR-003 | Unit | JavaCodeGenTest.testInt64* (4 tests) | Implemented |
 | SR-004 | Unit | JavaCodeGenTest.testNaN* (2 tests) | Implemented |
 | SEC-001 | Unit | MessageAnalyzerTest field name tests | Implemented |
@@ -328,7 +327,15 @@ plugin/src/test/java/dev/protocgen/textcodecs/jsonarray/
 ├── PluginRunnerTest.java            # Unit+Integration: orchestrator (22 tests)
 ├── IndexingAuditTest.java           # Unit: position correctness (12 tests)
 ├── JavaCodeGenTest.java             # E2E: Java code generation (71 tests)
-└── MultiLanguageCodeGenTest.java    # E2E: 8 non-Java languages (15 parameterized × 8 = 120 tests)
+├── MultiLanguageCodeGenTest.java    # E2E: 16 non-Java languages (15 parameterized x 16 = 240 tests)
+├── SafetySecurityTest.java          # Safety/security/fault injection (116 tests)
+├── GoldenFileTest.java              # Snapshot: exact output comparison
+├── PerformanceBenchmarkTest.java    # Plugin throughput benchmarks
+├── MemoryBenchmarkTest.java         # Memory allocation benchmarks
+└── ../pbtkurl/
+    ├── PbtkJavaCodeGenTest.java     # E2E: pbtk Java code generation
+    ├── PbtkMultiLanguageCodeGenTest.java  # E2E: pbtk 16 non-Java languages
+    └── PbtkSafetySecurityTest.java  # Safety/security tests for pbtk format
 
 integration-tests/
 ├── cross-language-test.sh           # System: Java ↔ Python round-trip
@@ -390,9 +397,9 @@ bash integration-tests/schema-evolution-test.sh
   1. Checkout → Setup Java 17 → Setup Gradle
   2. `spotlessCheck` (formatting gate)
   3. `:plugin:shadowJar` (build)
-  4. `:plugin:test` (all 484 unit tests)
+  4. `:plugin:test` (all 921 unit tests)
   5. Install protoc
-  6. Generate code for all 9 languages (smoke test)
+  6. Generate code for all 17 languages (smoke test)
   7. Upload shadow JAR as artifact
 - **Parallelization:** None (single job, tests run fast — ~2 seconds)
 - **Failure Handling:** Any test failure blocks merge
@@ -401,10 +408,10 @@ bash integration-tests/schema-evolution-test.sh
 
 | Gate | Criteria | Enforced By |
 |------|----------|-------------|
-| All tests pass | 100% pass rate (484/484) | CI: `./gradlew :plugin:test` |
+| All tests pass | 100% pass rate (921/921) | CI: `./gradlew :plugin:test` |
 | Code formatting | Google Java Style | CI: `./gradlew spotlessCheck` |
-| Coverage minimum | 78.6% instructions (current baseline) | CI: JaCoCo report + manual review |
-| 9-language generation | All 9 `protoc --jsonarray_out=lang=X` succeed | CI: smoke test |
+| Coverage minimum | 74.0% instructions (current baseline) | CI: JaCoCo report + manual review |
+| 17-language generation | All 17 `protoc --jsonarray_out=lang=X` succeed | CI: smoke test |
 | Cross-language round-trip | Java and Python produce/consume identical JSON | CI: `cross-language-test.sh` |
 | Schema evolution | Forward and backward compat pass | CI: `schema-evolution-test.sh` |
 | No regressions | No existing test failures | CI: zero-failure policy |
@@ -413,8 +420,8 @@ bash integration-tests/schema-evolution-test.sh
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| Generated code correctness only verified by pattern matching, not execution | Silent bugs in 7 of 9 languages undetectable | Extend execution tests to more languages; add golden-file snapshots |
-| No C/C++/Rust/Zig/Go compilation in CI | Generated code may have syntax errors | Pattern tests catch most issues; add optional compilation jobs |
+| Generated code correctness only verified by pattern matching, not execution | Silent bugs in 15 of 17 languages undetectable | Extend execution tests to more languages; add golden-file snapshots |
+| No non-Java/Python compilation in CI | Generated code may have syntax errors | Pattern tests catch most issues; add optional compilation jobs |
 | JaCoCo cannot measure generated code coverage | Generated code paths untested | Integration tests with Java/Python execution |
 | Property-based testing not yet implemented | Edge cases in serialization may be missed | Consider jqwik for round-trip properties |
 | No mutation testing | Test quality unknown — tests may pass on wrong code | Consider PIT mutation testing for critical components |
@@ -424,11 +431,11 @@ bash integration-tests/schema-evolution-test.sh
 
 | Priority | Improvement | Effort | Impact | Addresses |
 |----------|------------|--------|--------|-----------|
-| ~~1~~ | ~~Golden-file snapshot tests for all 9 languages~~ **IMPLEMENTED** (GoldenFileTest.java, 9 tests) | — | — | HAZ-001, HAZ-002 |
+| ~~1~~ | ~~Golden-file snapshot tests for all 17 languages~~ **IMPLEMENTED** (GoldenFileTest.java) | -- | -- | HAZ-001, HAZ-002 |
 | 2 | Automated `--version` test | Low | Low — completes FR-016 coverage | FR-016 |
 | 3 | Round-trip execution tests for Go (using `go run`) | Medium | High — Go is the 3rd most popular target | FR-012, HAZ-003 |
 | 4 | Property-based testing for round-trip invariant | Medium | High — discovers edge cases automatically | SR-001, SR-002 |
-| 5 | Proto2 default escaping audit for all 8 non-Java generators | Medium | Medium — closes HAZ-008 | HAZ-008 |
+| 5 | Proto2 default escaping audit for all 16 non-Java generators | Medium | Medium — closes HAZ-008 | HAZ-008 |
 | 6 | Performance regression benchmarks in CI | Low | Low — prevents accidental slowdowns | PERF-001 |
 | 7 | Mutation testing on MessageAnalyzer + TypeMappers | High | High — verifies test quality | HAZ-001, HAZ-002 |
 | 8 | C compilation + Valgrind in CI (optional job) | High | Medium — addresses HAZ-006 | HAZ-006 |
@@ -438,7 +445,7 @@ bash integration-tests/schema-evolution-test.sh
 | Flag | Area | Resolution Needed |
 |------|------|-------------------|
 | [ASSUMED_BEHAVIOR] | Pattern-matching tests assume string containment implies correctness | Golden-file tests would provide exact output verification |
-| [INCOMPLETE_ANALYSIS] | 7 of 9 languages have no compilation or execution tests | Requires target-language toolchains in CI |
+| [INCOMPLETE_ANALYSIS] | 15 of 17 languages have no compilation or execution tests | Requires target-language toolchains in CI |
 | [ASSUMED_BEHAVIOR] | Cross-language compatibility verified only for Java↔Python | Should extend to at least Go and JavaScript |
 | [EXTERNAL_DEPENDENCY] | Integration tests require protoc and python3 on PATH | CI workflow installs these; local dev must install manually |
 

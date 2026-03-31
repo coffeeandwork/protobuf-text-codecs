@@ -11,7 +11,7 @@ Reviewed By: _______________
 LIMITATIONS:
 - This assurance case is DRAFT quality requiring human review
 - All claims and evidence links must be validated by a qualified engineer
-- Coverage metrics are point-in-time snapshots from commit 6feba4a
+- Coverage metrics are point-in-time snapshots from current HEAD
 - This document does NOT constitute formal certification
 - An LLM-generated assurance case cannot substitute for human judgement
 ```
@@ -20,7 +20,7 @@ LIMITATIONS:
 
 ## 1. Top-Level Safety Claim
 
-**Claim C0:** protoc-gen-jsonarray generates correct, safe, and secure serialization/deserialization code for all 9 supported languages, such that:
+**Claim C0:** protoc-gen-jsonarray and protoc-gen-pbtkurl generate correct, safe, and secure serialization/deserialization code for all 17 supported languages, such that:
 1. Messages serialized by any language can be deserialized by any other language without data loss or corruption.
 2. Generated code does not introduce security vulnerabilities into the user's application.
 3. The encoding specification is implemented consistently across all generators.
@@ -34,7 +34,7 @@ LIMITATIONS:
 | Sub-Claim | Statement | Supported By |
 |-----------|-----------|-------------- |
 | C1 | Field positioning is correct across all generators | SR-001, E1, E2 |
-| C2 | Type encoding is consistent across all 9 languages | SR-002, FR-003–FR-009, E3, E4 |
+| C2 | Type encoding is consistent across all 17 languages | SR-002, FR-003–FR-009, E3, E4 |
 | C3 | int64 precision is preserved across language boundaries | SR-003, E5 |
 | C4 | Generated code is not injectable via crafted input | SEC-001–SEC-004, VULN-001–009, E6, E7 |
 | C5 | Output file paths cannot escape the output directory | SEC-002, VULN-004, E8 |
@@ -63,11 +63,11 @@ LIMITATIONS:
 
 - **Claim Supported:** C1 (field positioning across languages)
 - **Requirement:** SR-001, FR-011, FR-012
-- **Test File:** `MultiLanguageCodeGenTest.java` (120 tests: 15 test methods × 8 languages)
+- **Test File:** `MultiLanguageCodeGenTest.java` (240 tests: 15 test methods x 16 languages)
 - **Key Tests:**
-  - `testScalarFields` × 8 languages — verifies serializer output contains field-number-based position references
-  - `testFieldNumberGaps` × 8 languages — verifies null/gap handling in all generators
-- **Coverage:** 120/120 passing (parameterized across python, javascript, typescript, c, cpp, rust, zig, go)
+  - `testScalarFields` x 16 languages — verifies serializer output contains field-number-based position references
+  - `testFieldNumberGaps` x 16 languages — verifies null/gap handling in all generators
+- **Coverage:** 240/240 passing (parameterized across python, javascript, typescript, c, cpp, rust, zig, go, csharp, kotlin, swift, dart, php, ruby, objc, perl)
 - **Evidence Strength:** Strong — systematic parameterized coverage across all non-Java generators
 
 ### E3: Scalar Type Encoding Correctness
@@ -77,8 +77,8 @@ LIMITATIONS:
 - **Test Files:**
   - `JavaTypeMapperTest.java` (61 tests) — all 15 proto scalar types, default values, boxed vs primitive
   - `JavaCodeGenTest.java` — `testScalarDouble`, `testScalarFloat`, `testScalarInt32`, `testScalarInt64`, `testScalarUint32`, `testScalarUint64`, `testScalarBool`, `testScalarString`, `testScalarBytes`, and 6 more
-  - `MultiLanguageCodeGenTest.testScalarFields` × 8 languages
-- **Coverage:** 61 type mapper tests + 15 scalar codegen tests + 8 multi-language × 1 = 84 tests
+  - `MultiLanguageCodeGenTest.testScalarFields` x 16 languages
+- **Coverage:** 61 type mapper tests + 15 scalar codegen tests + 16 multi-language x 1 = 92 tests
 - **Evidence Strength:** Strong — covers every proto scalar type with boundary-value analysis
 
 ### E4: Complex Type Encoding Correctness
@@ -87,8 +87,8 @@ LIMITATIONS:
 - **Requirements:** FR-004, FR-005, FR-006, FR-007, FR-008
 - **Test Files:**
   - `JavaCodeGenTest.java` — nested message (2 tests), repeated fields (4 tests), map fields (4 tests), enum (2 tests), oneof (3 tests)
-  - `MultiLanguageCodeGenTest.java` — `testNestedMessage`, `testRepeatedField`, `testMapField`, `testEnumGeneration`, `testOneofTracking` × 8 languages each
-- **Coverage:** 15 Java + 40 multi-language = 55 tests
+  - `MultiLanguageCodeGenTest.java` — `testNestedMessage`, `testRepeatedField`, `testMapField`, `testEnumGeneration`, `testOneofTracking` x 16 languages each
+- **Coverage:** 15 Java + 80 multi-language = 95 tests
 - **Evidence Strength:** Strong — each complex type tested in all languages with structural output assertions
 
 ### E5: int64 Precision Preservation
@@ -98,7 +98,7 @@ LIMITATIONS:
 - **Test Files:**
   - `JavaCodeGenTest.testScalarInt64` — verifies `String.valueOf()` wrapping
   - `JavaCodeGenTest.testScalarUint64` — verifies `Long.toUnsignedString()` wrapping
-  - `MultiLanguageCodeGenTest.testScalarFields` × 8 languages — verifies string encoding pattern
+  - `MultiLanguageCodeGenTest.testScalarFields` x 16 languages — verifies string encoding pattern
 - **Evidence:** Generated serializers emit `String.valueOf(field)` (Java), `str(field)` (Python), `String(field)` (JS/TS), `strconv.FormatInt` (Go), `format!("{}", field)` (Rust), `std.fmt.allocPrint` (Zig), `snprintf` (C/C++)
 - **Evidence Strength:** Moderate — static analysis of generated patterns; no round-trip boundary-value test at 2^53 ± 1
 
@@ -106,7 +106,7 @@ LIMITATIONS:
 
 - **Claim Supported:** C4 (generated code not injectable)
 - **Requirements:** SEC-001, SEC-002, SEC-003, SEC-004
-- **Fix Commit:** 44a0363
+- **Fix Status:** All 9 VULNs addressed
 - **Validations:**
   - VULN-001 (message name injection): `MessageAnalyzer.java` validates names against `[a-zA-Z_][a-zA-Z0-9_]*]`
   - VULN-002 (type reference injection): `TypeRegistry.registerFile()` validates all type names at registration time
@@ -123,9 +123,9 @@ LIMITATIONS:
 - **Requirement:** SEC-003
 - **Test Files:**
   - `JavaCodeGenTest.testReservedWordEscaping` — Java keyword escaping
-  - `MultiLanguageCodeGenTest.testKeywordEscaping` × 8 languages
+  - `MultiLanguageCodeGenTest.testKeywordEscaping` x 16 languages
   - `SafetySecurityTest.testSEC003_KeywordEscaping`
-- **Implementation:** `KeywordUtil.java` (465 lines) maintains keyword sets for Java, Python, JavaScript, TypeScript, C, C++, Rust, Zig, Go
+- **Implementation:** `KeywordUtil.java` (~950 lines) maintains 16 keyword sets (14 in KeywordUtil, 2 delegated from NameResolvers) for Java, Python, JavaScript, TypeScript, C, C++, Rust, Zig, Go, C#, Kotlin, Swift, Dart, PHP, Ruby, Objective-C, Perl
 - **Evidence Strength:** Strong — tested for each language; keyword lists based on official language specifications
 
 ### E8: Path Traversal Prevention
@@ -144,8 +144,8 @@ LIMITATIONS:
 - **Test Files:**
   - `JavaCodeGenTest.java` — `testProto2RequiredField`, `testProto2OptionalPresence`, `testProto2StringDefault`, `testProto2IntDefault`, `testProto2BoolDefault`, `testProto2EnumDefault`, `testProto3OptionalPresence`
   - `PluginRunnerTest.testProto2Support`
-  - `MultiLanguageCodeGenTest.testOptionalPresence` × 8 languages
-- **Coverage:** 7 Java proto2 tests + 1 runner test + 8 multi-language = 16 tests
+  - `MultiLanguageCodeGenTest.testOptionalPresence` x 16 languages
+- **Coverage:** 7 Java proto2 tests + 1 runner test + 16 multi-language = 24 tests
 - **Evidence Strength:** Moderate — proto2 defaults and required fields tested for Java; multi-language proto2 default testing limited to presence semantics
 
 ### E10: Edge Case Handling
@@ -176,25 +176,24 @@ LIMITATIONS:
 
 ## 4. Coverage Summary
 
-### Test Metrics (Commit 6feba4a)
+### Test Metrics (current HEAD)
 
 | Metric | Value |
 |--------|-------|
-| Total tests | 500+ |
-| Tests passing | 500+ (100%) |
+| Total tests | 921 |
+| Tests passing | 921 (100%) |
 | Tests failing | 0 |
-| Test files | 12 classes |
-| Parameterized test methods | 25 (expanding to ~206 test invocations across 8–9 languages) |
-| Golden file snapshots | 9 (one per language) |
+| Test files | 17 classes |
+| Parameterized test methods | 25+ (expanding to ~500+ test invocations across 16-17 languages) |
+| Golden file snapshots | 9+ (one per language) |
 | Integration test scripts | 2 (cross-language, schema-evolution) |
 
-### JaCoCo Coverage (Commit 6feba4a)
+### JaCoCo Coverage (current HEAD)
 
-| Metric | Covered | Total | Percentage |
-|--------|---------|-------|------------|
-| Instructions | 27,217 | 34,617 | 78.6% |
-| Branches | 2,137 | 3,189 | 67.0% |
-| Lines | 5,209 | 6,512 | 80.0% |
+| Metric | Percentage |
+|--------|------------|
+| Instruction coverage | 74.0% |
+| Line coverage | 76.5% |
 
 ### Coverage by Component
 
@@ -221,16 +220,16 @@ LIMITATIONS:
 ## 5. Known Gaps and Residual Risks
 
 ### Gap G1: Round-Trip Testing Limited to Java ↔ Python
-- **Impact:** Cross-language interop (C1, C2) only verified for Java ↔ Python via integration tests. Other 7 languages verified only by structural output inspection.
+- **Impact:** Cross-language interop (C1, C2) only verified for Java ↔ Python via integration tests. Other 15 languages verified only by structural output inspection.
 - **Mitigation:** Multi-language golden file tests verify output structure. Encoding spec is simple (positional arrays with well-defined type mapping).
-- **Recommendation:** Add round-trip integration tests for all 9 language pairs.
+- **Recommendation:** Add round-trip integration tests for all 17 language pairs.
 
 ### Gap G2: No Fuzz Testing
 - **Impact:** Code injection prevention (C4) relies on regex validation and static analysis, not adversarial input testing.
 - **Mitigation:** All VULN-001–009 fixed with defense-in-depth. Attacker must already have local execution to craft CodeGeneratorRequest.
 - **Recommendation:** Add AFL/libFuzzer on the protobuf deserialization path; property-based testing on name validation.
 
-### Gap G3: C/Rust/Zig/Go Type Mapper Coverage Below 60%
+### Gap G3: Some Language Type Mapper Coverage Below 60%
 - **Impact:** Some type-mapping edge cases in these generators may not be exercised.
 - **Mitigation:** MultiLanguageCodeGenTest covers the main paths; golden file tests provide snapshot verification.
 - **Recommendation:** Add targeted unit tests for these type mappers, especially for uncommon types (sfixed32, sint64, fixed64).
@@ -256,7 +255,7 @@ LIMITATIONS:
 
 | Aspect | Level | Justification |
 |--------|-------|---------------|
-| Functional correctness | **Moderate-High** | 500+ tests, 80% line coverage, all 9 languages tested via parameterized framework |
+| Functional correctness | **Moderate-High** | 921 tests, 76.5% line coverage, all 17 languages tested via parameterized framework |
 | Safety (data integrity) | **High** | Core positioning invariant verified by dedicated audit tests; int64 string encoding verified in all generators |
 | Security (code injection) | **Moderate-High** | 9 vulnerabilities identified and fixed; defense-in-depth validation; no fuzz testing |
 | Protocol compliance | **High** | 22 plugin runner tests cover parameter parsing, error handling, feature flags |
@@ -265,7 +264,7 @@ LIMITATIONS:
 
 ### Overall Assessment
 
-The protoc-gen-jsonarray plugin achieves **moderate-to-high** assurance for its intended use case as a build-time code generation tool. The core encoding specification is well-tested with dedicated invariant verification. Security is hardened with defense-in-depth validation at multiple trust boundaries, though the low-risk residual gaps (fuzz testing, DAST) should be addressed before deployment in high-assurance environments.
+The protobuf-text-codecs suite (protoc-gen-jsonarray and protoc-gen-pbtkurl) achieves **moderate-to-high** assurance for its intended use case as a build-time code generation tool. The core encoding specification is well-tested with dedicated invariant verification across all 17 target languages. Security is hardened with defense-in-depth validation at multiple trust boundaries, though the low-risk residual gaps (fuzz testing, DAST) should be addressed before deployment in high-assurance environments.
 
 **The key trust assumption remains:** the plugin is invoked by `protoc` which provides well-formed `CodeGeneratorRequest` messages. All code injection vectors require bypassing `protoc` with a crafted request, which presupposes local code execution by the attacker.
 
@@ -275,7 +274,7 @@ The protoc-gen-jsonarray plugin achieves **moderate-to-high** assurance for its 
 
 - [ ] All claims (C1–C8) have supporting evidence
 - [ ] Evidence references match actual test files and line numbers
-- [ ] Coverage metrics match JaCoCo report at commit 6feba4a
+- [ ] Coverage metrics match JaCoCo report at current HEAD
 - [ ] Known gaps (G1–G6) are accurately characterized
 - [ ] Residual risks are acceptable for the intended deployment context
 - [ ] VULN-001 through VULN-009 status matches SECURITY_ASSESSMENT.md

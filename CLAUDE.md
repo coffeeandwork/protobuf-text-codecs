@@ -31,7 +31,7 @@ Google Maps-style protobuf URL encoding: `!<field_number><type_char><value>`.
 
 ## Supported Languages
 
-Java, Python, JavaScript, TypeScript, C, C++, Rust, Zig, Go (9 languages, both formats).
+Java, Python, JavaScript, TypeScript, C, C++, Rust, Zig, Go, C#, Kotlin, Swift, Dart, PHP, Ruby, Objective-C, Perl (17 languages, both formats).
 
 ## Build & Usage
 
@@ -52,7 +52,7 @@ protoc \
   src/main/proto/user.proto
 ```
 
-Both plugins accept `lang=<language>` parameter. Default is `java`. Aliases: `js`=javascript, `ts`=typescript, `c++`=cpp.
+Both plugins accept `lang=<language>` parameter. Default is `java`. Aliases: `js`=javascript, `ts`=typescript, `c++`=cpp, `c#`=csharp, `kt`=kotlin, `rb`=ruby, `objective-c`=objc.
 
 ## Architecture
 
@@ -65,7 +65,7 @@ The plugin is implemented in Java 17 and uses the standard protoc plugin protoco
 - `ProtoFileProcessor.java` — per-file code generation dispatch
 - `CodeWriter.java` — indented source code output utility
 - `model/` — language-neutral model: ProtoField, ProtoMessage, ProtoEnum, ProtoFile, TypeRegistry, WellKnownType
-- `codegen/` — shared interfaces (LanguageGenerator, NameResolver, TypeMapper) and KeywordUtil (465 lines, 8 language keyword sets)
+- `codegen/` — shared interfaces (LanguageGenerator, NameResolver, TypeMapper) and KeywordUtil (~950 lines, 16 keyword sets: 14 in KeywordUtil, 2 delegated from NameResolvers)
 
 ### JSON Array Generators (`dev.protocgen.textcodecs.jsonarray.codegen.<lang>`)
 
@@ -81,7 +81,7 @@ Each language has 6 classes: Generator, CodeEmitter, SerializerGenerator, Deseri
 - **Field-number-based positioning** (not declaration order) preserves schema evolution compatibility
 - **int64/uint64 as JSON strings** in JSON array format to prevent precision loss beyond 2^53
 - **NaN/Infinity → null** since these are not valid JSON values
-- **Cross-file imports** generated for all 9 languages using language-appropriate patterns
+- **Cross-file imports** generated for all 17 languages using language-appropriate patterns
 - **Lazy imports** in Python/JS/TS to prevent circular import issues
 - **Defense-in-depth validation**: field name regex, message/enum name validation, type reference validation, default value validation, path traversal prevention
 - **Proto2 support**: required fields, optional with schema defaults, groups (→ messages)
@@ -90,15 +90,15 @@ Each language has 6 classes: Generator, CodeEmitter, SerializerGenerator, Deseri
 ## Testing
 
 ```bash
-./gradlew :plugin:test                    # All tests (500+ tests)
+./gradlew :plugin:test                    # All tests (921 tests)
 ./gradlew :plugin:test --tests "*.PbtkJavaCodeGenTest"  # pbtk tests only
 ./gradlew :plugin:jacocoTestReport        # Coverage report
 ./gradlew spotlessCheck                   # Code formatting
 ```
 
-- 14+ test classes covering JSON array generators, 3+ for pbtk
-- Parameterized tests across 8 non-Java languages
-- Golden-file snapshot tests for all 9 languages
+- 17 test classes covering JSON array generators, 3 for pbtk
+- Parameterized tests across 16 non-Java languages
+- Golden-file snapshot tests for all 17 languages
 - Safety/security tests (SR-001–004, SEC-001–004) for both JSON array and pbtk formats
 - Integration tests (Java ↔ Python cross-language round-trip)
 

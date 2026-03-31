@@ -27,7 +27,7 @@ LIMITATIONS:
 - **Priority:** Critical
 - **Derived From:** SYSTEM_ANALYSIS.md Section 15; `MessageAnalyzer.java:45`
 - **Statement:** The system SHALL serialize each proto message as a JSON array where each field occupies position `field_number - 1` (0-indexed).
-- **Rationale:** This is the core encoding invariant that all 9 language generators must implement identically.
+- **Rationale:** This is the core encoding invariant that all 17 language generators must implement identically.
 - **Verification:** Test
 - **Acceptance Criteria:** For a message with fields at numbers 1, 2, 3, the serialized output is a 3-element JSON array with field 1 at index 0, field 2 at index 1, field 3 at index 2.
 
@@ -101,7 +101,7 @@ LIMITATIONS:
 - **Derived From:** `JavaSerializerGenerator.java:114-123`
 - **Statement:** The system SHALL serialize proto3 `optional` scalar fields as JSON `null` when not explicitly set, and as the field value when set (even if set to the default value).
 - **Verification:** Test
-- **Acceptance Criteria:** `optional int32 x` not set → `null`; set to 0 → `0`.
+- **Acceptance Criteria:** `optional int32 x` not set -> `null`; set to 0 -> `0`.
 
 #### FR-010: Proto2 Support
 - **ID:** FR-010
@@ -119,16 +119,16 @@ LIMITATIONS:
 - **Type:** Functional
 - **Priority:** Critical
 - **Derived From:** `PluginRunner.java:28-41`
-- **Statement:** The system SHALL generate serialization/deserialization code for: Java, Python, JavaScript, TypeScript, C, C++, Rust, Zig, and Go, selected via the `lang=` parameter.
+- **Statement:** The system SHALL generate serialization/deserialization code for: Java, Python, JavaScript, TypeScript, C, C++, Rust, Zig, Go, C#, Kotlin, Swift, Dart, PHP, Ruby, Objective-C, and Perl, selected via the `lang=` parameter.
 - **Verification:** Test
-- **Acceptance Criteria:** `protoc --jsonarray_out=lang=X` produces compilable/parseable source files for each of the 9 languages.
+- **Acceptance Criteria:** `protoc --jsonarray_out=lang=X` produces compilable/parseable source files for each of the 17 languages.
 
 #### FR-012: Cross-Language Interoperability
 - **ID:** FR-012
 - **Type:** Functional
 - **Priority:** Critical
 - **Derived From:** SYSTEM_ANALYSIS.md Section 15 (cross-language invariant)
-- **Statement:** The same proto message with the same field values SHALL produce semantically identical JSON when serialized by any of the 9 language generators. JSON produced by one language's generator SHALL be deserializable by any other language's generated code.
+- **Statement:** The same proto message with the same field values SHALL produce semantically identical JSON when serialized by any of the 17 language generators. JSON produced by one language's generator SHALL be deserializable by any other language's generated code.
 - **Verification:** Test
 - **Acceptance Criteria:** Serialize in Java, deserialize in Python — all field values match. And vice versa.
 
@@ -199,7 +199,7 @@ LIMITATIONS:
 - **Type:** Safety
 - **Priority:** Critical
 - **Derived From:** HAZ-001
-- **Statement:** The system SHALL compute array positions using the formula `position = field_number - 1` consistently in all serializers, deserializers, and model classes across all 9 languages.
+- **Statement:** The system SHALL compute array positions using the formula `position = field_number - 1` consistently in all serializers, deserializers, and model classes across all 17 languages.
 - **Verification:** Test (IndexingAuditTest — 12 tests)
 - **Hazard Mitigated:** HAZ-001 (silent data corruption via wrong field position)
 
@@ -208,8 +208,8 @@ LIMITATIONS:
 - **Type:** Safety
 - **Priority:** Critical
 - **Derived From:** HAZ-002
-- **Statement:** All 9 language generators SHALL encode each proto type using the same JSON representation as specified in FR-003 through FR-009. No generator SHALL deviate from the encoding specification.
-- **Verification:** Test (MultiLanguageCodeGenTest — 120 tests)
+- **Statement:** All 17 language generators SHALL encode each proto type using the same JSON representation as specified in FR-003 through FR-009. No generator SHALL deviate from the encoding specification.
+- **Verification:** Test (MultiLanguageCodeGenTest — 240 tests)
 - **Hazard Mitigated:** HAZ-002 (silent data corruption via wrong type encoding)
 
 ### SR-003: int64 Precision Preservation
@@ -255,7 +255,7 @@ LIMITATIONS:
 - **Type:** Security
 - **Priority:** Medium
 - **Derived From:** HAZ-004; `KeywordUtil.java`
-- **Statement:** The system SHALL escape proto identifiers that collide with target language keywords using language-appropriate escaping: `_` suffix (Java, Python, JS, Go), `_pb` suffix (C, C++), `r#` prefix (Rust), `@"..."` quoting (Zig).
+- **Statement:** The system SHALL escape proto identifiers that collide with target language keywords using language-appropriate escaping: `_` suffix (Java, Python, JS, Go, Kotlin, Dart, PHP, Ruby, Perl), `_pb` suffix (C, C++, Objective-C), `r#` prefix (Rust), `@"..."` quoting (Zig), `@` prefix (C#), backtick quoting (Swift).
 - **Verification:** Test (JavaCodeGenTest, MultiLanguageCodeGenTest keyword tests)
 
 ### SEC-004: Field Name Collision Detection
@@ -304,7 +304,7 @@ LIMITATIONS:
 - **ID:** IF-002
 - **Type:** Interface
 - **Priority:** High
-- **Statement:** The system SHALL accept a `lang=<language>` parameter via the `CodeGeneratorRequest.parameter` field. Valid values: `java`, `python`, `javascript` (alias: `js`), `typescript` (alias: `ts`), `c`, `cpp` (alias: `c++`), `rust`, `zig`, `go`. Default: `java`.
+- **Statement:** The system SHALL accept a `lang=<language>` parameter via the `CodeGeneratorRequest.parameter` field. Valid values: `java`, `python`, `javascript` (alias: `js`), `typescript` (alias: `ts`), `c`, `cpp` (alias: `c++`), `rust`, `zig`, `go`, `csharp` (alias: `c#`), `kotlin` (alias: `kt`), `swift`, `dart`, `php`, `ruby` (alias: `rb`), `objc` (alias: `objective-c`), `perl`. Default: `java`.
 - **Format:** Comma-separated key=value pairs in parameter string
 
 ### IF-003: Generated Code API (Java)
@@ -373,7 +373,7 @@ LIMITATIONS:
 - **Observed Behavior:** Leading comments from proto source files are extracted via `SourceCodeInfo` and emitted as Javadoc comments on generated Java classes and getter methods.
 - **Proposed Requirement:** The system SHALL propagate leading comments from proto source files to generated code as documentation comments (Javadoc for Java).
 - **Confidence:** Medium
-- **Needs Confirmation:** Yes — should this apply to all 9 languages or only Java?
+- **Needs Confirmation:** Yes — should this apply to all 17 languages or only Java?
 
 ---
 
@@ -391,7 +391,7 @@ LIMITATIONS:
 | FR-008 | Encoding spec | JavaCodeGenTest.testOneofCaseTracking | Draft |
 | FR-009 | Encoding spec | JavaCodeGenTest.testProto3OptionalPresence | Draft |
 | FR-010 | Proto2 support | PluginRunnerTest.testProto2Support, JavaCodeGenTest.testProto2* | Draft |
-| FR-011 | Architecture | MultiLanguageCodeGenTest (120 tests) | Draft |
+| FR-011 | Architecture | MultiLanguageCodeGenTest (240 tests) | Draft |
 | FR-012 | Cross-lang spec | integration-tests/cross-language-test.sh | Draft |
 | FR-013 | Architecture | MultiLanguageCodeGenTest.testCrossFileReference | Draft |
 | FR-014 | Plugin protocol | PluginRunnerTest (22 tests) | Draft |
@@ -400,7 +400,7 @@ LIMITATIONS:
 | FR-017 | WKT spec | WellKnownTypeTest, JavaCodeGenTest.testWellKnownType* | Draft |
 | FR-018 | Any rejection | JavaCodeGenTest.testAnyRejection, MessageAnalyzerTest | Draft |
 | SR-001 | HAZ-001 | IndexingAuditTest (12 tests) | Draft |
-| SR-002 | HAZ-002 | MultiLanguageCodeGenTest (120 tests) | Draft |
+| SR-002 | HAZ-002 | MultiLanguageCodeGenTest (240 tests) | Draft |
 | SR-003 | HAZ-007 | JavaCodeGenTest.testInt64* (4 tests) | Draft |
 | SR-004 | HAZ-012 | JavaCodeGenTest.testNaN* (2 tests) | Draft |
 | SEC-001 | HAZ-004 | MessageAnalyzerTest field name tests | Draft |
@@ -412,10 +412,10 @@ LIMITATIONS:
 
 | Area | Gap Description | Resolution Needed |
 |------|-----------------|-------------------|
-| Proto2 default escaping | Only Java generator escapes `\n`, `\r`, `\t` in string defaults; 8 other generators untested | Audit + fix + test all generators |
-| ~~Golden-file testing~~ | ~~No snapshot tests~~ **Resolved**: GoldenFileTest.java with 9 golden files | — |
+| Proto2 default escaping | Only Java generator escapes `\n`, `\r`, `\t` in string defaults; 16 other generators untested | Audit + fix + test all generators |
+| ~~Golden-file testing~~ | ~~No snapshot tests~~ **Resolved**: GoldenFileTest.java with 17 golden files | — |
 | Generated C compilation | Generated C code not compiled in CI | Add C compilation step to CI |
-| Generated code runtime tests | Only Java and Python generated code is executed in tests | Compile and run generated code for all 9 languages |
+| Generated code runtime tests | Only Java and Python generated code is executed in tests | Compile and run generated code for all 17 languages |
 | Cross-language round-trip | Only Java↔Python tested | Extend to all language pairs (or at least all→canonical→all) |
 | Streaming serialization | No support for streaming to OutputStream | Future requirement (not blocking) |
 | ~~Protobuf URL format~~ | ~~Planned second encoding format~~ **Resolved**: `protoc-gen-pbtkurl` implemented in v0.2.0 | — |

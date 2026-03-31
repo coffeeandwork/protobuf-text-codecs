@@ -10,7 +10,7 @@ Reviewed By: _______________
 ```
 LIMITATIONS:
 - This index is auto-generated and requires human validation
-- File paths and line numbers are snapshots from commit 6feba4a
+- File paths and line numbers are snapshots from current HEAD
 - All evidence items must be verified against the actual codebase
 ```
 
@@ -61,13 +61,13 @@ LIMITATIONS:
 | LanguageGenerator | `plugin/src/main/java/dev/protocgen/textcodecs/jsonarray/codegen/LanguageGenerator.java` | Generator interface | FR-011 |
 | NameResolver | `plugin/src/main/java/dev/protocgen/textcodecs/jsonarray/codegen/NameResolver.java` | Name mapping + collision detection | SEC-003, SEC-004 |
 | TypeMapper | `plugin/src/main/java/dev/protocgen/textcodecs/jsonarray/codegen/TypeMapper.java` | Type mapping interface | FR-003 |
-| KeywordUtil | `plugin/src/main/java/dev/protocgen/textcodecs/jsonarray/codegen/KeywordUtil.java` | Language keyword escaping (465 lines, 8 languages) | SEC-003 |
+| KeywordUtil | `plugin/src/main/java/dev/protocgen/textcodecs/jsonarray/codegen/KeywordUtil.java` | Language keyword escaping (~950 lines, 16 keyword sets) | SEC-003 |
 
-### Language Generators (9 languages × 6 classes each)
+### Language Generators (17 languages x 6 classes each)
 
 | Language | Package | Key Classes | Requirements Traced |
 |----------|---------|-------------|---------------------|
-| Java | `codegen/java/` | JavaGenerator, JavaCodeEmitter, JavaSerializerGenerator, JavaDeserializerGenerator, JavaTypeMapper, JavaNameResolver | FR-003–FR-010, SR-001–SR-004 |
+| Java | `codegen/java/` | JavaGenerator, JavaCodeEmitter, JavaSerializerGenerator, JavaDeserializerGenerator, JavaTypeMapper, JavaNameResolver | FR-003-FR-010, SR-001-SR-004 |
 | Python | `codegen/python/` | PythonGenerator, PythonCodeEmitter, PythonSerializerGenerator, PythonDeserializerGenerator, PythonTypeMapper, PythonNameResolver | FR-011, FR-013 |
 | JavaScript | `codegen/javascript/` | JavaScriptGenerator, JavaScriptCodeEmitter, JavaScriptSerializerGenerator, JavaScriptDeserializerGenerator, JavaScriptTypeMapper, JavaScriptNameResolver | FR-011, FR-013 |
 | TypeScript | `codegen/typescript/` | TypeScriptGenerator, TypeScriptCodeEmitter, TypeScriptSerializerGenerator, TypeScriptDeserializerGenerator, TypeScriptTypeMapper, TypeScriptNameResolver | FR-011, FR-013 |
@@ -76,6 +76,14 @@ LIMITATIONS:
 | Rust | `codegen/rust/` | RustGenerator, RustCodeEmitter, RustSerializerGenerator, RustDeserializerGenerator, RustTypeMapper, RustNameResolver | FR-011, FR-013 |
 | Zig | `codegen/zig/` | ZigGenerator, ZigCodeEmitter, ZigSerializerGenerator, ZigDeserializerGenerator, ZigTypeMapper, ZigNameResolver | FR-011, FR-013 |
 | Go | `codegen/go/` | GoGenerator, GoCodeEmitter, GoSerializerGenerator, GoDeserializerGenerator, GoTypeMapper, GoNameResolver | FR-011, FR-013 |
+| C# | `codegen/csharp/` | CSharpGenerator, CSharpCodeEmitter, CSharpSerializerGenerator, CSharpDeserializerGenerator, CSharpTypeMapper, CSharpNameResolver | FR-011, FR-013 |
+| Kotlin | `codegen/kotlin/` | KotlinGenerator, KotlinCodeEmitter, KotlinSerializerGenerator, KotlinDeserializerGenerator, KotlinTypeMapper, KotlinNameResolver | FR-011, FR-013 |
+| Swift | `codegen/swift/` | SwiftGenerator, SwiftCodeEmitter, SwiftSerializerGenerator, SwiftDeserializerGenerator, SwiftTypeMapper, SwiftNameResolver | FR-011, FR-013 |
+| Dart | `codegen/dart/` | DartGenerator, DartCodeEmitter, DartSerializerGenerator, DartDeserializerGenerator, DartTypeMapper, DartNameResolver | FR-011, FR-013 |
+| PHP | `codegen/php/` | PhpGenerator, PhpCodeEmitter, PhpSerializerGenerator, PhpDeserializerGenerator, PhpTypeMapper, PhpNameResolver | FR-011, FR-013 |
+| Ruby | `codegen/ruby/` | RubyGenerator, RubyCodeEmitter, RubySerializerGenerator, RubyDeserializerGenerator, RubyTypeMapper, RubyNameResolver | FR-011, FR-013 |
+| Objective-C | `codegen/objc/` | ObjCGenerator, ObjCCodeEmitter, ObjCSerializerGenerator, ObjCDeserializerGenerator, ObjCTypeMapper, ObjCNameResolver | FR-011, FR-013 |
+| Perl | `codegen/perl/` | PerlGenerator, PerlCodeEmitter, PerlSerializerGenerator, PerlDeserializerGenerator, PerlTypeMapper, PerlNameResolver | FR-011, FR-013 |
 
 ### Runtime Libraries
 
@@ -94,22 +102,26 @@ LIMITATIONS:
 
 | Test Class | Path | Tests | Requirements Verified |
 |------------|------|-------|-----------------------|
-| JavaCodeGenTest | `plugin/src/test/java/.../JavaCodeGenTest.java` | 71 | FR-001–FR-010, SR-001–SR-004, SEC-001, SEC-003, SEC-004 |
-| JavaTypeMapperTest | `plugin/src/test/java/.../JavaTypeMapperTest.java` | 61 | FR-003, SR-002 |
-| SafetySecurityTest | `plugin/src/test/java/.../SafetySecurityTest.java` | 116* | SR-001–SR-004, SEC-001–SEC-004, VULN-001–009 |
-| MessageAnalyzerTest | `plugin/src/test/java/.../MessageAnalyzerTest.java` | 37 | SEC-001, FR-010, FR-018 |
-| PluginRunnerTest | `plugin/src/test/java/.../PluginRunnerTest.java` | 22 | FR-014, FR-015, FR-011 |
-| TypeRegistryTest | `plugin/src/test/java/.../TypeRegistryTest.java` | 14 | SEC-001 (VULN-002) |
-| CodeWriterTest | `plugin/src/test/java/.../CodeWriterTest.java` | 14 | — (utility) |
-| IndexingAuditTest | `plugin/src/test/java/.../IndexingAuditTest.java` | 12 | SR-001, FR-001, FR-002 |
-| GoldenFileTest | `plugin/src/test/java/.../GoldenFileTest.java` | 9 | FR-011, SR-002 |
-| JavaNameResolverTest | `plugin/src/test/java/.../JavaNameResolverTest.java` | 5 | SEC-003, SEC-004 |
-| WellKnownTypeTest | `plugin/src/test/java/.../WellKnownTypeTest.java` | 3 | FR-017 |
-| MultiLanguageCodeGenTest | `plugin/src/test/java/.../MultiLanguageCodeGenTest.java` | 120** | FR-011, FR-013, SR-001, SR-002 |
-| | | **Total: 484** | |
+| JavaCodeGenTest | `plugin/src/test/java/.../jsonarray/JavaCodeGenTest.java` | 71 | FR-001-FR-010, SR-001-SR-004, SEC-001, SEC-003, SEC-004 |
+| JavaTypeMapperTest | `plugin/src/test/java/.../jsonarray/JavaTypeMapperTest.java` | 61 | FR-003, SR-002 |
+| SafetySecurityTest | `plugin/src/test/java/.../jsonarray/SafetySecurityTest.java` | 116 | SR-001-SR-004, SEC-001-SEC-004, VULN-001-009 |
+| MessageAnalyzerTest | `plugin/src/test/java/.../jsonarray/MessageAnalyzerTest.java` | 37 | SEC-001, FR-010, FR-018 |
+| PluginRunnerTest | `plugin/src/test/java/.../jsonarray/PluginRunnerTest.java` | 22 | FR-014, FR-015, FR-011 |
+| TypeRegistryTest | `plugin/src/test/java/.../jsonarray/TypeRegistryTest.java` | 14 | SEC-001 (VULN-002) |
+| CodeWriterTest | `plugin/src/test/java/.../jsonarray/CodeWriterTest.java` | 14 | -- (utility) |
+| IndexingAuditTest | `plugin/src/test/java/.../jsonarray/IndexingAuditTest.java` | 12 | SR-001, FR-001, FR-002 |
+| GoldenFileTest | `plugin/src/test/java/.../jsonarray/GoldenFileTest.java` | 9 | FR-011, SR-002 |
+| JavaNameResolverTest | `plugin/src/test/java/.../jsonarray/JavaNameResolverTest.java` | 5 | SEC-003, SEC-004 |
+| WellKnownTypeTest | `plugin/src/test/java/.../jsonarray/WellKnownTypeTest.java` | 3 | FR-017 |
+| MultiLanguageCodeGenTest | `plugin/src/test/java/.../jsonarray/MultiLanguageCodeGenTest.java` | 240 | FR-011, FR-013, SR-001, SR-002 |
+| PerformanceBenchmarkTest | `plugin/src/test/java/.../jsonarray/PerformanceBenchmarkTest.java` | -- | PERF-001, PERF-002 |
+| MemoryBenchmarkTest | `plugin/src/test/java/.../jsonarray/MemoryBenchmarkTest.java` | -- | PERF-001 |
+| PbtkJavaCodeGenTest | `plugin/src/test/java/.../pbtkurl/PbtkJavaCodeGenTest.java` | -- | FR-011 (pbtk) |
+| PbtkMultiLanguageCodeGenTest | `plugin/src/test/java/.../pbtkurl/PbtkMultiLanguageCodeGenTest.java` | -- | FR-011, FR-013 (pbtk) |
+| PbtkSafetySecurityTest | `plugin/src/test/java/.../pbtkurl/PbtkSafetySecurityTest.java` | -- | SR-001-SR-004, SEC-001-SEC-004 (pbtk) |
+| | | **Total: 921** | |
 
-\* 39 `@Test` + 9 `@ParameterizedTest` methods = 116 expanded invocations.
-\*\* 15 `@ParameterizedTest` methods × 8 languages = 120 expanded invocations.
+Note: 15 `@ParameterizedTest` methods x 16 languages = 240 expanded invocations for MultiLanguageCodeGenTest.
 
 ### Test Proto Files
 
@@ -154,13 +166,12 @@ LIMITATIONS:
 | JaCoCo CSV | `plugin/build/reports/jacoco/test/jacocoTestReport.csv` | Machine-readable |
 | JUnit XML | `plugin/build/test-results/test/` | Per-class XML results |
 
-### Coverage Summary (Commit 6feba4a)
+### Coverage Summary (current HEAD)
 
 | Metric | Value |
 |--------|-------|
-| Instruction coverage | 27,217 / 34,617 (78.6%) |
-| Branch coverage | 2,137 / 3,189 (67.0%) |
-| Line coverage | 5,209 / 6,512 (80.0%) |
+| Instruction coverage | 74.0% |
+| Line coverage | 76.5% |
 
 ---
 
@@ -170,15 +181,15 @@ LIMITATIONS:
 
 | VULN ID | Severity | Fix Commit | Verification |
 |---------|----------|------------|--------------|
-| VULN-001 | High | 44a0363 | MessageAnalyzerTest — name validation |
-| VULN-002 | High | 44a0363 | TypeRegistryTest — type name validation |
-| VULN-003 | High | 44a0363 | SafetySecurityTest — default value validation |
-| VULN-004 | Medium | 44a0363 | SafetySecurityTest — path traversal rejection |
-| VULN-005 | Low | 44a0363 | JavaCodeGenTest — Javadoc `*/` escaping |
-| VULN-006 | Low | N/A (accepted) | Warning emitted; protoc limits practical field numbers |
+| VULN-001 | High | Fixed | MessageAnalyzerTest -- name validation |
+| VULN-002 | High | Fixed | TypeRegistryTest -- type name validation |
+| VULN-003 | High | Fixed | SafetySecurityTest -- default value validation |
+| VULN-004 | Medium | Fixed | SafetySecurityTest -- path traversal rejection |
+| VULN-005 | Low | Fixed | JavaCodeGenTest -- Javadoc `*/` escaping |
+| VULN-006 | Low | Accepted | Warning emitted; protoc limits practical field numbers |
 | VULN-007 | Low | Partial | C runtime has bounds-checked array access; generated code gap remains |
-| VULN-008 | Medium | 44a0363 | C runtime base64 validates input length % 4 |
-| VULN-009 | Info | 44a0363 | ObjectMapper cached as static field |
+| VULN-008 | Medium | Fixed | C runtime base64 validates input length % 4 |
+| VULN-009 | Info | Fixed | Resolved in v0.2.0 |
 
 ### Security Documents
 
@@ -197,7 +208,8 @@ LIMITATIONS:
 | Plugin build | `plugin/build.gradle` | Shadow JAR, JaCoCo, test config |
 | Settings | `settings.gradle` | Multi-project structure |
 | CI workflow | `.github/workflows/ci.yml` | Automated build, test, coverage |
-| Plugin wrapper | `protoc-gen-jsonarray` | Shell script for protoc integration |
+| Plugin wrapper (jsonarray) | `protoc-gen-jsonarray` | Shell script for protoc integration |
+| Plugin wrapper (pbtkurl) | `protoc-gen-pbtkurl` | Shell script for protoc integration |
 
 ---
 
@@ -218,22 +230,15 @@ LIMITATIONS:
 
 | Commit | Description | Phase |
 |--------|-------------|-------|
-| d3b8c77 | Initial release of protoc-gen-jsonarray v0.1.0 | Implementation |
-| 0ee76a2 | Fix null safety and add indexing audit tests | Implementation |
-| 600d827 | Add comprehensive bug catalog from systematic audit | Quality |
-| cd789ae | Fix all 36 cataloged bugs across 9 language generators | Quality |
-| 0bace71 | Add 71 end-to-end code generation tests | Quality |
-| 31a5952 | Migrate to Groovy DSL and add multi-language tests | Quality |
-| d2e4c84 | Add Phase 1 system analysis document | Phase 1 |
-| 8f4da77 | Improve system analysis with deeper coverage | Phase 1 |
-| 6fd50ef | Add Phase 2: Hazard Analysis and Requirements | Phase 2 |
-| 74c2c34 | Add Phase 3: Test Strategy | Phase 3 |
-| 0a1f2f2 | Add Phase 4: Test Matrix and traceability | Phase 4 |
-| 7c03c86 | Add Phase 5: Security Assessment | Phase 5 |
-| 44a0363 | Fix all 9 security vulnerabilities | Phase 5 |
-| 046b8e2 | Fix 22 stale numbers across Phase 1-4 docs | Phase 5 |
-| 6feba4a | Update Phase 1-5 docs after security fixes | Phase 5 |
-| (pending) | Phase 6: Assurance Case and Evidence Index | Phase 6 |
+| 1a8d60d | Initial release of protobuf-text-codecs v0.2.0 | Implementation |
+| a893b9a | Eliminate Jackson dependency, add immutable builder pattern, and prepare for OSS release | Implementation |
+| a806b9b | Trim README from 783 to 434 lines | Documentation |
+| f861f31 | Add protobuf tutorial links and protoc plugin protocol reference | Documentation |
+| 376655e | Add code generation for 8 new languages: C#, Kotlin, Swift, Dart, PHP, Ruby, Objective-C, Perl | Languages |
+| 1c7c605 | Add keyword escaping for 5 new languages and inline plugin protocol docs | Languages |
+| 549f016 | Update Supported Languages table to 17 languages | Documentation |
+| 8fdae73 | Expand test coverage and CI to all 17 languages | Testing |
+| 0466fbe | Add 8 new languages to parameterized multi-language tests | Testing |
 
 ---
 

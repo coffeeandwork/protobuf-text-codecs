@@ -36,19 +36,21 @@ LIMITATIONS:
 protobuf-text-codecs/
 ├── plugin/                           # Main protoc plugin (Java)
 │   └── src/
-│       ├── main/java/.../            # 69 source files, ~13,500 lines
+│       ├── main/java/.../            # 139 source files, ~27,000 lines
 │       │   ├── Main.java             # Entry point (stdin/stdout)
 │       │   ├── PluginRunner.java     # Orchestrator
 │       │   ├── ProtoFileProcessor.java
 │       │   ├── MessageAnalyzer.java
 │       │   ├── CodeWriter.java
 │       │   ├── model/                # Language-neutral internal model (6 classes)
-│       │   └── codegen/              # 9 language generators (54 classes)
+│       │   └── codegen/              # 17 language generators (102+ classes)
 │       │       ├── KeywordUtil.java
 │       │       ├── java/ python/ javascript/ typescript/
 │       │       ├── c/ cpp/ rust/ zig/ go/
+│       │       ├── csharp/ kotlin/ swift/ dart/
+│       │       ├── php/ ruby/ objc/ perl/
 │       │       └── LanguageGenerator.java (interface)
-│       └── test/java/.../            # 12 test files, ~7,071 lines
+│       └── test/java/.../            # 17 test files
 ├── runtime/                          # Per-language runtime libraries
 │   ├── java/  (zero-dependency, 2 classes)
 │   ├── c/     (cJSON-based, 2 files)
@@ -67,7 +69,7 @@ protobuf-text-codecs/
 
 Key directories:
 - `plugin/src/main/`: Plugin source code — the core product
-- `plugin/src/test/`: Unit and code generation tests (484 tests)
+- `plugin/src/test/`: Unit and code generation tests (921 tests)
 - `runtime/`: Thin runtime libraries for languages that need them (Java, C, C++, Rust)
 - `test-protos/`: Proto definitions for testing (user.proto, address.proto, kitchen_sink.proto, edge_cases.proto, proto2_test.proto)
 - `integration-tests/`: Cross-language round-trip and schema evolution tests
@@ -79,8 +81,8 @@ Key directories:
 | `main()` | CLI (protoc plugin) | `Main.java:12` | Reads CodeGeneratorRequest from stdin, writes CodeGeneratorResponse to stdout |
 | `--version` flag | CLI | `Main.java:14-18` | Prints `protoc-gen-jsonarray 0.2.0` to stdout and exits |
 | `protoc-gen-jsonarray` | Shell wrapper | `protoc-gen-jsonarray:1` | Validates java/JAR existence, delegates to Main |
-| `PluginRunner.run()` | Internal API | `PluginRunner.java:44` | Core orchestration — can be called programmatically (used by 500+ unit tests) |
-| `LanguageGenerator.generate()` | Internal API | `LanguageGenerator.java:15` | Per-language code generation interface (9 implementations) |
+| `PluginRunner.run()` | Internal API | `PluginRunner.java:44` | Core orchestration — can be called programmatically (used by 921 unit tests) |
+| `LanguageGenerator.generate()` | Internal API | `LanguageGenerator.java:15` | Per-language code generation interface (17 implementations) |
 
 ## 4. Components
 
@@ -98,7 +100,7 @@ Key directories:
 | ProtoFile | `model/ProtoFile.java` | File metadata model | 75 | 70.3% |
 | WellKnownType | `model/WellKnownType.java` | Google WKT detection (17 types) | 69 | 100% (3 tests) |
 | CodeWriter | `CodeWriter.java` | Indented source code builder | 105 | 100% (14 tests) |
-| KeywordUtil | `codegen/KeywordUtil.java` | Language keyword escaping (8 languages) | 465 | 98.7% |
+| KeywordUtil | `codegen/KeywordUtil.java` | Language keyword escaping (16 keyword sets: 14 in KeywordUtil, 2 delegated from NameResolvers) | ~950 | 98.7% |
 
 ### Language Generators (Criticality A — bugs produce incorrect generated code)
 
@@ -113,6 +115,14 @@ Key directories:
 | Rust (6 classes) | `codegen/rust/` | 1,317 | 74.7% (parameterized tests) |
 | Zig (6 classes) | `codegen/zig/` | 1,163 | 80.5% (parameterized tests) |
 | Go (6 classes) | `codegen/go/` | 1,364 | 68.7% (parameterized tests) |
+| C# (6 classes) | `codegen/csharp/` | ~1,200 | parameterized tests |
+| Kotlin (6 classes) | `codegen/kotlin/` | ~1,100 | parameterized tests |
+| Swift (6 classes) | `codegen/swift/` | ~1,100 | parameterized tests |
+| Dart (6 classes) | `codegen/dart/` | ~1,100 | parameterized tests |
+| PHP (6 classes) | `codegen/php/` | ~1,100 | parameterized tests |
+| Ruby (6 classes) | `codegen/ruby/` | ~1,000 | parameterized tests |
+| Objective-C (6 classes) | `codegen/objc/` | ~1,200 | parameterized tests |
+| Perl (6 classes) | `codegen/perl/` | ~1,000 | parameterized tests |
 
 ### Runtime Libraries (Criticality B — used by generated code, not the plugin)
 
@@ -126,6 +136,14 @@ Key directories:
 | JavaScript/TypeScript | — | — | None (self-contained, uses native `JSON`) |
 | Zig | — | — | None (self-contained, uses `std.json`) |
 | Go | — | — | None (self-contained, uses `encoding/json`) |
+| C# | — | — | None (self-contained, uses `System.Text.Json`) |
+| Kotlin | — | — | None (self-contained, uses `kotlinx.serialization`) |
+| Swift | — | — | None (self-contained, uses `Foundation` JSONSerialization) |
+| Dart | — | — | None (self-contained, uses `dart:convert`) |
+| PHP | — | — | None (self-contained, uses `json_encode`/`json_decode` built-in) |
+| Ruby | — | — | None (self-contained, uses stdlib `json`) |
+| Objective-C | — | — | None (self-contained, uses `Foundation` NSJSONSerialization) |
+| Perl | — | — | None (self-contained, uses `JSON` CPAN module) |
 
 ## 5. Dependencies
 
@@ -270,7 +288,7 @@ None. The plugin is completely stateless across invocations. Within a single inv
 
 | Config Item | Source | Purpose | Validation |
 |-------------|--------|---------|------------|
-| `lang=<language>` | protoc parameter string | Selects target language (default: java) | Allowlist: java, python, javascript, js, typescript, ts, c, cpp, c++, rust, zig, go |
+| `lang=<language>` | protoc parameter string | Selects target language (default: java) | Allowlist: java, python, javascript, js, typescript, ts, c, cpp, c++, rust, zig, go, csharp, c#, kotlin, kt, swift, dart, php, ruby, rb, objc, objective-c, perl (24 entries: 17 languages + 7 aliases) |
 | `--version` | CLI argument | Prints version and exits | Exact string match |
 
 No environment variables, no config files, no system properties. The plugin's behavior is fully determined by the `CodeGeneratorRequest` and the `lang=` parameter.
@@ -279,7 +297,7 @@ No environment variables, no config files, no system properties. The plugin's be
 
 | Flag | Location | Description | Information Needed |
 |------|----------|-------------|-------------------|
-| [UNKNOWN_CRITICALITY] | All 9 generators | Cannot determine which target languages are mission-critical vs. nice-to-have | Which languages will be used in production? |
+| [UNKNOWN_CRITICALITY] | All 17 generators | Cannot determine which target languages are mission-critical vs. nice-to-have | Which languages will be used in production? |
 | [ASSUMED_BEHAVIOR] | `FieldCodecs.java` reflection | Assumes well-known types have standard getters (`getSeconds()`, `getNanos()`, `getValue()`) | Confirm protobuf-java maintains these across versions |
 | [EXTERNAL_DEPENDENCY] | `protoc` compiler | Plugin correctness depends on protoc providing valid CodeGeneratorRequest | protoc version compatibility range (tested: 33.4, claimed: "any") |
 | ~~[EXTERNAL_DEPENDENCY]~~ | ~~Jackson 2.18.2~~ | **Resolved**: Jackson removed in v0.2.0; replaced with built-in JsonArrayWriter/JsonArrayReader | — |
@@ -295,7 +313,7 @@ No environment variables, no config files, no system properties. The plugin's be
 | Area | Applicability | Rationale |
 |------|---------------|-----------|
 | Data Integrity | **FULL** | Core value: generated serialization must produce correct, interoperable output. A subtle bug silently produces code that compiles but corrupts data at runtime. |
-| Code Generation Correctness | **FULL** | Primary output is source code for 9 languages. Must compile, be syntactically valid, and handle all proto constructs. |
+| Code Generation Correctness | **FULL** | Primary output is source code for 17 languages. Must compile, be syntactically valid, and handle all proto constructs. |
 | Security Testing | **ADAPTED** | Narrow trust boundary (stdin from protoc). Defense-in-depth present. Focus on: crafted CodeGeneratorRequest injection, generated code injection via field/type names. |
 | Performance Testing | **ADAPTED** | Single invocation per build. Benchmarked: 1.1μs/op small, 0.1ms/op large. Focus on: very large protos, extreme sparse field numbers. |
 | Fault Injection | **ADAPTED** | Focus on: malformed CodeGeneratorRequest, extreme field numbers, deeply nested messages, proto files with thousands of fields. |
@@ -370,14 +388,14 @@ The core encoding format that all generated code must implement:
 | unset scalar (proto3 optional) | JSON `null` |
 | unset scalar (proto2) | JSON `null` (schema default applied on deserialization) |
 
-**Cross-language invariant:** The same proto message with the same field values MUST produce semantically identical JSON when serialized by any of the 9 language generators. Verified by cross-language round-trip tests (Java ↔ Python).
+**Cross-language invariant:** The same proto message with the same field values MUST produce semantically identical JSON when serialized by any of the 17 language generators. Verified by cross-language round-trip tests (Java ↔ Python).
 
 ## 16. Test Coverage Summary
 
 | Test Class | Tests | Focus |
 |------------|-------|-------|
 | JavaCodeGenTest | 71 | Java code generation for every proto construct |
-| MultiLanguageCodeGenTest | 120 (15×8) | 15 @ParameterizedTest methods × 8 non-Java languages |
+| MultiLanguageCodeGenTest | 240 (15×16) | 15 @ParameterizedTest methods × 16 non-Java languages |
 | MessageAnalyzerTest | 37 | Proto analysis: fields, oneofs, maps, WKTs, proto2 |
 | IndexingAuditTest | 12 | Off-by-one, sparse gaps, presence bits, oneof case constants |
 | JavaTypeMapperTest | 61 | Type mapping for all 15 proto scalar types |
@@ -386,21 +404,26 @@ The core encoding format that all generated code must implement:
 | CodeWriterTest | 14 | Indentation, blocks, formatting |
 | JavaNameResolverTest | 5 | Naming conventions |
 | WellKnownTypeTest | 3 | WKT lookup and classification |
-| SafetySecurityTest | 116 | Safety (SR-001–004), security (SEC-001–004), fault injection (39 @Test + 9 @ParameterizedTest = 116 invocations) |
-| GoldenFileTest | 9 | 1 @ParameterizedTest × 9 languages — exact output comparison against golden files |
+| SafetySecurityTest | 116 | Safety (SR-001–004), security (SEC-001–004), fault injection for jsonarray |
+| GoldenFileTest | 9+ | @ParameterizedTest — exact output comparison against golden files |
+| PerformanceBenchmarkTest | — | Plugin throughput benchmarks |
+| MemoryBenchmarkTest | — | Memory allocation benchmarks |
+| PbtkJavaCodeGenTest | — | pbtk URL format Java code generation |
+| PbtkMultiLanguageCodeGenTest | — | pbtk URL format across 16 non-Java languages |
+| PbtkSafetySecurityTest | — | Safety/security tests for pbtk format |
 
-**Total: 500+ tests. Overall coverage: 78.6% instructions, 80.0% lines.**
+**Total: 921 tests. Overall coverage: 74.0% instructions, 76.5% lines.**
 
 Integration tests (not in JUnit):
 - Cross-language round-trip (Java ↔ Python): 5 assertions
 - Schema evolution (forward/backward compat): 4 assertions
-- 9-language generation smoke test (CI workflow)
+- 17-language generation smoke test (CI workflow)
 
 ## 17. Initial Observations
 
 ### Strengths
 1. **Clean architecture:** Language-neutral model layer cleanly separates proto analysis from code generation. Adding a new language requires implementing 6 classes with no changes to the core.
-2. **Thorough testing:** 500+ unit tests (78.6% coverage) + integration tests + 71 end-to-end code generation tests verifying actual generated source code.
+2. **Thorough testing:** 921 tests (74.0% instruction coverage, 76.5% line coverage) + integration tests + 71 end-to-end code generation tests verifying actual generated source code.
 3. **Immutable model:** All model objects use `List.copyOf()` — no accidental mutation.
 4. **Defense-in-depth:** Field name validation, path traversal, keyword escaping, collision detection — even though protoc validates most inputs upstream.
 5. **Zero runtime dependencies:** The plugin itself only needs `protobuf-java`. No network, no disk, no state.
@@ -408,9 +431,9 @@ Integration tests (not in JUnit):
 
 ### Concerns
 1. **Silent incorrect output is the highest-risk failure.** A bug in any generator produces code that compiles but corrupts data. No build-time or generation-time signal.
-2. **9 language generators = 9x testing surface.** Parameterized tests cover common patterns but don't deeply test language-specific edge cases (e.g., C memory management, Zig API compatibility).
+2. **17 language generators = 17x testing surface.** Parameterized tests cover common patterns but don't deeply test language-specific edge cases (e.g., C memory management, Zig API compatibility).
 3. **C runtime memory safety not dynamically validated.** Valgrind/ASan testing would increase confidence.
 4. **Zig standard library instability.** Generated Zig code may break with future Zig releases.
 5. **int64 string encoding may surprise users.** Correct per protobuf JSON spec but breaks expectations of tools expecting numeric JSON values.
 6. **Proto2 default value escaping only validated for Java.** Other generators may not properly escape special characters in schema-specified defaults.
-7. ~~No golden-file/snapshot tests.~~ **Resolved.** GoldenFileTest.java provides exact output comparison for all 9 languages against checked-in golden files.
+7. ~~No golden-file/snapshot tests.~~ **Resolved.** GoldenFileTest.java provides exact output comparison for all 17 languages against checked-in golden files.

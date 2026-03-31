@@ -14,7 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Nested messages use `!<num>m<count>` prefix followed by sub-fields
 - Repeated fields emit one token per element; maps serialize as repeated `!<num>m2!1<key>!2<val>` entries
 - No JSON library dependency — generated pbtk code uses pure string manipulation
-- All 9 target languages supported: Java, Python, JavaScript, TypeScript, C, C++, Rust, Zig, Go
+- All 17 target languages supported: Java, Python, JavaScript, TypeScript, C, C++, Rust, Zig, Go, C#, Kotlin, Swift, Dart, PHP, Ruby, Objective-C, Perl
+- 8 new language generators: C# (System.Text.Json), Kotlin (kotlinx.serialization), Swift (Foundation), Dart (dart:convert), PHP (json built-in), Ruby (json stdlib), Objective-C (Foundation), Perl (JSON CPAN)
+- Language aliases: `c#`=csharp, `kt`=kotlin, `rb`=ruby, `objective-c`=objc
+- KeywordUtil expanded to 16 keyword sets (~950 lines) covering all 17 languages
 - Separate shadow JAR build task (`pbtkShadowJar`) and wrapper script (`protoc-gen-pbtkurl`)
 - Shares infrastructure with jsonarray plugin: model, MessageAnalyzer, TypeRegistry, NameResolvers, TypeMappers, KeywordUtil
 - Multi-language parameterized tests for pbtk code generation

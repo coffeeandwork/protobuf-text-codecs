@@ -39,11 +39,11 @@ Vulnerability classes NOT covered:
 |----------|----------|------------|------------|
 | stdin parsing | `Main.java:24` | protobuf-java wire format validation | Adequate for well-formed input |
 | Field names → generated code | `MessageAnalyzer.java:179` | Regex `[a-zA-Z_][a-zA-Z0-9_]*` | **Adequate** |
-| Message/enum names → generated code | `MessageAnalyzer.java:67,142` | Regex `[a-zA-Z_][a-zA-Z0-9_]*` + keyword escaping | **Fixed** (VULN-001, commit 44a0363) |
-| Type references → generated code | `TypeRegistry.registerFile()` | Validated at registration time | **Fixed** (VULN-002, commit 44a0363) |
-| Default values → generated code | `schemaDefaultExpression()` | String escaping + bool/numeric/enum regex validation | **Fixed** (VULN-003, commit 44a0363) |
-| Source comments → generated code | `JavaCodeEmitter.emitDocComment()` | `*/` escaped to `* /` | **Fixed** (VULN-005, commit 44a0363) |
-| Package names → file paths | `PluginRunner.java:121` | Rejects `..`, `/`, `\0` | **Fixed** (VULN-004, commit 44a0363) |
+| Message/enum names → generated code | `MessageAnalyzer.java:67,142` | Regex `[a-zA-Z_][a-zA-Z0-9_]*` + keyword escaping | **Fixed** (VULN-001) |
+| Type references → generated code | `TypeRegistry.registerFile()` | Validated at registration time | **Fixed** (VULN-002) |
+| Default values → generated code | `schemaDefaultExpression()` | String escaping + bool/numeric/enum regex validation | **Fixed** (VULN-003) |
+| Source comments → generated code | `JavaCodeEmitter.emitDocComment()` | `*/` escaped to `* /` | **Fixed** (VULN-005) |
+| Package names → file paths | `PluginRunner.java:121` | Rejects `..`, `/`, `\0` | **Fixed** (VULN-004) |
 | Language parameter | `PluginRunner.java:64` | Allowlist | Adequate |
 
 ### Key Trust Assumption
@@ -95,7 +95,7 @@ Not applicable. The plugin has no authentication, authorization, or user identit
 - **Severity:** High
 - **Category:** CWE-94 (Improper Control of Generation of Code)
 - **Location:** `MessageAnalyzer.java:66` (message names used without validation)
-- **Description:** Field names are validated against `[a-zA-Z_][a-zA-Z0-9_]*` at line 91, but message names from `descriptor.getName()` are not. Message names flow directly into generated class/struct/type declarations in all 9 languages.
+- **Description:** Field names are validated against `[a-zA-Z_][a-zA-Z0-9_]*` at line 91, but message names from `descriptor.getName()` are not. Message names flow directly into generated class/struct/type declarations in all 17 languages.
 - **Evidence:**
 ```java
 // MessageAnalyzer.java:66 — message name used without validation
@@ -105,13 +105,13 @@ w.block("public class " + className, () -> { ... });
 ```
 - **Risk:** A crafted `CodeGeneratorRequest` (bypassing protoc) with a message named `Foo { } class Evil { static { Runtime.getRuntime().exec("evil"); } } class Dummy` would produce compilable Java containing arbitrary code. Exploitation requires local code execution to craft the request.
 - **Recommendation:** Add `descriptor.getName().matches("[a-zA-Z_][a-zA-Z0-9_]*")` validation in the `analyze()` method.
-- **Status:** **Fixed** (commit 44a0363)
+- **Status:** **Fixed**
 
 ### VULN-002: `simpleTypeName()` returns unsanitized type segment — code injection
 
 - **Severity:** High
 - **Category:** CWE-94 (Code Injection)
-- **Location:** `JavaSerializerGenerator.java:356`, `JavaDeserializerGenerator.java:304`, `JavaTypeMapper.java:165`, `PythonDeserializerGenerator.java:246` (and equivalents in all 9 generators)
+- **Location:** `JavaSerializerGenerator.java:356`, `JavaDeserializerGenerator.java:304`, `JavaTypeMapper.java:165`, `PythonDeserializerGenerator.java:246` (and equivalents in all 17 generators)
 - **Description:** `simpleTypeName()` extracts the substring after the last `.` in a type reference and injects it into generated code (type casts, static method calls). If the last segment contains `()`, `;`, `{}`, the generated code becomes injectable.
 - **Evidence:**
 ```java
@@ -121,7 +121,7 @@ return lastDot >= 0 ? protoFullName.substring(lastDot + 1) : protoFullName;
 ```
 - **Risk:** Same as VULN-001 — requires crafted CodeGeneratorRequest.
 - **Recommendation:** Validate return value against `[a-zA-Z_][a-zA-Z0-9_]*` or validate at `TypeRegistry.registerFile()` time.
-- **Status:** **Fixed** (commit 44a0363)
+- **Status:** **Fixed**
 
 ### VULN-003: Proto2 default values for bool/numeric/enum types emitted without validation
 
@@ -136,7 +136,7 @@ default -> defaultValue;        // raw string for int32 etc.
 ```
 - **Risk:** A crafted default value like `true; Runtime.getRuntime().exec("evil");//` in a proto2 bool field produces injectable Java code.
 - **Recommendation:** Validate: bool → `^(true|false)$`; integers → `^-?[0-9]+$`; enum constants → `^[A-Z_][A-Z0-9_]*$`.
-- **Status:** **Fixed** (commit 44a0363)
+- **Status:** **Fixed**
 
 ### VULN-004: Path traversal check incomplete — absolute paths not rejected
 
@@ -154,7 +154,7 @@ if (genFile.getName().contains("..")) { return errorResponse(...); }
 ```java
 if (name.contains("..") || name.startsWith("/") || name.contains("\0"))
 ```
-- **Status:** **Fixed** (commit 44a0363)
+- **Status:** **Fixed**
 
 ### VULN-005: Javadoc comment injection via `*/` in proto source comments
 
@@ -168,7 +168,7 @@ w.line(" * %s", trimmed); // trimmed contains raw comment text
 ```
 - **Risk:** Attacker must control proto source comments, which typically means they control the `.proto` file itself.
 - **Recommendation:** `trimmed.replace("*/", "* /")` before emitting.
-- **Status:** **Fixed** (commit 44a0363)
+- **Status:** **Fixed**
 
 ### VULN-006: No hard limit on sparse field numbers — DoS via huge generated arrays
 
@@ -178,7 +178,7 @@ w.line(" * %s", trimmed); // trimmed contains raw comment text
 - **Description:** A message with field numbers 1 and 536870911 (max proto field number) would generate serialize code with ~537 million `addNull()` calls.
 - **Risk:** Build-time DoS — the generated source file would be enormous and compilation would be very slow or fail with OOM.
 - **Recommendation:** Add a configurable hard limit (e.g., 10,000) on max field number and reject with an error.
-- **Status:** **Fixed** (commit 44a0363)
+- **Status:** **Fixed**
 
 ### VULN-007: C generated code — integer overflow in calloc and missing NULL check
 
@@ -194,7 +194,7 @@ for (int i = 0; i < count; i++) { msg->field[i] = ...; } // NULL deref if calloc
 ```
 - **Risk:** If the generated C code processes malicious JSON with extremely large array sizes, it could cause a heap overflow or NULL dereference.
 - **Recommendation:** Generate bounds checking (`if (count < 0 || count > MAX_SIZE) return NULL;`) and NULL checks (`if (!msg->field) return NULL;`).
-- **Status:** **Fixed** (commit 44a0363)
+- **Status:** **Fixed**
 
 ### VULN-008: C base64 decode — incomplete input validation
 
@@ -204,7 +204,7 @@ for (int i = 0; i < count; i++) { msg->field[i] = ...; } // NULL deref if calloc
 - **Description:** The `jsonarray_base64_decode` function does not validate that input length is a multiple of 4. Non-standard lengths could cause size miscalculation.
 - **Risk:** Malformed base64 input in JSON could trigger incorrect memory allocation size.
 - **Recommendation:** Add `if (input_len % 4 != 0) return NULL;` or implement proper padding tolerance.
-- **Status:** **Fixed** (commit 44a0363)
+- **Status:** **Fixed**
 
 ### VULN-009: Python docstring injection
 
@@ -214,7 +214,7 @@ for (int i = 0; i < count; i++) { msg->field[i] = ...; } // NULL deref if calloc
 - **Description:** The message full name is emitted into a triple-quoted Python docstring without escaping `"""`. A crafted message name containing `"""` could close the docstring and inject Python code.
 - **Risk:** Same as VULN-001 — requires crafted message name.
 - **Recommendation:** Escape `"""` sequences or validate message names (per VULN-001 fix).
-- **Status:** **Fixed** (commit 44a0363)
+- **Status:** **Fixed**
 
 ### Summary Table
 
@@ -303,6 +303,13 @@ CodeGeneratorRequest (stdin)
 | nlohmann/json | C++ | JSON for generated C++ code | User must provide; header-only |
 | serde_json | Rust | JSON for generated Rust code | Version 1.x specified in Cargo.toml |
 | base64 | Rust | Base64 for generated Rust code | Version 0.22 specified in Cargo.toml |
+| System.Text.Json | C# | JSON for generated C# code | Part of .NET runtime (no external dep) |
+| Foundation | Objective-C/Swift | NSJSONSerialization/JSONSerialization | Part of Apple platform SDK |
+| json (stdlib) | Ruby | JSON for generated Ruby code | Part of Ruby stdlib |
+| JSON (CPAN) | Perl | JSON for generated Perl code | User must install from CPAN |
+| dart:convert | Dart | JSON for generated Dart code | Part of Dart SDK |
+| json built-in | PHP | JSON for generated PHP code | Part of PHP core (json extension) |
+| kotlinx.serialization | Kotlin | JSON for generated Kotlin code | User must provide |
 
 #### Build Dependencies
 | Package | Version | Purpose | Ships in JAR |
@@ -374,7 +381,7 @@ Tests already implemented in `SafetySecurityTest.java` (116 tests):
 | SEC-T-006 | testSEC001_unicodeRejected | Field name injection | Implemented |
 | SEC-T-007 | testSEC001_codeInjectionRejected | Field name code injection | Implemented |
 | SEC-T-008 | testSEC002_normalPathAccepted | Path traversal | Implemented |
-| SEC-T-009 | testSEC003_keywordEscaping (×9 langs) | Keyword escaping | Implemented |
+| SEC-T-009 | testSEC003_keywordEscaping (x17 langs) | Keyword escaping | Implemented |
 | SEC-T-010 | testSEC004_nameCollision | Collision detection | Implemented |
 
 ### Additional Tests Recommended
@@ -395,7 +402,7 @@ Tests already implemented in `SafetySecurityTest.java` (116 tests):
 | [INCOMPLETE_ANALYSIS] | C runtime memory safety | Requires Valgrind/ASan dynamic analysis |
 | [INCOMPLETE_ANALYSIS] | Dependency CVEs | Requires SCA tool scan |
 | [ASSUMED_BEHAVIOR] | protoc input validation | Assumed protoc rejects invalid identifiers; not verified against all protoc versions |
-| [INCOMPLETE_ANALYSIS] | Non-Java generators default escaping | Only Java generator's default value handling was deeply reviewed; 8 others need equivalent audit |
+| [INCOMPLETE_ANALYSIS] | Non-Java generators default escaping | Only Java generator's default value handling was deeply reviewed; 16 others need equivalent audit |
 | [ASSUMED_BEHAVIOR] | protoc path handling | Assumed protoc prepends output dir to file paths, mitigating VULN-004 |
 
 ## 11. Approval
