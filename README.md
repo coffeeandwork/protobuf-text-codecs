@@ -1,6 +1,6 @@
 # protobuf-text-codecs
 
-A suite of `protoc` compiler plugins that generate code for serializing Protocol Buffer messages using **human-readable text formats** instead of the standard binary encoding.
+A suite of `protoc` compiler plugins that generate code for serializing Protocol Buffer messages using **compact text-based formats** instead of the standard binary encoding.
 
 ---
 
@@ -8,11 +8,11 @@ A suite of `protoc` compiler plugins that generate code for serializing Protocol
 
 Standard Protocol Buffers use a binary encoding format that is efficient but opaque -- you cannot read or inspect serialized data without a decoder. The common alternative, protobuf's JSON mapping, produces verbose output because every field includes its name as a key.
 
-**protobuf-text-codecs** provides two compact, human-readable serialization formats:
+**protobuf-text-codecs** provides two compact text-based serialization formats:
 
 ### Format 1: Positional JSON Array (`protoc-gen-jsonarray`)
 
-Encodes each message as a **positional JSON array**, where the array index corresponds to the field number. The result is valid JSON that is both human-readable and compact -- no field names appear in the output, only positional values.
+Encodes each message as a **positional JSON array**, where the array index corresponds to the field number. The result is valid JSON that is compact -- no field names appear in the output, only positional values.
 
 Key properties:
 

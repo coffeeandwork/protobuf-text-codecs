@@ -1,6 +1,6 @@
 # protobuf-text-codecs
 
-A suite of `protoc` compiler plugins that generate code for serializing Protocol Buffer messages using human-readable text formats. Two encoding formats are supported, each as a separate protoc plugin:
+A suite of `protoc` compiler plugins that generate code for serializing Protocol Buffer messages using compact text-based formats. Two encoding formats are supported, each as a separate protoc plugin:
 
 ## Encoding Formats
 
