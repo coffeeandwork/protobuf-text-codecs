@@ -667,9 +667,9 @@ public class PbtkZigGenerator implements LanguageGenerator {
     w.line("var entry_key: ?%s = null;", keyZigType);
     w.line("var entry_val: ?%s = null;", valZigType);
 
-    w.line("var __mi: usize = 0;");
+    w.line("var pb_mi: usize = 0;");
     w.block(
-        "while (__mi < entry_count and offset.* < tokens.len) : (__mi += 1)",
+        "while (pb_mi < entry_count and offset.* < tokens.len) : (pb_mi += 1)",
         () -> {
           w.line("const mt = tokens[offset.*];");
           w.line("var mne: usize = 0;");
@@ -831,14 +831,67 @@ public class PbtkZigGenerator implements LanguageGenerator {
             String zigName = "self." + nameResolver.fieldName(field.getName());
 
             if (field.isMap()) {
+              // Free allocator-owned string keys
+              if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_STRING) {
+                w.block(
+                    "var key_it = " + zigName + ".keyIterator(); while (key_it.next()) |key|",
+                    () -> {
+                      w.line("allocator.free(key.*);");
+                    });
+              }
+              // Free allocator-owned string values
+              if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_STRING) {
+                w.block(
+                    "var val_it = " + zigName + ".valueIterator(); while (val_it.next()) |val|",
+                    () -> {
+                      w.line("allocator.free(val.*);");
+                    });
+              }
               w.line("%s.deinit();", zigName);
               hasCleanup = true;
             } else if (field.isRepeated()) {
+              // Free allocator-owned elements in the list
+              if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_STRING) {
+                w.block(
+                    "for (" + zigName + ".items) |item|",
+                    () -> {
+                      w.line("allocator.free(item);");
+                    });
+              } else if (field.getKind() == ProtoField.FieldKind.MESSAGE
+                  || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
+                w.block(
+                    "for (" + zigName + ".items) |*item|",
+                    () -> {
+                      w.line("item.deinit(allocator);");
+                    });
+              } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+                w.block(
+                    "for (" + zigName + ".items) |item|",
+                    () -> {
+                      w.line("allocator.free(item);");
+                    });
+              }
               w.line("%s.deinit();", zigName);
               hasCleanup = true;
             } else if (field.getKind() == ProtoField.FieldKind.MESSAGE
                 || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
               w.block("if (" + zigName + ") |*val|", () -> w.line("val.deinit(allocator);"));
+              hasCleanup = true;
+            } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_STRING) {
+              // Free allocator-owned string slice; skip if it is the default empty literal
+              w.block(
+                  "if (" + zigName + ".len > 0)",
+                  () -> {
+                    w.line("allocator.free(%s);", zigName);
+                  });
+              hasCleanup = true;
+            } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+              // Free allocator-owned bytes slice; skip if it is the default empty literal
+              w.block(
+                  "if (" + zigName + ".len > 0)",
+                  () -> {
+                    w.line("allocator.free(%s);", zigName);
+                  });
               hasCleanup = true;
             }
           }
@@ -856,6 +909,9 @@ public class PbtkZigGenerator implements LanguageGenerator {
                           if (member.getKind() == ProtoField.FieldKind.MESSAGE
                               || member.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
                             w.line(".%s => |*msg| msg.deinit(allocator),", tagName);
+                          } else if (member.getProtoType()
+                              == FieldDescriptorProto.Type.TYPE_STRING) {
+                            w.line(".%s => |str| allocator.free(str),", tagName);
                           } else {
                             w.line(".%s => {},", tagName);
                           }

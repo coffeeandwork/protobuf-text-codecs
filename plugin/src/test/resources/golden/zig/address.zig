@@ -55,8 +55,14 @@ pub const Address = struct {
     }
 
     pub fn deinit(self: *Address, allocator: std.mem.Allocator) void {
-        allocator.free(self.street);
-        allocator.free(self.city);
-        allocator.free(self.state);
+        if (self.street.len > 0) {
+            allocator.free(self.street);
+        }
+        if (self.city.len > 0) {
+            allocator.free(self.city);
+        }
+        if (self.state.len > 0) {
+            allocator.free(self.state);
+        }
     }
 };

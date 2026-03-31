@@ -319,8 +319,21 @@ public class ZigCodeEmitter {
               w.line("%s.deinit();", zigName);
               hasCleanup = true;
             } else if (field.isRepeated()) {
-              // Free allocator-owned string elements in the list
+              // Free allocator-owned elements in the list
               if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_STRING) {
+                w.block(
+                    "for (" + zigName + ".items) |item|",
+                    () -> {
+                      w.line("allocator.free(item);");
+                    });
+              } else if (field.getKind() == ProtoField.FieldKind.MESSAGE
+                  || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
+                w.block(
+                    "for (" + zigName + ".items) |*item|",
+                    () -> {
+                      w.line("item.deinit(allocator);");
+                    });
+              } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
                 w.block(
                     "for (" + zigName + ".items) |item|",
                     () -> {
@@ -338,8 +351,20 @@ public class ZigCodeEmitter {
                   });
               hasCleanup = true;
             } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_STRING) {
-              // Free allocator-owned string slice
-              w.line("allocator.free(%s);", zigName);
+              // Free allocator-owned string slice; skip if it is the default empty literal
+              w.block(
+                  "if (" + zigName + ".len > 0)",
+                  () -> {
+                    w.line("allocator.free(%s);", zigName);
+                  });
+              hasCleanup = true;
+            } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+              // Free allocator-owned bytes slice; skip if it is the default empty literal
+              w.block(
+                  "if (" + zigName + ".len > 0)",
+                  () -> {
+                    w.line("allocator.free(%s);", zigName);
+                  });
               hasCleanup = true;
             }
           }

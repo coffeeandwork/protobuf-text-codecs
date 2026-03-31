@@ -400,7 +400,7 @@ public class CppCodeEmitter {
 
     // Oneof case tracking fields
     for (ProtoMessage.OneofGroup group : message.getOneofGroups()) {
-      String caseName = "__oneof_" + nameResolver.fieldName(group.name()) + "_case_";
+      String caseName = "pb_oneof_" + nameResolver.fieldName(group.name()) + "_case_";
       w.line("int %s = 0; // 0 = not set", caseName);
     }
   }
@@ -450,7 +450,7 @@ public class CppCodeEmitter {
 
   private void emitOneofAccessors(CodeWriter w, ProtoMessage message) {
     for (ProtoMessage.OneofGroup group : message.getOneofGroups()) {
-      String caseName = "__oneof_" + nameResolver.fieldName(group.name()) + "_case_";
+      String caseName = "pb_oneof_" + nameResolver.fieldName(group.name()) + "_case_";
       String getterName = nameResolver.fieldName(group.name()) + "_case";
       w.blankLine();
       w.line("int %s() const { return %s; }", getterName, caseName);
@@ -513,7 +513,7 @@ public class CppCodeEmitter {
   /** Return additional statements for setter body when field is a oneof member. */
   private String oneofSetSuffix(ProtoField field) {
     if (field.isOneofMember()) {
-      String caseName = "__oneof_" + nameResolver.fieldName(field.getOneofName()) + "_case_";
+      String caseName = "pb_oneof_" + nameResolver.fieldName(field.getOneofName()) + "_case_";
       return " " + caseName + " = " + field.getFieldNumber() + ";";
     }
     return "";
