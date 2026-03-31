@@ -22,36 +22,36 @@ example_Address* example_address_deserialize(const cJSON* array) {
   if (!array || !cJSON_IsArray(array)) return NULL;
   example_Address* msg = (example_Address*)calloc(1, sizeof(example_Address));
   if (!msg) return NULL;
-  int size = cJSON_GetArraySize(array);
-  if (size > 0) {
-    cJSON* item = cJSON_GetArrayItem(array, 0);
-    if (item && !cJSON_IsNull(item)) {
+  cJSON* item = array->child;
+  if (item) {
+    if (!cJSON_IsNull(item)) {
       if (cJSON_IsString(item) && item->valuestring) {
         msg->street = jsonarray_strdup(item->valuestring);
       }
     }
+    item = item->next;
   }
-  if (size > 1) {
-    cJSON* item = cJSON_GetArrayItem(array, 1);
-    if (item && !cJSON_IsNull(item)) {
+  if (item) {
+    if (!cJSON_IsNull(item)) {
       if (cJSON_IsString(item) && item->valuestring) {
         msg->city = jsonarray_strdup(item->valuestring);
       }
     }
+    item = item->next;
   }
-  if (size > 2) {
-    cJSON* item = cJSON_GetArrayItem(array, 2);
-    if (item && !cJSON_IsNull(item)) {
+  if (item) {
+    if (!cJSON_IsNull(item)) {
       if (cJSON_IsString(item) && item->valuestring) {
         msg->state = jsonarray_strdup(item->valuestring);
       }
     }
+    item = item->next;
   }
-  if (size > 3) {
-    cJSON* item = cJSON_GetArrayItem(array, 3);
-    if (item && !cJSON_IsNull(item)) {
+  if (item) {
+    if (!cJSON_IsNull(item)) {
       msg->zip = (int32_t)cJSON_GetNumberValue(item);
     }
+    item = item->next;
   }
   return msg;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 protobuf-text-codecs contributors
+ * Copyright 2026 coffeeandwork
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -268,6 +268,8 @@ class SchemaEvolutionTest {
           // Generic fallback: any language checking > 2 or >= 3
           "> 2",
           ">= 3",
+          // C cursor-based: if (item) serves as implicit bounds check
+          "if (item)",
         },
         "[jsonarray/" + lang + "] forward-compat bounds check for years at position 2");
   }
@@ -352,6 +354,8 @@ class SchemaEvolutionTest {
           ".get(2)",
           "get(2)",
           "at(2)",
+          // C cursor-based: if (item) + item->next handles position advancement
+          "item->next",
         },
         "[jsonarray/" + lang + "] deserializer should access position 2 for years field");
   }
@@ -451,6 +455,8 @@ class SchemaEvolutionTest {
           ".get(9)",
           "get(9)",
           "at(9)",
+          // C cursor-based: if (item) + item->next handles position advancement
+          "item->next",
         },
         "[jsonarray/" + lang + "] deserializer should access position 9 for gamma (field 10)");
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 protobuf-text-codecs contributors
+ * Copyright 2026 coffeeandwork
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,16 +43,17 @@ public class CDeserializerGenerator {
           w.line("if (!array || !cJSON_IsArray(array)) return NULL;");
           w.line("%s* msg = (%s*)calloc(1, sizeof(%s));", typeName, typeName, typeName);
           w.line("if (!msg) return NULL;");
-          w.line("int size = cJSON_GetArraySize(array);");
+          // Use cursor-based iteration (O(n)) instead of cJSON_GetArrayItem (O(n^2))
+          w.line("cJSON* item = array->child;");
 
           int maxPos = message.getMaxFieldNumber();
           for (int pos = 0; pos < maxPos; pos++) {
             ProtoField field = message.fieldAtPosition(pos);
             if (field == null) {
-              w.line("/* position %d: gap (no field) */", pos);
+              w.line("if (item) { item = item->next; } /* position %d: gap (no field) */", pos);
               continue;
             }
-            emitFieldDeserialize(w, field, pos, funcPrefix);
+            emitFieldDeserialize(w, field, funcPrefix);
           }
 
           w.line("return msg;");
@@ -78,39 +79,37 @@ public class CDeserializerGenerator {
     w.line("%s* %s_from_json_string(const char* json);", typeName, funcPrefix);
   }
 
-  private void emitFieldDeserialize(CodeWriter w, ProtoField field, int pos, String funcPrefix) {
+  private void emitFieldDeserialize(CodeWriter w, ProtoField field, String funcPrefix) {
     String fieldName = nameResolver.fieldName(field.getName());
 
     w.block(
-        "if (size > " + pos + ")",
+        "if (item)",
         () -> {
-          w.line("cJSON* item = cJSON_GetArrayItem(array, %d);", pos);
-
           if (field.isOneofMember()) {
             emitOneofDeserialize(w, field, fieldName, funcPrefix);
-            return;
+          } else {
+            w.block(
+                "if (!cJSON_IsNull(item))",
+                () -> {
+                  if (field.isMap()) {
+                    emitMapDeserialize(w, field, fieldName, funcPrefix);
+                  } else if (field.isRepeated()) {
+                    emitRepeatedDeserialize(w, field, fieldName, funcPrefix);
+                  } else if (field.getKind() == ProtoField.FieldKind.MESSAGE
+                      || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
+                    emitMessageDeserialize(w, field, fieldName, funcPrefix);
+                  } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
+                    emitEnumDeserialize(w, field, fieldName);
+                  } else {
+                    emitScalarDeserialize(w, field, fieldName);
+                  }
+
+                  if (field.isProto3Optional()) {
+                    w.line("msg->has_%s = true;", fieldName);
+                  }
+                });
           }
-
-          w.block(
-              "if (item && !cJSON_IsNull(item))",
-              () -> {
-                if (field.isMap()) {
-                  emitMapDeserialize(w, field, fieldName, funcPrefix);
-                } else if (field.isRepeated()) {
-                  emitRepeatedDeserialize(w, field, fieldName, funcPrefix);
-                } else if (field.getKind() == ProtoField.FieldKind.MESSAGE
-                    || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
-                  emitMessageDeserialize(w, field, fieldName, funcPrefix);
-                } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
-                  emitEnumDeserialize(w, field, fieldName);
-                } else {
-                  emitScalarDeserialize(w, field, fieldName);
-                }
-
-                if (field.isProto3Optional()) {
-                  w.line("msg->has_%s = true;", fieldName);
-                }
-              });
+          w.line("item = item->next;");
         });
   }
 
