@@ -102,7 +102,7 @@ LIMITATIONS:
 
 | Test Class | Path | Tests | Requirements Verified |
 |------------|------|-------|-----------------------|
-| JavaCodeGenTest | `plugin/src/test/java/.../jsonarray/JavaCodeGenTest.java` | 71 | FR-001-FR-010, SR-001-SR-004, SEC-001, SEC-003, SEC-004 |
+| JavaCodeGenTest | `plugin/src/test/java/.../jsonarray/JavaCodeGenTest.java` | 80 | FR-001-FR-010, SR-001-SR-004, SEC-001, SEC-003, SEC-004 |
 | JavaTypeMapperTest | `plugin/src/test/java/.../jsonarray/JavaTypeMapperTest.java` | 61 | FR-003, SR-002 |
 | SafetySecurityTest | `plugin/src/test/java/.../jsonarray/SafetySecurityTest.java` | 180 | SR-001-SR-004, SEC-001-SEC-004, VULN-001-009 |
 | MessageAnalyzerTest | `plugin/src/test/java/.../jsonarray/MessageAnalyzerTest.java` | 37 | SEC-001, FR-010, FR-018 |
@@ -116,12 +116,12 @@ LIMITATIONS:
 | MultiLanguageCodeGenTest | `plugin/src/test/java/.../jsonarray/MultiLanguageCodeGenTest.java` | 240 | FR-011, FR-013, SR-001, SR-002 |
 | PerformanceBenchmarkTest | `plugin/src/test/java/.../jsonarray/PerformanceBenchmarkTest.java` | 8 | PERF-001, PERF-002 |
 | MemoryBenchmarkTest | `plugin/src/test/java/.../jsonarray/MemoryBenchmarkTest.java` | 4 | PERF-001 |
-| PbtkJavaCodeGenTest | `plugin/src/test/java/.../pbtkurl/PbtkJavaCodeGenTest.java` | 27 | FR-011 (pbtk) |
+| PbtkJavaCodeGenTest | `plugin/src/test/java/.../pbtkurl/PbtkJavaCodeGenTest.java` | 29 | FR-011 (pbtk) |
 | PbtkMultiLanguageCodeGenTest | `plugin/src/test/java/.../pbtkurl/PbtkMultiLanguageCodeGenTest.java` | 144 | FR-011, FR-013 (pbtk) |
-| PbtkSafetySecurityTest | `plugin/src/test/java/.../pbtkurl/PbtkSafetySecurityTest.java` | 70 | SR-001-SR-004, SEC-001-SEC-004 (pbtk) |
+| PbtkSafetySecurityTest | `plugin/src/test/java/.../pbtkurl/PbtkSafetySecurityTest.java` | 86 | SR-001-SR-004, SEC-001-SEC-004 (pbtk) |
 | SchemaEvolutionTest | `plugin/src/test/java/.../jsonarray/SchemaEvolutionTest.java` | 119 | FR-001, FR-002, SR-001 |
-| JavaSchemaEvolutionTest | `plugin/src/test/java/.../jsonarray/JavaSchemaEvolutionTest.java` | 11 | FR-001, FR-002, SR-001 |
-| | | **Total: 1,066** | |
+| JavaSchemaEvolutionTest | `plugin/src/test/java/.../jsonarray/JavaSchemaEvolutionTest.java` | 15 | FR-001, FR-002, SR-001 |
+| | | **Total: 1,090** | |
 
 Note: 15 `@ParameterizedTest` methods x 16 languages = 240 expanded invocations for MultiLanguageCodeGenTest.
 
@@ -197,7 +197,7 @@ Note: 15 `@ParameterizedTest` methods x 16 languages = 240 expanded invocations 
 | VULN-004 | Medium | Fixed | SafetySecurityTest -- path traversal rejection |
 | VULN-005 | Low | Fixed | JavaCodeGenTest -- Javadoc `*/` escaping |
 | VULN-006 | Low | Fixed | Warning emitted; protoc limits practical field numbers |
-| VULN-007 | Low | Partial | C runtime has bounds-checked array access; generated code gap remains |
+| VULN-007 | Low | Fixed | Bounds checking and NULL checks added to generated C deserializer code |
 | VULN-008 | Medium | Fixed | C runtime base64 validates input length % 4 |
 | VULN-009 | Info | Fixed | Resolved in v0.2.0 |
 

@@ -77,12 +77,8 @@ public class ObjCSerializerGenerator {
 
     if (field.isOneofMember()) {
       String oneofProp = nameResolver.fieldName(field.getOneofName());
-      String caseConst =
-          nameResolver.fieldName(field.getOneofName())
-              + "Case"
-              + capitalize(nameResolver.fieldName(field.getName()));
       w.block(
-          "if (self." + oneofProp + "Case == " + className(field) + caseConst + ")",
+          "if (self." + oneofProp + "Case == " + field.getFieldNumber() + ")",
           () -> {
             emitValueAdd(w, field, "self." + oneofProp + "Value");
           });
@@ -326,8 +322,7 @@ public class ObjCSerializerGenerator {
                 "for (id __key in " + accessor + ")",
                 () -> {
                   w.line("id __val = %s[__key];", accessor);
-                  w.line("NSArray *pair = @[__key, %s];", mapValueExpr(field, "__val"));
-                  w.line("[mapNode addObject:pair];");
+                  emitNonStringMapPairAdd(w, field, "__key", "__val");
                 });
             w.line("[array addObject:mapNode];");
           }
@@ -342,10 +337,56 @@ public class ObjCSerializerGenerator {
           keyExpr, valExpr, valExpr, refType, valExpr);
     } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
       w.line("mapNode[%s] = %s;", keyExpr, valExpr);
+    } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+      w.line(
+          "mapNode[%s] = (%s != nil) ? [(NSData *)%s base64EncodedStringWithOptions:0] : [NSNull null];",
+          keyExpr, valExpr, valExpr);
+    } else if (typeMapper.isInt64Type(field.getMapValueType())) {
+      if (typeMapper.isSignedInt64(field.getMapValueType())) {
+        w.line(
+            "mapNode[%s] = [NSString stringWithFormat:@\"%%lld\", [(NSNumber *)%s longLongValue]];",
+            keyExpr, valExpr);
+      } else {
+        w.line(
+            "mapNode[%s] = [NSString stringWithFormat:@\"%%llu\", [(NSNumber *)%s unsignedLongLongValue]];",
+            keyExpr, valExpr);
+      }
+    } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE
+        || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT) {
+      w.line("double __mapVal = [(NSNumber *)%s doubleValue];", valExpr);
+      w.line("if (isnan(__mapVal) || isinf(__mapVal)) {");
+      w.indent();
+      w.line("mapNode[%s] = [NSNull null];", keyExpr);
+      w.dedent();
+      w.line("} else {");
+      w.indent();
+      w.line("mapNode[%s] = %s;", keyExpr, valExpr);
+      w.dedent();
+      w.line("}");
     } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_STRING) {
       w.line("mapNode[%s] = (%s != nil) ? %s : [NSNull null];", keyExpr, valExpr, valExpr);
     } else {
       w.line("mapNode[%s] = (%s != nil) ? %s : [NSNull null];", keyExpr, valExpr, valExpr);
+    }
+  }
+
+  private void emitNonStringMapPairAdd(
+      CodeWriter w, ProtoField field, String keyExpr, String valExpr) {
+    if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE
+        || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT) {
+      w.line("double __pairVal = [(NSNumber *)%s doubleValue];", valExpr);
+      w.line("if (isnan(__pairVal) || isinf(__pairVal)) {");
+      w.indent();
+      w.line("[mapNode addObject:@[%s, [NSNull null]]];", keyExpr);
+      w.dedent();
+      w.line("} else {");
+      w.indent();
+      w.line("[mapNode addObject:@[%s, %s]];", keyExpr, valExpr);
+      w.dedent();
+      w.line("}");
+    } else {
+      w.line("NSArray *pair = @[%s, %s];", keyExpr, mapValueExpr(field, valExpr));
+      w.line("[mapNode addObject:pair];");
     }
   }
 
@@ -359,16 +400,22 @@ public class ObjCSerializerGenerator {
           + " *)"
           + valExpr
           + " toJsonArray] : [NSNull null]";
+    } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+      return "("
+          + valExpr
+          + " != nil) ? [(NSData *)"
+          + valExpr
+          + " base64EncodedStringWithOptions:0] : [NSNull null]";
+    } else if (typeMapper.isInt64Type(field.getMapValueType())) {
+      if (typeMapper.isSignedInt64(field.getMapValueType())) {
+        return "[NSString stringWithFormat:@\"%lld\", [(NSNumber *)" + valExpr + " longLongValue]]";
+      } else {
+        return "[NSString stringWithFormat:@\"%llu\", [(NSNumber *)"
+            + valExpr
+            + " unsignedLongLongValue]]";
+      }
     }
     return "(" + valExpr + " != nil) ? " + valExpr + " : [NSNull null]";
-  }
-
-  /**
-   * Placeholder for extracting class name context -- not needed since we don't use enum-based oneof
-   * in ObjC.
-   */
-  private String className(ProtoField field) {
-    return "";
   }
 
   private static String capitalize(String s) {

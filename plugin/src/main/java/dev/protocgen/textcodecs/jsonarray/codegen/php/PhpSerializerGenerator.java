@@ -194,6 +194,14 @@ public class PhpSerializerGenerator {
       w.line("$result[] = array_map('base64_encode', %s);", phpField);
     } else if (isInt64Type(field.getProtoType())) {
       w.line("$result[] = array_map('strval', %s);", phpField);
+    } else if (isFloatOrDouble(field.getProtoType())) {
+      w.line("$arr = [];");
+      w.line("foreach (%s as $item) {", phpField);
+      w.indent();
+      w.line("$arr[] = (is_nan($item) || is_infinite($item)) ? null : $item;");
+      w.dedent();
+      w.line("}");
+      w.line("$result[] = $arr;");
     } else {
       w.line("$result[] = array_values(%s);", phpField);
     }
@@ -219,6 +227,22 @@ public class PhpSerializerGenerator {
         w.dedent();
         w.line("}");
         w.line("$result[] = (object) $mapArr;");
+      } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+        w.line("$mapArr = [];");
+        w.line("foreach (%s as $k => $v) {", phpField);
+        w.indent();
+        w.line("$mapArr[$k] = base64_encode($v);");
+        w.dedent();
+        w.line("}");
+        w.line("$result[] = (object) $mapArr;");
+      } else if (isFloatOrDouble(field.getMapValueType())) {
+        w.line("$mapArr = [];");
+        w.line("foreach (%s as $k => $v) {", phpField);
+        w.indent();
+        w.line("$mapArr[$k] = (is_nan($v) || is_infinite($v)) ? null : $v;");
+        w.dedent();
+        w.line("}");
+        w.line("$result[] = (object) $mapArr;");
       } else {
         w.line("$result[] = (object) %s;", phpField);
       }
@@ -237,6 +261,22 @@ public class PhpSerializerGenerator {
         w.line("foreach (%s as $k => $v) {", phpField);
         w.indent();
         w.line("$pairs[] = [$k, (string) $v];");
+        w.dedent();
+        w.line("}");
+        w.line("$result[] = $pairs;");
+      } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+        w.line("$pairs = [];");
+        w.line("foreach (%s as $k => $v) {", phpField);
+        w.indent();
+        w.line("$pairs[] = [$k, base64_encode($v)];");
+        w.dedent();
+        w.line("}");
+        w.line("$result[] = $pairs;");
+      } else if (isFloatOrDouble(field.getMapValueType())) {
+        w.line("$pairs = [];");
+        w.line("foreach (%s as $k => $v) {", phpField);
+        w.indent();
+        w.line("$pairs[] = [$k, (is_nan($v) || is_infinite($v)) ? null : $v];");
         w.dedent();
         w.line("}");
         w.line("$result[] = $pairs;");

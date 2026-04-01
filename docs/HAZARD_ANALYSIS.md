@@ -35,7 +35,7 @@ LIMITATIONS:
 | PluginRunner | **High** | Wrong language selected, proto2 misidentified, path traversal bypass | Wrong language output; proto2 fields get proto3 defaults; files written outside output dir | Unit tests (22) | Central coordinator; security boundary |
 | ProtoFileProcessor | **High** | Comment map wrong, syntax not propagated | Missing Javadoc; proto2 presence semantics lost | Indirect tests (95.5%) | Bridges raw descriptors to typed model |
 | CodeWriter | **Low** | Wrong indentation | Generated code has formatting issues but still compiles | Unit tests (14), 100% coverage | Cosmetic only — incorrect indent doesn't affect semantics |
-| KeywordUtil | **Medium** | Missing keyword, wrong escape | Generated code won't compile in target language | Unit tests, 98.7% coverage | Compilation error is detectable (not silent) |
+| KeywordUtil | **Medium** | Missing keyword, wrong escape | Generated code won't compile in target language | Unit tests, 100% coverage | Compilation error is detectable (not silent) |
 | WellKnownType | **Medium** | Missing WKT, wrong classification | Timestamp/Duration serialized as raw arrays instead of formatted strings | Unit tests (3), 100% coverage | Incorrect but detectable by user |
 
 ### Per-Language Generators
@@ -61,7 +61,7 @@ LIMITATIONS:
 
 | ID | Hazard | Severity | Likelihood | Risk Level | Mitigation |
 |----|--------|----------|------------|------------|------------|
-| HAZ-001 | Silent data corruption via wrong field position | Major | Unlikely | **High** | 12 indexing audit tests, 71 Java codegen tests, 240 multi-lang tests |
+| HAZ-001 | Silent data corruption via wrong field position | Major | Unlikely | **High** | 12 indexing audit tests, 80 Java codegen tests, 240 multi-lang tests |
 | HAZ-002 | Silent data corruption via wrong type encoding | Major | Unlikely | **High** | Type mapper tests (61), codegen pattern assertions |
 | HAZ-003 | Cross-language encoding incompatibility | Moderate | Possible | **Medium** | Cross-language round-trip tests (Java↔Python), encoding spec |
 | HAZ-004 | Code injection via crafted proto field/type names | Major | Rare | **Medium** | Field name regex validation, keyword escaping, protoc upstream validation |
@@ -80,7 +80,7 @@ LIMITATIONS:
 - **Description:** A bug in any SerializerGenerator or DeserializerGenerator that places a field value at the wrong array position. The generated code compiles and runs, but serialized data has fields swapped or shifted.
 - **Causal Chain:** Bug in field-number-to-position mapping → serializer emits `array.add(field)` at wrong index → deserialized message has field A's value in field B's slot → user application reads wrong data
 - **Affected Components:** All 17 SerializerGenerators, all 17 DeserializerGenerators, MessageAnalyzer (position calculation)
-- **Current Safeguards:** 12 IndexingAuditTest cases verify position = fieldNumber - 1; 71 JavaCodeGenTest cases verify generated patterns; 240 MultiLanguageCodeGenTest cases verify all 16 other languages; cross-language round-trip tests verify Java↔Python produce identical JSON
+- **Current Safeguards:** 12 IndexingAuditTest cases verify position = fieldNumber - 1; 80 JavaCodeGenTest cases verify generated patterns; 240 MultiLanguageCodeGenTest cases verify all 16 other languages; cross-language round-trip tests verify Java↔Python produce identical JSON
 - **Additional Mitigation:** Golden-file snapshot tests would catch regressions. Per-language compilation + execution tests (not just pattern matching) would catch runtime issues.
 
 #### HAZ-002: Silent data corruption via wrong type encoding
@@ -138,7 +138,7 @@ LIMITATIONS:
 | Component Group | Required Assurance | Testing Rigor | Analysis Required |
 |-----------------|-------------------|---------------|-------------------|
 | MessageAnalyzer + TypeRegistry | **High** | Exhaustive (all field types, all cardinalities, all edge cases) | Yes — field position correctness proof |
-| Java Generator (reference impl) | **High** | Exhaustive (71 dedicated tests + shared) | Yes — generated code compilation + round-trip |
+| Java Generator (reference impl) | **High** | Exhaustive (80 dedicated tests + shared) | Yes — generated code compilation + round-trip |
 | Other 16 Generators | **High** | Thorough (parameterized tests + language-specific edge cases) | Yes — generated code compilation |
 | Runtime Libraries | **Medium** | Thorough (unit tests for each helper function) | Yes — C memory safety dynamic analysis |
 | PluginRunner / Main | **Medium** | Basic (parameter parsing, error handling) | No |

@@ -114,6 +114,7 @@ LIMITATIONS:
   - VULN-004 (path traversal): `PluginRunner.java` rejects `..`, leading `/`, and `\0`
   - VULN-005 (Javadoc injection): `JavaCodeEmitter.emitDocComment()` escapes `*/` → `* /`
 - **Test File:** `SafetySecurityTest.java` (39 `@Test` + 9 `@ParameterizedTest` = 180 invocations) — field name validation, keyword escaping, path traversal, int64 encoding, NaN handling
+- **Test File:** `PbtkSafetySecurityTest.java` (86 tests) — safety/security tests for pbtk URL format
 - **Test File:** `MessageAnalyzerTest.java` (37 tests) — invalid name rejection, Any rejection
 - **Evidence Strength:** Strong — defense-in-depth with validation at multiple layers; all 9 VULN items addressed
 
@@ -178,8 +179,8 @@ LIMITATIONS:
 - **Requirements:** FR-001, FR-002, SR-001
 - **Test Files:**
   - `SchemaEvolutionTest.java` (119 tests) — forward/backward compatibility across languages, field addition/removal, renumbering
-  - `JavaSchemaEvolutionTest.java` (11 tests) — Java-specific round-trip schema evolution verification
-- **Coverage:** 130 tests total covering schema evolution scenarios
+  - `JavaSchemaEvolutionTest.java` (15 tests) — Java-specific round-trip schema evolution verification
+- **Coverage:** 134 tests total covering schema evolution scenarios
 - **Evidence Strength:** Strong — systematic verification of positional encoding stability under schema changes across all supported languages
 
 ---
@@ -190,11 +191,11 @@ LIMITATIONS:
 
 | Metric | Value |
 |--------|-------|
-| Total tests | 1,066 |
-| Tests passing | 1,066 (100%) |
+| Total tests | 1,090 |
+| Tests passing | 1,090 (100%) |
 | Tests failing | 0 |
 | Test files | 19 classes |
-| Parameterized test methods | 25+ (expanding to 1,066 test invocations across 17 languages) |
+| Parameterized test methods | 25+ (expanding to 1,090 test invocations across 17 languages) |
 | Golden file snapshots | 17 (one per language) |
 | Integration test scripts | 2 (cross-language, schema-evolution) |
 
@@ -262,13 +263,13 @@ LIMITATIONS:
 - **Mitigation:** Integration tests exercise this path end-to-end. Main.java is 30 lines of glue code.
 - **Recommendation:** Acceptable risk — add integration-level test if needed.
 
-### Gap G6: VULN-007 (C calloc Overflow) Partially Addressed
-- **Impact:** Generated C deserializer code does not validate JSON array size before allocating memory.
-- **Mitigation:** The C runtime includes bounds-checked array access (`jsonarray_array_get`). The risk requires maliciously crafted JSON input at runtime.
-- **Recommendation:** Add size validation in generated C deserializer code templates.
+### Gap G6: VULN-007 (C calloc Overflow) Fixed
+- **Impact:** Generated C deserializer code previously did not validate JSON array size before allocating memory.
+- **Status:** Fixed — bounds checking and NULL checks added to generated C deserializer code.
+- **Residual Risk:** Low — requires maliciously crafted JSON input at runtime to trigger.
 
 ### Resolved: Schema Evolution (previously unverified)
-- **Status:** Resolved with 130 tests (SchemaEvolutionTest: 119, JavaSchemaEvolutionTest: 11)
+- **Status:** Resolved with 134 tests (SchemaEvolutionTest: 119, JavaSchemaEvolutionTest: 15)
 - **Coverage:** Forward/backward compatibility, field addition/removal, renumbering verified across all supported languages.
 - **Evidence:** E12
 
@@ -278,7 +279,7 @@ LIMITATIONS:
 
 | Aspect | Level | Justification |
 |--------|-------|---------------|
-| Functional correctness | **Moderate-High** | 1,066 tests, 76.6% line coverage, all 17 languages tested via parameterized framework |
+| Functional correctness | **Moderate-High** | 1,090 tests, 76.6% line coverage, all 17 languages tested via parameterized framework |
 | Safety (data integrity) | **High** | Core positioning invariant verified by dedicated audit tests; int64 string encoding verified in all generators |
 | Security (code injection) | **Moderate-High** | 9 vulnerabilities identified and fixed; defense-in-depth validation; no fuzz testing |
 | Protocol compliance | **High** | 22 plugin runner tests cover parameter parsing, error handling, feature flags |

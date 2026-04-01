@@ -107,8 +107,8 @@ LIMITATIONS:
 | Performance (PERF) | 2 | 12 | 0 | 12 |
 | Interface (IF) | 3 | ~25 | 0 | ~25 |
 | pbtk URL format | — | ~241 | 0 | ~241 |
-| Schema Evolution | — | ~130 | 0 | ~130 |
-| **Total** | **31** | **~1,164** | **~2** | **1,066** |
+| Schema Evolution | — | ~134 | 0 | ~134 |
+| **Total** | **31** | **~1,188** | **~2** | **1,090** |
 
 ## Test Files
 
@@ -122,17 +122,17 @@ LIMITATIONS:
 | JavaTypeMapperTest.java | Unit: all 15 scalar type mappings | 61 | Implemented |
 | PluginRunnerTest.java | Unit+Integration: orchestrator, params, errors | 22 | Implemented |
 | IndexingAuditTest.java | Unit: position correctness, boundaries | 12 | Implemented |
-| JavaCodeGenTest.java | E2E: Java code generation (all constructs) | 71 | Implemented |
+| JavaCodeGenTest.java | E2E: Java code generation (all constructs) | 80 | Implemented |
 | MultiLanguageCodeGenTest.java | E2E: 16 non-Java languages (15 @ParameterizedTest x 16 langs = 240 invocations) | 240 | Implemented |
 | PerformanceBenchmarkTest.java | Performance: plugin throughput benchmarks | 8 | Implemented |
 | MemoryBenchmarkTest.java | Performance: memory allocation benchmarks | 4 | Implemented |
-| PbtkJavaCodeGenTest.java | E2E: pbtk URL format Java code generation | 27 | Implemented |
+| PbtkJavaCodeGenTest.java | E2E: pbtk URL format Java code generation | 29 | Implemented |
 | PbtkMultiLanguageCodeGenTest.java | E2E: pbtk URL format across 16 non-Java languages | 144 | Implemented |
-| PbtkSafetySecurityTest.java | Safety/security tests for pbtk format | 70 | Implemented |
+| PbtkSafetySecurityTest.java | Safety/security tests for pbtk format | 86 | Implemented |
 | SafetySecurityTest.java | Safety/security/fault injection (39 @Test + 9 @ParameterizedTest = 180 invocations) | 180 | Implemented |
 | GoldenFileTest.java | Snapshot: exact output comparison | 17 | Implemented |
 | SchemaEvolutionTest.java | Schema evolution: forward/backward compatibility across languages | 119 | Implemented |
-| JavaSchemaEvolutionTest.java | Schema evolution: Java-specific round-trip verification | 11 | Implemented |
+| JavaSchemaEvolutionTest.java | Schema evolution: Java-specific round-trip verification | 15 | Implemented |
 
 ## Missing Coverage
 

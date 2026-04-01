@@ -59,7 +59,7 @@ LIMITATIONS:
 | Metric | Value | Assessment |
 |--------|-------|------------|
 | Test files | 19 classes | Adequate for current scope |
-| Total tests | 1,066 | Good — comprehensive for core + all 17 languages + schema evolution |
+| Total tests | 1,090 | Good — comprehensive for core + all 17 languages + schema evolution |
 | Instruction coverage | 73.9% | Good overall; gaps in non-Java generators |
 | Line coverage | 76.6% | Good overall |
 | Integration tests | 2 shell scripts (9 assertions) | Minimal but effective |
@@ -76,7 +76,7 @@ LIMITATIONS:
 | High | PluginRunner | 93.3% | 95% | 1.7% |
 | High | ProtoFileProcessor | 95.5% | 95% | None |
 | High | All NameResolvers | 42-80% | 85% | Variable |
-| Medium | KeywordUtil | 98.7% | 90% | None (exceeds) |
+| Medium | KeywordUtil | 100% | 90% | None (exceeds) |
 | Medium | WellKnownType | 100% | 90% | None (exceeds) |
 | Low | CodeWriter | 100% | 80% | None (exceeds) |
 
@@ -84,7 +84,7 @@ LIMITATIONS:
 
 | Requirement | Current Coverage | Gap |
 |-------------|-----------------|-----|
-| FR-001 (Positional encoding) | Full — 12 indexing tests + 71 codegen tests | None |
+| FR-001 (Positional encoding) | Full — 12 indexing tests + 80 codegen tests | None |
 | FR-002 (Gap handling) | Full — IndexingAuditTest | None |
 | FR-003 (Scalar types) | Full for Java (61 type mapper + 15 codegen); partial for others | Round-trip execution tests for non-Java |
 | FR-004 (Nested messages) | Pattern assertion only | No compilation/execution test |
@@ -325,13 +325,13 @@ plugin/src/test/java/dev/protocgen/textcodecs/jsonarray/
 ├── JavaTypeMapperTest.java          # Unit: Java type mapping (61 tests)
 ├── PluginRunnerTest.java            # Unit+Integration: orchestrator (22 tests)
 ├── IndexingAuditTest.java           # Unit: position correctness (12 tests)
-├── JavaCodeGenTest.java             # E2E: Java code generation (71 tests)
+├── JavaCodeGenTest.java             # E2E: Java code generation (80 tests)
 ├── MultiLanguageCodeGenTest.java    # E2E: 16 non-Java languages (15 parameterized x 16 = 240 tests)
 ├── SafetySecurityTest.java          # Safety/security/fault injection (180 tests)
 ├── GoldenFileTest.java              # Snapshot: exact output comparison
 ├── PerformanceBenchmarkTest.java    # Plugin throughput benchmarks
 ├── MemoryBenchmarkTest.java         # Memory allocation benchmarks
-├── SchemaEvolutionTest.java         # Schema evolution across all 17 langs, both formats (119 tests)
+├── SchemaEvolutionTest.java         # Schema evolution across all 17 langs, both formats (119 parameterized)
 ├── JavaSchemaEvolutionTest.java     # Java-specific schema evolution patterns (11 tests)
 └── ../pbtkurl/
     ├── PbtkJavaCodeGenTest.java     # E2E: pbtk Java code generation
@@ -398,7 +398,7 @@ bash integration-tests/schema-evolution-test.sh
   1. Checkout → Setup Java 17 → Setup Gradle
   2. `spotlessCheck` (formatting gate)
   3. `:plugin:shadowJar` (build)
-  4. `:plugin:test` (all 1,066 unit tests)
+  4. `:plugin:test` (all 1,090 unit tests)
   5. Install protoc
   6. Generate code for all 17 languages (smoke test)
   7. Upload shadow JAR as artifact
@@ -409,7 +409,7 @@ bash integration-tests/schema-evolution-test.sh
 
 | Gate | Criteria | Enforced By |
 |------|----------|-------------|
-| All tests pass | 100% pass rate (1,066/1,066) | CI: `./gradlew :plugin:test` |
+| All tests pass | 100% pass rate (1,090/1,090) | CI: `./gradlew :plugin:test` |
 | Code formatting | Google Java Style | CI: `./gradlew spotlessCheck` |
 | Coverage minimum | 73.9% instructions (current baseline) | CI: JaCoCo report + manual review |
 | 17-language generation | All 17 `protoc --jsonarray_out=lang=X` succeed | CI: smoke test |

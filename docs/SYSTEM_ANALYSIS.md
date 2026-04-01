@@ -36,7 +36,7 @@ LIMITATIONS:
 protobuf-text-codecs/
 ├── plugin/                           # Main protoc plugin (Java)
 │   └── src/
-│       ├── main/java/.../            # 139 source files, ~47,000 lines
+│       ├── main/java/.../            # 140 source files, ~47,300 lines
 │       │   ├── Main.java             # Entry point (stdin/stdout)
 │       │   ├── PluginRunner.java     # Orchestrator
 │       │   ├── ProtoFileProcessor.java
@@ -72,7 +72,7 @@ protobuf-text-codecs/
 
 Key directories:
 - `plugin/src/main/`: Plugin source code — the core product
-- `plugin/src/test/`: Unit and code generation tests (1,066 tests)
+- `plugin/src/test/`: Unit and code generation tests (1,090 tests)
 - `runtime/`: Thin runtime libraries for languages that need them (Java, C, C++, Rust)
 - `test-protos/`: Proto definitions for testing (user.proto, address.proto, kitchen_sink.proto, edge_cases.proto, proto2_test.proto)
 - `integration-tests/`: Cross-language round-trip and schema evolution tests
@@ -84,7 +84,7 @@ Key directories:
 | `Main.main()` | CLI (protoc plugin) | `Main.java` | Reads CodeGeneratorRequest from stdin, writes CodeGeneratorResponse to stdout |
 | `Main.main()` --version | CLI | `Main.java` | Prints `protoc-gen-jsonarray 0.2.0` to stdout and exits |
 | `protoc-gen-jsonarray` | Shell wrapper | `protoc-gen-jsonarray` | Validates java/JAR existence, delegates to Main |
-| `PluginRunner.run()` | Internal API | `PluginRunner.java` | Core orchestration — can be called programmatically (used by 1,066 unit tests) |
+| `PluginRunner.run()` | Internal API | `PluginRunner.java` | Core orchestration — can be called programmatically (used by 1,090 unit tests) |
 | `LanguageGenerator.generate()` | Internal API | `LanguageGenerator.java` | Per-language code generation interface (17 implementations) |
 
 ## 4. Components
@@ -103,13 +103,13 @@ Key directories:
 | ProtoFile | `model/ProtoFile.java` | File metadata model | 90 | 70.3% |
 | WellKnownType | `model/WellKnownType.java` | Google WKT detection (17 types) | 84 | 100% (3 tests) |
 | CodeWriter | `CodeWriter.java` | Indented source code builder | 129 | 100% (14 tests) |
-| KeywordUtil | `codegen/KeywordUtil.java` | Language keyword escaping (16 keyword sets: 14 in KeywordUtil, 2 delegated from NameResolvers) | 951 | 98.7% |
+| KeywordUtil | `codegen/KeywordUtil.java` | Language keyword escaping (16 keyword sets: 14 in KeywordUtil, 2 delegated from NameResolvers) | 951 | 100% |
 
 ### Language Generators (Criticality A — bugs produce incorrect generated code)
 
 | Generator | Location | Lines | Test Coverage |
 |-----------|----------|-------|---------------|
-| Java (6 classes) | `codegen/java/` | 1,458 | 87.6% (71 dedicated + shared tests) |
+| Java (6 classes) | `codegen/java/` | 1,458 | 87.6% (80 dedicated + shared tests) |
 | Python (6 classes) | `codegen/python/` | 1,104 | 72.2% (parameterized tests) |
 | JavaScript (6 classes) | `codegen/javascript/` | 1,072 | 78.8% (parameterized tests) |
 | TypeScript (6 classes) | `codegen/typescript/` | 932 | 79.2% (parameterized tests) |
@@ -397,7 +397,7 @@ The core encoding format that all generated code must implement:
 
 | Test Class | Tests | Focus |
 |------------|-------|-------|
-| JavaCodeGenTest | 71 | Java code generation for every proto construct |
+| JavaCodeGenTest | 80 | Java code generation for every proto construct |
 | MultiLanguageCodeGenTest | 240 (15×16) | 15 @ParameterizedTest methods × 16 non-Java languages |
 | MessageAnalyzerTest | 37 | Proto analysis: fields, oneofs, maps, WKTs, proto2 |
 | IndexingAuditTest | 12 | Off-by-one, sparse gaps, presence bits, oneof case constants |
@@ -411,13 +411,13 @@ The core encoding format that all generated code must implement:
 | GoldenFileTest | 17 | @ParameterizedTest — exact output comparison against golden files |
 | PerformanceBenchmarkTest | 8 | Plugin throughput benchmarks |
 | MemoryBenchmarkTest | 4 | Memory allocation benchmarks |
-| PbtkJavaCodeGenTest | 27 | pbtk URL format Java code generation |
+| PbtkJavaCodeGenTest | 29 | pbtk URL format Java code generation |
 | PbtkMultiLanguageCodeGenTest | 144 | pbtk URL format across 16 non-Java languages |
-| PbtkSafetySecurityTest | 70 | Safety/security tests for pbtk format |
+| PbtkSafetySecurityTest | 86 | Safety/security tests for pbtk format |
 | SchemaEvolutionTest | 119 | Schema evolution across all 17 languages, both formats (parameterized) |
-| JavaSchemaEvolutionTest | 11 | Java-specific schema evolution patterns (array sizing, bounds, gaps, oneofs) |
+| JavaSchemaEvolutionTest | 15 | Java-specific schema evolution patterns (array sizing, bounds, gaps, oneofs) |
 
-**Total: 1,066 tests (19 test classes). Overall coverage: 73.9% instructions, 76.6% lines.**
+**Total: 1,090 tests (19 test classes). Overall coverage: 73.9% instructions, 76.6% lines.**
 
 Integration tests (not in JUnit):
 - Cross-language round-trip (Java ↔ Python): 5 assertions
@@ -428,7 +428,7 @@ Integration tests (not in JUnit):
 
 ### Strengths
 1. **Clean architecture:** Language-neutral model layer cleanly separates proto analysis from code generation. Adding a new language requires implementing 6 classes with no changes to the core.
-2. **Thorough testing:** 1,066 tests (73.9% instruction coverage, 76.6% line coverage) + integration tests + 71 end-to-end code generation tests verifying actual generated source code + 130 schema evolution tests across all 17 languages.
+2. **Thorough testing:** 1,090 tests (73.9% instruction coverage, 76.6% line coverage) + integration tests + 80 end-to-end code generation tests verifying actual generated source code + 134 schema evolution tests across all 17 languages.
 3. **Immutable model:** All model objects use `List.copyOf()` — no accidental mutation.
 4. **Defense-in-depth:** Field name validation, path traversal, keyword escaping, collision detection — even though protoc validates most inputs upstream.
 5. **Zero runtime dependencies:** The plugin itself only needs `protobuf-java`. No network, no disk, no state.

@@ -220,8 +220,14 @@ public class DartSerializerGenerator {
       w.line("mapObj[%s] = %s != null ? %s.serialize() : null;", keyExpr, valueExpr, valueExpr);
     } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
       w.line("mapObj[%s] = %s ?? 0;", keyExpr, valueExpr);
+    } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+      w.line("mapObj[%s] = base64Encode(%s);", keyExpr, valueExpr);
     } else if (isInt64Type(field.getMapValueType())) {
       w.line("mapObj[%s] = %s.toString();", keyExpr, valueExpr);
+    } else if (isFloatType(field.getMapValueType())) {
+      w.line(
+          "mapObj[%s] = %s.isNaN || %s.isInfinite ? null : %s;",
+          keyExpr, valueExpr, valueExpr, valueExpr);
     } else {
       w.line("mapObj[%s] = %s;", keyExpr, valueExpr);
     }
@@ -232,8 +238,14 @@ public class DartSerializerGenerator {
       w.line("%s.add(%s != null ? %s.serialize() : null);", arrExpr, valueExpr, valueExpr);
     } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
       w.line("%s.add(%s ?? 0);", arrExpr, valueExpr);
+    } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+      w.line("%s.add(base64Encode(%s));", arrExpr, valueExpr);
     } else if (isInt64Type(field.getMapValueType())) {
       w.line("%s.add(%s.toString());", arrExpr, valueExpr);
+    } else if (isFloatType(field.getMapValueType())) {
+      w.line(
+          "%s.add(%s.isNaN || %s.isInfinite ? null : %s);",
+          arrExpr, valueExpr, valueExpr, valueExpr);
     } else {
       w.line("%s.add(%s);", arrExpr, valueExpr);
     }
