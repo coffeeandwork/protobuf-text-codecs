@@ -2332,7 +2332,96 @@ class JavaCodeGenTest {
   }
 
   // ======================================================================
-  // 50. Scalar deserialization: double, float, string, bool, int32, uint32, enum
+  // 50. Oneof deserialization
+  // ======================================================================
+
+  @Test
+  void testOneofDeserializationSetsCase() {
+    FieldDescriptorProto emailField =
+        FieldDescriptorProto.newBuilder()
+            .setName("email")
+            .setNumber(1)
+            .setType(FieldDescriptorProto.Type.TYPE_STRING)
+            .setLabel(FieldDescriptorProto.Label.LABEL_OPTIONAL)
+            .setOneofIndex(0)
+            .build();
+
+    FieldDescriptorProto phoneField =
+        FieldDescriptorProto.newBuilder()
+            .setName("phone")
+            .setNumber(2)
+            .setType(FieldDescriptorProto.Type.TYPE_STRING)
+            .setLabel(FieldDescriptorProto.Label.LABEL_OPTIONAL)
+            .setOneofIndex(0)
+            .build();
+
+    DescriptorProto msg =
+        DescriptorProto.newBuilder()
+            .setName("Contact")
+            .addField(emailField)
+            .addField(phoneField)
+            .addOneofDecl(
+                com.google.protobuf.DescriptorProtos.OneofDescriptorProto.newBuilder()
+                    .setName("info")
+                    .build())
+            .build();
+    String code = generateSingleMessage(msg);
+
+    // Deserializer reads each oneof member from its position
+    assertTrue(code.contains("array.get(0)"), "Deserializer reads email from position 0");
+    assertTrue(code.contains("array.get(1)"), "Deserializer reads phone from position 1");
+
+    // Builder setter updates the oneof case field (uses field number)
+    assertTrue(code.contains("infoCase_ = 1"), "setEmail updates infoCase_ to field number 1");
+    assertTrue(code.contains("infoCase_ = 2"), "setPhone updates infoCase_ to field number 2");
+
+    // getInfoCase method exists
+    assertTrue(code.contains("getInfoCase()"), "getInfoCase() method generated");
+  }
+
+  @Test
+  void testOneofDeserializationNullDoesNotSetCase() {
+    FieldDescriptorProto nameField =
+        FieldDescriptorProto.newBuilder()
+            .setName("name")
+            .setNumber(1)
+            .setType(FieldDescriptorProto.Type.TYPE_STRING)
+            .setLabel(FieldDescriptorProto.Label.LABEL_OPTIONAL)
+            .setOneofIndex(0)
+            .build();
+
+    FieldDescriptorProto id =
+        FieldDescriptorProto.newBuilder()
+            .setName("id")
+            .setNumber(2)
+            .setType(FieldDescriptorProto.Type.TYPE_INT32)
+            .setLabel(FieldDescriptorProto.Label.LABEL_OPTIONAL)
+            .setOneofIndex(0)
+            .build();
+
+    DescriptorProto msg =
+        DescriptorProto.newBuilder()
+            .setName("Ident")
+            .addField(nameField)
+            .addField(id)
+            .addOneofDecl(
+                com.google.protobuf.DescriptorProtos.OneofDescriptorProto.newBuilder()
+                    .setName("value")
+                    .build())
+            .build();
+    String code = generateSingleMessage(msg);
+
+    // The deserializer's null check prevents setting the case for absent positions
+    assertTrue(
+        code.contains("array.get(0) != null"),
+        "Deserializer null-checks before setting oneof member");
+    assertTrue(
+        code.contains("array.get(1) != null"),
+        "Deserializer null-checks position 1 before setting oneof member");
+  }
+
+  // ======================================================================
+  // 51. Scalar deserialization: double, float, string, bool, int32, uint32, enum
   // ======================================================================
 
   @Test
