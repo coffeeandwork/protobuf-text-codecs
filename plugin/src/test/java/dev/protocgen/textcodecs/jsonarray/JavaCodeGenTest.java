@@ -2332,7 +2332,113 @@ class JavaCodeGenTest {
   }
 
   // ======================================================================
-  // 50. Oneof deserialization
+  // 50. Map key type coverage (int64, uint64, bool, fixed32)
+  // ======================================================================
+
+  @Test
+  void testMapKeyTypeInt64() {
+    DescriptorProto msg =
+        buildMapMessage(
+            "int64_key_map",
+            "Int64Map",
+            FieldDescriptorProto.Type.TYPE_INT64,
+            FieldDescriptorProto.Type.TYPE_STRING);
+    String code = generateSingleMessage(msg);
+
+    // Int64-keyed maps use array-of-pairs (non-string key)
+    assertTrue(
+        code.contains("List<Object>") || code.contains("Object[]"),
+        "Int64-keyed map uses array-of-pairs encoding");
+  }
+
+  @Test
+  void testMapKeyTypeBool() {
+    DescriptorProto msg =
+        buildMapMessage(
+            "bool_key_map",
+            "BoolMap",
+            FieldDescriptorProto.Type.TYPE_BOOL,
+            FieldDescriptorProto.Type.TYPE_STRING);
+    String code = generateSingleMessage(msg);
+
+    // Bool keys are non-string, so array-of-pairs encoding
+    assertFalse(code.contains("Map<String, String>"), "Bool-keyed map is not Map<String>");
+  }
+
+  @Test
+  void testMapKeyTypeUint64() {
+    DescriptorProto msg =
+        buildMapMessage(
+            "uint64_key_map",
+            "Uint64Map",
+            FieldDescriptorProto.Type.TYPE_UINT64,
+            FieldDescriptorProto.Type.TYPE_STRING);
+    String code = generateSingleMessage(msg);
+
+    assertTrue(
+        code.contains("parseUnsignedLong") || code.contains("Long"),
+        "Uint64 key type uses unsigned parsing");
+  }
+
+  @Test
+  void testMapKeyTypeFixed32() {
+    DescriptorProto msg =
+        buildMapMessage(
+            "fixed32_key_map",
+            "Fixed32Map",
+            FieldDescriptorProto.Type.TYPE_FIXED32,
+            FieldDescriptorProto.Type.TYPE_STRING);
+    String code = generateSingleMessage(msg);
+
+    assertTrue(
+        code.contains("intValue") || code.contains("Integer"), "Fixed32 key type uses int parsing");
+  }
+
+  private DescriptorProto buildMapMessage(
+      String fieldName,
+      String msgName,
+      FieldDescriptorProto.Type keyType,
+      FieldDescriptorProto.Type valueType) {
+    // Use a simple entry type name
+    DescriptorProto mapEntry =
+        DescriptorProto.newBuilder()
+            .setName("MapEntry")
+            .setOptions(
+                com.google.protobuf.DescriptorProtos.MessageOptions.newBuilder()
+                    .setMapEntry(true)
+                    .build())
+            .addField(
+                FieldDescriptorProto.newBuilder()
+                    .setName("key")
+                    .setNumber(1)
+                    .setType(keyType)
+                    .setLabel(FieldDescriptorProto.Label.LABEL_OPTIONAL)
+                    .build())
+            .addField(
+                FieldDescriptorProto.newBuilder()
+                    .setName("value")
+                    .setNumber(2)
+                    .setType(valueType)
+                    .setLabel(FieldDescriptorProto.Label.LABEL_OPTIONAL)
+                    .build())
+            .build();
+
+    return DescriptorProto.newBuilder()
+        .setName(msgName)
+        .addNestedType(mapEntry)
+        .addField(
+            FieldDescriptorProto.newBuilder()
+                .setName(fieldName)
+                .setNumber(1)
+                .setType(FieldDescriptorProto.Type.TYPE_MESSAGE)
+                .setTypeName(".test." + msgName + "." + mapEntry.getName())
+                .setLabel(FieldDescriptorProto.Label.LABEL_REPEATED)
+                .build())
+        .build();
+  }
+
+  // ======================================================================
+  // 51. Oneof deserialization
   // ======================================================================
 
   @Test
