@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+#
+# Pre-push hook: runs formatting check and unit tests before allowing push.
+# Install: git config core.hooksPath .githooks
+#
+set -euo pipefail
+
+echo "=== Pre-push: checking formatting ==="
+./gradlew spotlessCheck --quiet 2>&1 || {
+    echo ""
+    echo "PUSH BLOCKED: spotlessCheck failed."
+    echo "Run: ./gradlew spotlessApply"
+    exit 1
+}
+
+echo "=== Pre-push: running unit tests ==="
+./gradlew :plugin:test --quiet 2>&1 || {
+    echo ""
+    echo "PUSH BLOCKED: unit tests failed."
+    exit 1
+}
+
+echo "=== Pre-push: all checks passed ==="
