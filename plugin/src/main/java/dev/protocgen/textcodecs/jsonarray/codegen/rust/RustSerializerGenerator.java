@@ -254,6 +254,8 @@ public class RustSerializerGenerator {
       w.line("map_obj.insert(%s, %s.serialize());", keyExpr, valueExpr);
     } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
       w.line("map_obj.insert(%s, json!(*%s as i32));", keyExpr, valueExpr);
+    } else if (isInt64Type(field.getMapValueType())) {
+      w.line("map_obj.insert(%s, json!(%s.to_string()));", keyExpr, valueExpr);
     } else {
       w.line("map_obj.insert(%s, json!(%s));", keyExpr, valueExpr);
     }
@@ -268,6 +270,8 @@ public class RustSerializerGenerator {
       w.line("pair.push(%s.serialize());", valueExpr);
     } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
       w.line("pair.push(json!(*%s as i32));", valueExpr);
+    } else if (isInt64Type(field.getMapValueType())) {
+      w.line("pair.push(json!(%s.to_string()));", valueExpr);
     } else {
       w.line("pair.push(json!(%s));", valueExpr);
     }

@@ -17,6 +17,7 @@ package dev.protocgen.textcodecs.jsonarray.codegen.ruby;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
+import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoMessage;
 import java.util.Set;
@@ -105,6 +106,8 @@ public class RubySerializerGenerator {
       w.line("result << %s", rbField);
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
       w.line("result << Base64.strict_encode64(%s)", rbField);
+    } else if (isInt64Type(field.getProtoType())) {
+      w.line("result << %s.to_s", rbField);
     } else {
       w.line("result << %s", rbField);
     }
@@ -130,6 +133,8 @@ public class RubySerializerGenerator {
   private void emitScalarAppend(CodeWriter w, ProtoField field, String rbField) {
     if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
       w.line("result << Base64.strict_encode64(%s)", rbField);
+    } else if (isInt64Type(field.getProtoType())) {
+      w.line("result << %s.to_s", rbField);
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_FLOAT
         || field.getProtoType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
       w.line("result << (%s.nan? || %s.infinite? ? nil : %s)", rbField, rbField, rbField);
@@ -170,6 +175,8 @@ public class RubySerializerGenerator {
       w.line("result << %s.dup", rbField);
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
       w.line("result << %s.map { |%s| Base64.strict_encode64(%s) }", rbField, itemVar, itemVar);
+    } else if (isInt64Type(field.getProtoType())) {
+      w.line("result << %s.map { |%s| %s.to_s }", rbField, itemVar, itemVar);
     } else {
       w.line("result << %s.dup", rbField);
     }
@@ -183,6 +190,8 @@ public class RubySerializerGenerator {
         w.line("result << %s.transform_values { |v| v.nil? ? nil : v.serialize }", rbField);
       } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
         w.line("result << %s.dup", rbField);
+      } else if (isInt64Type(field.getMapValueType())) {
+        w.line("result << %s.transform_values { |v| v.to_s }", rbField);
       } else {
         w.line("result << %s.dup", rbField);
       }
@@ -192,9 +201,16 @@ public class RubySerializerGenerator {
         w.line("result << %s.map { |k, v| [k, v.nil? ? nil : v.serialize] }", rbField);
       } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
         w.line("result << %s.map { |k, v| [k, v] }", rbField);
+      } else if (isInt64Type(field.getMapValueType())) {
+        w.line("result << %s.map { |k, v| [k, v.to_s] }", rbField);
       } else {
         w.line("result << %s.map { |k, v| [k, v] }", rbField);
       }
     }
+  }
+
+  /** Check if the given proto type is a 64-bit integer type that needs string encoding. */
+  private static boolean isInt64Type(FieldDescriptorProto.Type type) {
+    return ProtoTypeUtil.isInt64Type(type);
   }
 }

@@ -17,6 +17,7 @@ package dev.protocgen.textcodecs.jsonarray.codegen.perl;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
+import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoMessage;
 import java.util.Set;
@@ -108,6 +109,8 @@ public class PerlSerializerGenerator {
       w.line("push @result, %s;", plField);
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
       w.line("push @result, encode_base64(%s, \"\");", plField);
+    } else if (isInt64Type(field.getProtoType())) {
+      w.line("push @result, \"\" . %s;", plField);
     } else {
       w.line("push @result, %s;", plField);
     }
@@ -133,6 +136,8 @@ public class PerlSerializerGenerator {
   private void emitScalarAppend(CodeWriter w, ProtoField field, String plField) {
     if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
       w.line("push @result, encode_base64(%s, \"\");", plField);
+    } else if (isInt64Type(field.getProtoType())) {
+      w.line("push @result, \"\" . %s;", plField);
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BOOL) {
       w.line("push @result, %s ? JSON::true : JSON::false;", plField);
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_FLOAT
@@ -174,6 +179,8 @@ public class PerlSerializerGenerator {
       w.line("push @result, [@{%s}];", plField);
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
       w.line("push @result, [map { encode_base64($_, \"\") } @{%s}];", plField);
+    } else if (isInt64Type(field.getProtoType())) {
+      w.line("push @result, [map { \"\" . $_ } @{%s}];", plField);
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BOOL) {
       w.line("push @result, [map { $_ ? JSON::true : JSON::false } @{%s}];", plField);
     } else {
@@ -189,6 +196,8 @@ public class PerlSerializerGenerator {
         w.line(
             "push @result, {map { $_ => (defined(%s->{$_}) ? %s->{$_}->serialize() : undef) } keys %%{%s}};",
             plField, plField, plField);
+      } else if (isInt64Type(field.getMapValueType())) {
+        w.line("push @result, {map { $_ => (\"\" . %s->{$_}) } keys %%{%s}};", plField, plField);
       } else {
         w.line("push @result, {%%{%s}};", plField);
       }
@@ -198,9 +207,16 @@ public class PerlSerializerGenerator {
         w.line(
             "push @result, [map { [$_, defined(%s->{$_}) ? %s->{$_}->serialize() : undef] } keys %%{%s}];",
             plField, plField, plField);
+      } else if (isInt64Type(field.getMapValueType())) {
+        w.line("push @result, [map { [$_, \"\" . %s->{$_}] } keys %%{%s}];", plField, plField);
       } else {
         w.line("push @result, [map { [$_, %s->{$_}] } keys %%{%s}];", plField, plField);
       }
     }
+  }
+
+  /** Check if the given proto type is a 64-bit integer type that needs string encoding. */
+  private static boolean isInt64Type(FieldDescriptorProto.Type type) {
+    return ProtoTypeUtil.isInt64Type(type);
   }
 }

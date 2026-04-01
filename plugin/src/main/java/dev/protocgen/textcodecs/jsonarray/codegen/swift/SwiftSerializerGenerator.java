@@ -263,6 +263,8 @@ public class SwiftSerializerGenerator {
       w.line("%s[%s] = %s.serialize()", mapVar, keyExpr, valueExpr);
     } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
       w.line("%s[%s] = %s.rawValue", mapVar, keyExpr, valueExpr);
+    } else if (isInt64Type(field.getMapValueType())) {
+      w.line("%s[%s] = String(%s)", mapVar, keyExpr, valueExpr);
     } else {
       w.line("%s[%s] = %s", mapVar, keyExpr, valueExpr);
     }
@@ -274,6 +276,9 @@ public class SwiftSerializerGenerator {
     }
     if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
       return valueExpr + ".rawValue";
+    }
+    if (isInt64Type(field.getMapValueType())) {
+      return "String(" + valueExpr + ")";
     }
     return valueExpr;
   }

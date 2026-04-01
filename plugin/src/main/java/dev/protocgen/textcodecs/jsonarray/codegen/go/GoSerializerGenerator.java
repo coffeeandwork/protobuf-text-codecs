@@ -294,6 +294,8 @@ public class GoSerializerGenerator {
           });
     } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
       w.line("%s[%s] = int32(%s)", mapVar, keyExpr, valueExpr);
+    } else if (isInt64Type(field.getMapValueType())) {
+      w.line("%s[%s] = %s", mapVar, keyExpr, int64ToStringExpr(valueExpr, field.getMapValueType()));
     } else {
       w.line("%s[%s] = %s", mapVar, keyExpr, valueExpr);
     }
@@ -305,6 +307,9 @@ public class GoSerializerGenerator {
     }
     if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
       return "int32(" + valueExpr + ")";
+    }
+    if (isInt64Type(field.getMapValueType())) {
+      return int64ToStringExpr(valueExpr, field.getMapValueType());
     }
     return valueExpr;
   }

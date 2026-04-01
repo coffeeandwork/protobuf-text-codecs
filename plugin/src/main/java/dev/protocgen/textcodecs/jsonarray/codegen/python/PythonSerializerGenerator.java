@@ -201,6 +201,8 @@ public class PythonSerializerGenerator {
             pyField);
       } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
         w.line("result.append(dict(%s))", pyField);
+      } else if (INT64_TYPES.contains(field.getMapValueType())) {
+        w.line("result.append({k: str(v) for k, v in %s.items()})", pyField);
       } else {
         w.line("result.append(dict(%s))", pyField);
       }
@@ -212,6 +214,8 @@ public class PythonSerializerGenerator {
             pyField);
       } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
         w.line("result.append([[k, v] for k, v in %s.items()])", pyField);
+      } else if (INT64_TYPES.contains(field.getMapValueType())) {
+        w.line("result.append([[k, str(v)] for k, v in %s.items()])", pyField);
       } else {
         w.line("result.append([[k, v] for k, v in %s.items()])", pyField);
       }
