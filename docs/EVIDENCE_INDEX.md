@@ -123,7 +123,7 @@ LIMITATIONS:
 | PbtkJavaSchemaEvolutionTest | `plugin/src/test/java/.../pbtkurl/PbtkJavaSchemaEvolutionTest.java` | 4 | FR-001, FR-002, SR-001 (pbtk) |
 | SchemaEvolutionTest | `plugin/src/test/java/.../jsonarray/SchemaEvolutionTest.java` | 119 | FR-001, FR-002, SR-001 |
 | JavaSchemaEvolutionTest | `plugin/src/test/java/.../jsonarray/JavaSchemaEvolutionTest.java` | 15 | FR-001, FR-002, SR-001 |
-| | | **Total: 1,107** | |
+| | | **Total: 1,124** | |
 
 Note: 15 `@ParameterizedTest` methods x 16 languages = 240 expanded invocations for MultiLanguageCodeGenTest.
 

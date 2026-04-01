@@ -108,7 +108,7 @@ LIMITATIONS:
 | Interface (IF) | 3 | ~25 | 0 | ~25 |
 | pbtk URL format | — | ~241 | 0 | ~241 |
 | Schema Evolution | — | ~134 | 0 | ~134 |
-| **Total** | **31** | **~1,188** | **~2** | **1,107** |
+| **Total** | **31** | **~1,188** | **~2** | **1,124** |
 
 ## Test Files
 

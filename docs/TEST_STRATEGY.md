@@ -59,7 +59,7 @@ LIMITATIONS:
 | Metric | Value | Assessment |
 |--------|-------|------------|
 | Test files | 21 classes | Adequate for current scope |
-| Total tests | 1,107 | Good — comprehensive for core + all 17 languages + schema evolution |
+| Total tests | 1,124 | Good — comprehensive for core + all 17 languages + schema evolution |
 | Instruction coverage | 73.9% | Good overall; gaps in non-Java generators |
 | Line coverage | 76.6% | Good overall |
 | Integration tests | 4 shell scripts (cross-language, schema-evolution, proto2-proto3-migration, CI smoke) | Adequate |
@@ -403,7 +403,7 @@ bash integration-tests/schema-evolution-test.sh
   1. Checkout → Setup Java 17 → Setup Gradle
   2. `spotlessCheck` (formatting gate)
   3. `:plugin:shadowJar` (build)
-  4. `:plugin:test` (all 1,107 unit tests)
+  4. `:plugin:test` (all 1,124 unit tests)
   5. Install protoc
   6. Generate code for all 17 languages (smoke test)
   7. Upload shadow JAR as artifact
@@ -414,7 +414,7 @@ bash integration-tests/schema-evolution-test.sh
 
 | Gate | Criteria | Enforced By |
 |------|----------|-------------|
-| All tests pass | 100% pass rate (1,107/1,107) | CI: `./gradlew :plugin:test` |
+| All tests pass | 100% pass rate (1,124/1,124) | CI: `./gradlew :plugin:test` |
 | Code formatting | Google Java Style | CI: `./gradlew spotlessCheck` |
 | Coverage minimum | 73.9% instructions (current baseline) | CI: JaCoCo report + manual review |
 | 17-language generation | All 17 `protoc --jsonarray_out=lang=X` succeed | CI: smoke test |
