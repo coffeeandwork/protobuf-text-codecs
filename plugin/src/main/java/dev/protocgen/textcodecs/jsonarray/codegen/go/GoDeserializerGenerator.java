@@ -481,13 +481,35 @@ public class GoDeserializerGenerator {
       return enumType + "(" + scalarCastExpr(FieldDescriptorProto.Type.TYPE_INT32, valueExpr) + ")";
     }
     String goType = typeMapper.scalarType(field.getMapValueType());
-    String castExpr = scalarCastExpr(field.getMapValueType(), valueExpr);
     if (goType.equals("[]byte")) {
       return "func() []byte { if s, ok := "
           + valueExpr
           + ".(string); ok { "
           + "d, _ := base64.StdEncoding.DecodeString(s); return d }; return nil }()";
     }
+    // int64/uint64 map values: serializer emits strings for precision, so parse from
+    // string first and fall back to float64 for interop (matches scalar field handling)
+    if (isInt64Type(field.getMapValueType())) {
+      boolean isUnsigned =
+          field.getMapValueType() == FieldDescriptorProto.Type.TYPE_UINT64
+              || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FIXED64;
+      if (isUnsigned) {
+        return "func() uint64 { if s, ok := "
+            + valueExpr
+            + ".(string); ok { if p, err := strconv.ParseUint(s, 10, 64); err == nil { return p } }; "
+            + "if v, ok := "
+            + valueExpr
+            + ".(float64); ok { return uint64(v) }; return 0 }()";
+      } else {
+        return "func() int64 { if s, ok := "
+            + valueExpr
+            + ".(string); ok { if p, err := strconv.ParseInt(s, 10, 64); err == nil { return p } }; "
+            + "if v, ok := "
+            + valueExpr
+            + ".(float64); ok { return int64(v) }; return 0 }()";
+      }
+    }
+    String castExpr = scalarCastExpr(field.getMapValueType(), valueExpr);
     return goType + "(" + castExpr + ")";
   }
 }

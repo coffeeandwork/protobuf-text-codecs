@@ -303,6 +303,13 @@ public class CDeserializerGenerator {
       w.line(
           "msg->%s = (%s && cJSON_IsString(%s) && %s->valuestring) ? jsonarray_strdup(%s->valuestring) : NULL;",
           target, nodeExpr, nodeExpr, nodeExpr, nodeExpr);
+    } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+      // Bytes map values: serializer emits base64 strings, decode them back.
+      // Note: map entry struct lacks a value_len field, so length is discarded.
+      w.line("{ size_t __blen = 0;");
+      w.line(
+          "msg->%s = (%s && cJSON_IsString(%s) && %s->valuestring) ? jsonarray_base64_decode(%s->valuestring, &__blen) : NULL; }",
+          target, nodeExpr, nodeExpr, nodeExpr, nodeExpr);
     } else {
       w.line("msg->%s = %s;", target, scalarReadExpr(field.getMapValueType(), nodeExpr));
     }

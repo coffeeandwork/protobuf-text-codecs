@@ -374,6 +374,27 @@ public class SwiftDeserializerGenerator {
           () -> {
             w.line("%s = e", targetExpr);
           });
+    } else if (valType == FieldDescriptorProto.Type.TYPE_BYTES) {
+      // Bytes map values: serializer emits base64 strings
+      w.block(
+          "if let s = " + valueExpr + " as? String, let decoded = Data(base64Encoded: s)",
+          () -> {
+            w.line("%s = decoded", targetExpr);
+          });
+    } else if (isInt64Type(valType)) {
+      // int64/uint64 map values: serializer emits strings for precision,
+      // so parse from String first and fall back to Double for interop
+      String swiftType = typeMapper.scalarType(valType);
+      w.block(
+          "if let s = " + valueExpr + " as? String, let parsed = " + swiftType + "(s)",
+          () -> {
+            w.line("%s = parsed", targetExpr);
+          });
+      w.block(
+          "else if let v = " + valueExpr + " as? Double",
+          () -> {
+            w.line("%s = %s(v)", targetExpr, swiftType);
+          });
     } else {
       String swiftType = typeMapper.scalarType(valType);
       String castType = swiftAssertType(valType);
