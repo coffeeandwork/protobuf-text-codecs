@@ -22,8 +22,8 @@ import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoMessage;
 
 /**
- * Generates Jackson-free serialization methods for Java classes. Uses StringBuilder directly to
- * produce JSON array strings with fields at positions determined by field number.
+ * Generates serialization methods for Java classes. Uses StringBuilder directly to produce JSON
+ * array strings with fields at positions determined by field number.
  */
 public class JavaSerializerGenerator {
 
@@ -102,7 +102,7 @@ public class JavaSerializerGenerator {
     } else if (field.isRepeated()) {
       emitRepeatedSerialize(w, field, javaField);
     } else if (field.isWellKnownType()) {
-      // For now, serialize WKTs as nested messages (WKT runtime can be updated later)
+      // Well-known types are serialized as nested messages (same positional encoding)
       emitMessageSerialize(w, field, javaField);
     } else if (field.getKind() == ProtoField.FieldKind.MESSAGE) {
       emitMessageSerialize(w, field, javaField);

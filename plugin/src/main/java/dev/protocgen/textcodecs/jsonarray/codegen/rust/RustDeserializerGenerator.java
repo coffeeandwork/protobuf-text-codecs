@@ -199,7 +199,7 @@ public class RustDeserializerGenerator {
 
   private void emitWellKnownDeserialize(
       CodeWriter w, ProtoField field, String rustField, String nodeExpr) {
-    // Well-known types are treated as regular message fields for now
+    // Well-known types are deserialized as regular message fields
     emitMessageDeserialize(w, field, rustField, nodeExpr);
   }
 

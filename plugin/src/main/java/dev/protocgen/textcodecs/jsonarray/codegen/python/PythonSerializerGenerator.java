@@ -74,6 +74,7 @@ public class PythonSerializerGenerator {
       w.indent();
       emitValueForField(w, field, pyField);
       w.dedent();
+      // "else" split to avoid Java keyword triggering spotless reformatting
       w.line("el" + "se:");
       w.indent();
       w.line("result.append(None)");

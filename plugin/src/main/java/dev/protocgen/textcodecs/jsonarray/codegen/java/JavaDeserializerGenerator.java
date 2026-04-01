@@ -94,7 +94,7 @@ public class JavaDeserializerGenerator {
           } else if (field.isRepeated()) {
             emitRepeatedDeserialize(w, field, setter, elemExpr, pos);
           } else if (field.isWellKnownType()) {
-            // Treat well-known types as nested messages for now
+            // Well-known types are deserialized as nested messages
             emitMessageDeserialize(w, field, setter, elemExpr);
           } else if (field.getKind() == ProtoField.FieldKind.MESSAGE) {
             emitMessageDeserialize(w, field, setter, elemExpr);

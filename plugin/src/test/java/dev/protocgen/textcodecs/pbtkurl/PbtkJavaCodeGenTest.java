@@ -668,6 +668,67 @@ class PbtkJavaCodeGenTest {
   }
 
   @Test
+  void testProto2RequiredField() {
+    FieldDescriptorProto reqField =
+        FieldDescriptorProto.newBuilder()
+            .setName("name")
+            .setNumber(1)
+            .setType(FieldDescriptorProto.Type.TYPE_STRING)
+            .setLabel(FieldDescriptorProto.Label.LABEL_REQUIRED)
+            .build();
+
+    DescriptorProto msg = DescriptorProto.newBuilder().setName("Msg").addField(reqField).build();
+
+    FileDescriptorProto file =
+        FileDescriptorProto.newBuilder()
+            .setName("test.proto")
+            .setSyntax("proto2")
+            .setPackage("com.example")
+            .addMessageType(msg)
+            .build();
+
+    String code = generatedCode(file);
+
+    // Required field should have presence tracking (BitSet) like in JSON array format
+    assertTrue(code.contains("BitSet"), "Proto2 required field has BitSet presence tracking");
+    assertTrue(code.contains("hasName"), "Proto2 required field has has*() method");
+
+    // Required field should always be serialized with the !1s prefix
+    assertTrue(code.contains("!1s"), "Required string field uses !1s prefix");
+
+    // URL encoding should still be applied
+    assertTrue(code.contains("URLEncoder.encode"), "Required string field still uses URL encoding");
+  }
+
+  @Test
+  void testAnyRejection() {
+    FieldDescriptorProto anyField =
+        FieldDescriptorProto.newBuilder()
+            .setName("payload")
+            .setNumber(1)
+            .setType(FieldDescriptorProto.Type.TYPE_MESSAGE)
+            .setTypeName(".google.protobuf.Any")
+            .setLabel(FieldDescriptorProto.Label.LABEL_OPTIONAL)
+            .build();
+
+    DescriptorProto msg = DescriptorProto.newBuilder().setName("Msg").addField(anyField).build();
+
+    FileDescriptorProto file =
+        FileDescriptorProto.newBuilder()
+            .setName("test.proto")
+            .setSyntax("proto3")
+            .setPackage("com.example")
+            .addMessageType(msg)
+            .build();
+
+    CodeGeneratorResponse response = generate(file);
+    assertTrue(response.hasError(), "google.protobuf.Any should cause an error");
+    assertTrue(
+        response.getError().contains("google.protobuf.Any"),
+        "Error message should mention Any, got: " + response.getError());
+  }
+
+  @Test
   void testMultipleRepeatedFields() {
     FileDescriptorProto file =
         protoFile()

@@ -274,7 +274,7 @@ public class RustSerializerGenerator {
   }
 
   private void emitWellKnownSerialize(CodeWriter w, ProtoField field, String rustField) {
-    // Well-known types are treated as regular message fields for now
+    // Well-known types are serialized as regular message fields
     emitMessageSerialize(w, field, rustField);
   }
 

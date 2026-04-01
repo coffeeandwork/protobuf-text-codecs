@@ -293,24 +293,39 @@ class PbtkSafetySecurityTest {
     assertTrue(code.contains("!1e"), "enum should use type char 'e'");
   }
 
-  @Test
-  void testSR002_bytesBase64InAllLanguages() {
-    // All languages must reference base64 for bytes fields.
+  @ParameterizedTest(name = "SR-002 bytes base64 encoding in {0}")
+  @ValueSource(
+      strings = {
+        "java",
+        "python",
+        "javascript",
+        "typescript",
+        "c",
+        "cpp",
+        "rust",
+        "zig",
+        "go",
+        "csharp",
+        "kotlin",
+        "swift",
+        "dart",
+        "php",
+        "ruby",
+        "objc",
+        "perl"
+      })
+  void testSR002_bytesBase64InAllLanguages(String lang) {
+    // All 17 languages must reference base64 for bytes fields.
     DescriptorProto msg =
         DescriptorProto.newBuilder()
             .setName("Msg")
             .addField(scalarField("data", 1, FieldDescriptorProto.Type.TYPE_BYTES))
             .build();
 
-    for (String lang :
-        new String[] {
-          "java", "python", "javascript", "typescript", "c", "cpp", "rust", "zig", "go"
-        }) {
-      String code = generateAll(msg, lang);
-      assertTrue(
-          code.toLowerCase().contains("base64"),
-          lang + ": bytes field must use base64, but no base64 reference found");
-    }
+    String code = generateAll(msg, lang);
+    assertTrue(
+        code.toLowerCase().contains("base64"),
+        lang + ": bytes field must use base64, but no base64 reference found");
   }
 
   // ======================================================================

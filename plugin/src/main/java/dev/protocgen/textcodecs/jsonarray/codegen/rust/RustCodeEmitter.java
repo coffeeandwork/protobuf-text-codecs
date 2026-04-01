@@ -324,8 +324,8 @@ public class RustCodeEmitter {
                       nameResolver.enumConstantName(protoEnum.getValues().get(0).name());
                   w.line("%s::%s", protoEnum.getName(), firstName);
                 } else {
-                  // Should not happen, but handle gracefully
-                  w.line("unsafe { std::mem::zeroed() }");
+                  // Unreachable with valid proto files; proto enums must have at least one value
+                  w.line("panic!(\"enum has no values\")");
                 }
               });
         });

@@ -2208,6 +2208,130 @@ class JavaCodeGenTest {
   }
 
   // ======================================================================
+  // 53. Proto2 group field treated as nested message
+  // ======================================================================
+
+  @Test
+  void testProto2GroupTreatedAsMessage() {
+    // Proto2 groups use TYPE_GROUP but are structurally identical to nested messages.
+    // The analyzer should normalize TYPE_GROUP to TYPE_MESSAGE.
+    DescriptorProto groupMsg =
+        DescriptorProto.newBuilder()
+            .setName("MyGroup")
+            .addField(scalarField("x", 1, FieldDescriptorProto.Type.TYPE_INT32))
+            .addField(scalarField("y", 2, FieldDescriptorProto.Type.TYPE_STRING))
+            .build();
+
+    FieldDescriptorProto groupField =
+        FieldDescriptorProto.newBuilder()
+            .setName("mygroup")
+            .setNumber(1)
+            .setType(FieldDescriptorProto.Type.TYPE_GROUP)
+            .setTypeName(".test.Msg.MyGroup")
+            .setLabel(FieldDescriptorProto.Label.LABEL_OPTIONAL)
+            .build();
+
+    DescriptorProto msg =
+        DescriptorProto.newBuilder()
+            .setName("Msg")
+            .addField(groupField)
+            .addNestedType(groupMsg)
+            .build();
+
+    String code = generateSingleMessage(msg, "test", "proto2");
+
+    // Group should be generated as a static inner class (same as nested message)
+    assertTrue(
+        code.contains("public static final class MyGroup"),
+        "Group should be generated as static final inner class");
+
+    // Group field should have getter/setter like any message field
+    assertTrue(
+        code.contains("getMygroup()") || code.contains("getMyGroup()"),
+        "Group field should have a getter");
+
+    // Serializer should treat it as a message (appendJsonArray or null check)
+    assertTrue(
+        code.contains("appendJsonArray(sb)"),
+        "Group field should serialize via appendJsonArray like a nested message");
+
+    // Deserializer should use fromJsonArray
+    assertTrue(
+        code.contains("MyGroup.fromJsonArray("),
+        "Group field should deserialize via fromJsonArray like a nested message");
+  }
+
+  // ======================================================================
+  // 54. Message with only oneof fields (no standalone fields)
+  // ======================================================================
+
+  @Test
+  void testMessageWithOnlyOneofFields() {
+    FieldDescriptorProto strVal =
+        FieldDescriptorProto.newBuilder()
+            .setName("str_val")
+            .setNumber(1)
+            .setType(FieldDescriptorProto.Type.TYPE_STRING)
+            .setLabel(FieldDescriptorProto.Label.LABEL_OPTIONAL)
+            .setOneofIndex(0)
+            .build();
+
+    FieldDescriptorProto intVal =
+        FieldDescriptorProto.newBuilder()
+            .setName("int_val")
+            .setNumber(2)
+            .setType(FieldDescriptorProto.Type.TYPE_INT32)
+            .setLabel(FieldDescriptorProto.Label.LABEL_OPTIONAL)
+            .setOneofIndex(0)
+            .build();
+
+    FieldDescriptorProto boolVal =
+        FieldDescriptorProto.newBuilder()
+            .setName("bool_val")
+            .setNumber(3)
+            .setType(FieldDescriptorProto.Type.TYPE_BOOL)
+            .setLabel(FieldDescriptorProto.Label.LABEL_OPTIONAL)
+            .setOneofIndex(0)
+            .build();
+
+    DescriptorProto msg =
+        DescriptorProto.newBuilder()
+            .setName("OneofOnly")
+            .addField(strVal)
+            .addField(intVal)
+            .addField(boolVal)
+            .addOneofDecl(OneofDescriptorProto.newBuilder().setName("value").build())
+            .build();
+    String code = generateSingleMessage(msg);
+
+    // Class should be generated
+    assertTrue(
+        code.contains("public final class OneofOnly"), "Class declaration for oneof-only message");
+
+    // Case tracking field
+    assertTrue(code.contains("valueCase_"), "Oneof case tracking field present");
+
+    // Case constants for all members
+    assertTrue(code.contains("STR_VALCase_"), "STR_VAL case constant");
+    assertTrue(code.contains("INT_VALCase_"), "INT_VAL case constant");
+    assertTrue(code.contains("BOOL_VALCase_"), "BOOL_VAL case constant");
+
+    // All fields emit null when not the active case
+    assertTrue(
+        code.contains("else { sb.append(\"null\"); }"),
+        "Inactive oneof members emit null in serializer");
+
+    // Serializer checks each case before emitting
+    assertTrue(code.contains("valueCase_ == STR_VALCase_"), "Serializer checks STR_VAL case");
+    assertTrue(code.contains("valueCase_ == INT_VALCase_"), "Serializer checks INT_VAL case");
+    assertTrue(code.contains("valueCase_ == BOOL_VALCase_"), "Serializer checks BOOL_VAL case");
+
+    // toByteArray and parseFrom convenience methods still present
+    assertTrue(code.contains("toByteArray"), "toByteArray method present");
+    assertTrue(code.contains("parseFrom"), "parseFrom method present");
+  }
+
+  // ======================================================================
   // Helpers
   // ======================================================================
 
