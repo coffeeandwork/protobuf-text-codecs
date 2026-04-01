@@ -837,6 +837,12 @@ public class PbtkCGenerator implements LanguageGenerator {
           } else if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_BOOL) {
             w.line("pbtk_buf_append(buf, \"!1%s\");", keyTypeChar);
             w.line("pbtk_buf_append(buf, %s ? \"1\" : \"0\");", keyAccessor);
+          } else if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_UINT32
+              || field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_FIXED32
+              || field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_UINT64
+              || field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_FIXED64) {
+            w.line("pbtk_buf_append(buf, \"!1%s\");", keyTypeChar);
+            w.line("pbtk_buf_append_uint(buf, (uint64_t)%s);", keyAccessor);
           } else {
             w.line("pbtk_buf_append(buf, \"!1%s\");", keyTypeChar);
             w.line("pbtk_buf_append_int(buf, (int64_t)%s);", keyAccessor);
@@ -884,6 +890,12 @@ public class PbtkCGenerator implements LanguageGenerator {
                   w.line("pbtk_buf_append(buf, \"!2f\");");
                   w.line("pbtk_buf_append_float(buf, %s);", valAccessor);
                 });
+          } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_UINT32
+              || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FIXED32
+              || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_UINT64
+              || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FIXED64) {
+            w.line("pbtk_buf_append(buf, \"!2i\");");
+            w.line("pbtk_buf_append_uint(buf, (uint64_t)%s);", valAccessor);
           } else {
             String valTypeChar = pbtkTypeChar(field.getMapValueType());
             w.line("pbtk_buf_append(buf, \"!2%s\");", valTypeChar);

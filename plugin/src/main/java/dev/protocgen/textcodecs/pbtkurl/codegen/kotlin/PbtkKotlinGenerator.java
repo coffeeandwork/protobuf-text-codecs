@@ -533,6 +533,14 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
           } else if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_BOOL) {
             w.line(
                 "sb.append(\"!1%s\").append(if (__key as Boolean) \"1\" else \"0\")", keyTypeChar);
+          } else if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_UINT32
+              || field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_FIXED32) {
+            w.line("sb.append(\"!1%s\").append(Integer.toUnsignedLong(__key as Int))", keyTypeChar);
+          } else if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_UINT64
+              || field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_FIXED64) {
+            w.line(
+                "sb.append(\"!1%s\").append(java.lang.Long.toUnsignedString(__key as Long))",
+                keyTypeChar);
           } else {
             w.line("sb.append(\"!1%s\").append(__key)", keyTypeChar);
           }
@@ -562,6 +570,12 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT) {
             w.line(
                 "{ val __fv = (__value as Number).toFloat(); if (!__fv.isNaN() && !__fv.isInfinite()) sb.append(\"!2f\").append(__fv) }");
+          } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_UINT32
+              || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FIXED32) {
+            w.line("sb.append(\"!2i\").append(Integer.toUnsignedLong(__value as Int))");
+          } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_UINT64
+              || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FIXED64) {
+            w.line("sb.append(\"!2i\").append(java.lang.Long.toUnsignedString(__value as Long))");
           } else {
             String valTypeChar = pbtkTypeChar(field.getMapValueType());
             w.line("sb.append(\"!2%s\").append(__value)", valTypeChar);

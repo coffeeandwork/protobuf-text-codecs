@@ -644,6 +644,13 @@ public class PbtkObjCGenerator implements LanguageGenerator {
             w.line(
                 "[buf appendFormat:@\"!1%s%%@\", [(NSNumber *)__key boolValue] ? @\"1\" : @\"0\"];",
                 keyTypeChar);
+          } else if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_UINT32
+              || field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_FIXED32
+              || field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_UINT64
+              || field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_FIXED64) {
+            w.line(
+                "[buf appendFormat:@\"!1%s%%llu\", [(NSNumber *)__key unsignedLongLongValue]];",
+                keyTypeChar);
           } else {
             w.line(
                 "[buf appendFormat:@\"!1%s%%lld\", [(NSNumber *)__key longLongValue]];",
@@ -678,6 +685,11 @@ public class PbtkObjCGenerator implements LanguageGenerator {
                     w.line(
                         "[buf appendFormat:@\"!2%s%%.17g\", [(NSNumber *)__val doubleValue]];",
                         valTypeChar));
+          } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_UINT32
+              || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FIXED32
+              || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_UINT64
+              || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FIXED64) {
+            w.line("[buf appendFormat:@\"!2i%%llu\", [(NSNumber *)__val unsignedLongLongValue]];");
           } else {
             String valTypeChar = pbtkTypeChar(field.getMapValueType());
             w.line(

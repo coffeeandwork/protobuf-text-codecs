@@ -247,6 +247,20 @@ public class PbtkJavaSerializerGenerator {
             w.line(
                 "sb.append(\"!1%s\").append(((Boolean) %s.getKey()) ? \"1\" : \"0\");",
                 keyTypeChar, entryVar);
+          } else if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_UINT32
+              || field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_FIXED32) {
+            w.line(
+                "sb.append(\"!1%s\").append(Integer.toUnsignedLong((Integer) %s.getKey()));",
+                keyTypeChar, entryVar);
+          } else if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_UINT64
+              || field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_FIXED64) {
+            w.line(
+                "sb.append(\"!1%s\").append(Long.toUnsignedString((Long) %s.getKey()));",
+                keyTypeChar, entryVar);
+          } else if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_INT64
+              || field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_SINT64
+              || field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_SFIXED64) {
+            w.line("sb.append(\"!1%s\").append((Long) %s.getKey());", keyTypeChar, entryVar);
           } else {
             w.line("sb.append(\"!1%s\").append(%s.getKey());", keyTypeChar, entryVar);
           }
@@ -279,6 +293,20 @@ public class PbtkJavaSerializerGenerator {
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT) {
             w.line("{ Float __fv = ((Number) %s.getValue()).floatValue();", entryVar);
             w.line("if (!__fv.isNaN() && !__fv.isInfinite()) sb.append(\"!2f\").append(__fv); }");
+          } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_UINT32
+              || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FIXED32) {
+            w.line(
+                "sb.append(\"!2i\").append(Integer.toUnsignedLong((Integer) %s.getValue()));",
+                entryVar);
+          } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_UINT64
+              || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FIXED64) {
+            w.line(
+                "sb.append(\"!2i\").append(Long.toUnsignedString((Long) %s.getValue()));",
+                entryVar);
+          } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_INT64
+              || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_SINT64
+              || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_SFIXED64) {
+            w.line("sb.append(\"!2i\").append((Long) %s.getValue());", entryVar);
           } else {
             String valTypeChar = pbtkTypeChar(field.getMapValueType());
             w.line("sb.append(\"!2%s\").append(%s.getValue());", valTypeChar, entryVar);
