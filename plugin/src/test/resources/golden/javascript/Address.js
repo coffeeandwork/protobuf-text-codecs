@@ -94,11 +94,11 @@ class Address {
   }
 
   /**
-   * Serialize this message to a JSON string.
-   * @returns {string} The JSON string.
+   * Encode this message to a Uint8Array.
+   * @returns {Uint8Array} The encoded bytes.
    */
-  toJsonString() {
-    return JSON.stringify(this.serialize());
+  encode() {
+    return new TextEncoder().encode(JSON.stringify(this.serialize()));
   }
 
   /**
@@ -126,11 +126,12 @@ class Address {
   }
 
   /**
-   * Deserialize from a JSON string.
-   * @param {string} json - The JSON string.
+   * Decode from a Uint8Array or string.
+   * @param {Uint8Array|string} data - The encoded data.
    * @returns {Address} The deserialized message.
    */
-  static fromJsonString(json) {
+  static decode(data) {
+    const json = typeof data === 'string' ? data : new TextDecoder().decode(data);
     return Address.deserialize(JSON.parse(json));
   }
 

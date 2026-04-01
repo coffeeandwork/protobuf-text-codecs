@@ -54,20 +54,12 @@ public class RustSerializerGenerator {
           w.line("Value::Array(arr)");
         });
 
-    // Convenience: serialize to JSON string
+    // Convenience: encode to Vec<u8>
     w.blankLine();
     w.block(
-        "pub fn to_json_string(&self) -> Result<String, serde_json::Error>",
+        "pub fn encode_to_vec(&self) -> Vec<u8>",
         () -> {
-          w.line("serde_json::to_string(&self.serialize())");
-        });
-
-    // Convenience: serialize to bytes
-    w.blankLine();
-    w.block(
-        "pub fn to_json_bytes(&self) -> Result<Vec<u8>, serde_json::Error>",
-        () -> {
-          w.line("Ok(self.to_json_string()?.into_bytes())");
+          w.line("serde_json::to_vec(&self.serialize()).unwrap_or_default()");
         });
   }
 

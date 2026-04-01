@@ -56,18 +56,25 @@ public class GoDeserializerGenerator {
           w.line("return obj, nil");
         });
 
-    // FromJsonString convenience function
+    // Unmarshal method on receiver: takes []byte, returns error
     w.blankLine();
     w.block(
-        "func " + structName + "FromJsonString(s string) (*" + structName + ", error)",
+        "func (m *" + structName + ") Unmarshal(data []byte) error",
         () -> {
           w.line("var arr []any");
           w.block(
-              "if err := json.Unmarshal([]byte(s), &arr); err != nil",
+              "if err := json.Unmarshal(data, &arr); err != nil",
               () -> {
-                w.line("return nil, fmt.Errorf(\"failed to unmarshal JSON: %s\", err)", "%w");
+                w.line("return fmt.Errorf(\"failed to unmarshal JSON: %s\", err)", "%w");
               });
-          w.line("return Deserialize%s(arr)", structName);
+          w.line("parsed, err := Deserialize%s(arr)", structName);
+          w.block(
+              "if err != nil",
+              () -> {
+                w.line("return err");
+              });
+          w.line("*m = *parsed");
+          w.line("return nil");
         });
   }
 

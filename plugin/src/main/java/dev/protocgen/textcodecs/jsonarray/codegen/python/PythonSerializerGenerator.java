@@ -55,20 +55,12 @@ public class PythonSerializerGenerator {
     w.line("return result");
     w.dedent();
 
-    // toJsonString convenience
+    // SerializeToString convenience
     w.blankLine();
-    w.line("def to_json_string(self):");
+    w.line("def SerializeToString(self):");
     w.indent();
-    w.line("\"\"\"Serialize this message to a JSON string.\"\"\"");
-    w.line("return json.dumps(self.serialize())");
-    w.dedent();
-
-    // toJsonBytes convenience
-    w.blankLine();
-    w.line("def to_json_bytes(self):");
-    w.indent();
-    w.line("\"\"\"Serialize this message to JSON-encoded bytes.\"\"\"");
-    w.line("return self.to_json_string().encode(\"utf-8\")");
+    w.line("\"\"\"Serialize this message to a JSON-encoded bytes string.\"\"\"");
+    w.line("return json.dumps(self.serialize()).encode(\"utf-8\")");
     w.dedent();
   }
 

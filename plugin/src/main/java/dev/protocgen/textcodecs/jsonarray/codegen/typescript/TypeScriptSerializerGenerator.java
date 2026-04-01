@@ -66,12 +66,12 @@ public class TypeScriptSerializerGenerator {
           w.line("return this.serialize();");
         });
 
-    // toJsonString() convenience
+    // encode() convenience - returns Uint8Array
     w.blankLine();
     w.block(
-        "toJsonString(): string",
+        "encode(): Uint8Array",
         () -> {
-          w.line("return JSON.stringify(this.serialize());");
+          w.line("return new TextEncoder().encode(JSON.stringify(this.serialize()));");
         });
   }
 

@@ -59,22 +59,14 @@ public class KotlinSerializerGenerator {
           w.line("sb.append(']')");
         });
 
-    // Public convenience: serialize to JSON string
-    w.blankLine();
-    w.block(
-        "fun toJsonString(): String",
-        () -> {
-          w.line("val sb = StringBuilder(%d)", Math.max(64, message.getMaxFieldNumber() * 32));
-          w.line("appendJsonArray(sb)");
-          w.line("return sb.toString()");
-        });
-
     // Public convenience: serialize to ByteArray
     w.blankLine();
     w.block(
-        "fun toJsonBytes(): ByteArray",
+        "fun toByteArray(): ByteArray",
         () -> {
-          w.line("return toJsonString().toByteArray(Charsets.UTF_8)");
+          w.line("val sb = StringBuilder(%d)", Math.max(64, message.getMaxFieldNumber() * 32));
+          w.line("appendJsonArray(sb)");
+          w.line("return sb.toString().toByteArray(Charsets.UTF_8)");
         });
   }
 

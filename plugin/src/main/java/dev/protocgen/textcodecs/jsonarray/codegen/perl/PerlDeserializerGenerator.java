@@ -66,21 +66,12 @@ public class PerlDeserializerGenerator {
     w.dedent();
     w.line("}");
 
-    // Convenience: deserialize from JSON string
+    // Convenience: decode from JSON string
     w.blankLine();
-    w.line("sub from_json_string {");
-    w.indent();
-    w.line("my ($class, $json_str) = @_;");
-    w.line("return $class->deserialize(decode_json($json_str));");
-    w.dedent();
-    w.line("}");
-
-    // Convenience: deserialize from bytes (same as string in Perl)
-    w.blankLine();
-    w.line("sub from_json_bytes {");
+    w.line("sub decode {");
     w.indent();
     w.line("my ($class, $data) = @_;");
-    w.line("return $class->from_json_string($data);");
+    w.line("return $class->deserialize(decode_json($data));");
     w.dedent();
     w.line("}");
   }

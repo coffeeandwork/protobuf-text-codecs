@@ -31,9 +31,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Swift language code generator for pbtk URL encoding. Produces Swift source files with toPbtkUrl()
- * and fromPbtkUrl() methods. Generated code uses only Foundation (String manipulation, percent
- * encoding, Data for base64).
+ * Swift language code generator for pbtk URL encoding. Produces Swift source files with
+ * serializedData() and init(serializedData:) methods. Generated code uses only Foundation (String
+ * manipulation, percent encoding, Data for base64).
  *
  * <p>The pbtk format encodes protobuf messages as URL strings: {@code
  * !<fieldNumber><typeChar><value>} where type chars are: b=bool(0/1), i=integer, f=float, d=double,
@@ -622,20 +622,20 @@ public class PbtkSwiftGenerator implements LanguageGenerator {
     }
   }
 
-  /** Emit the public toPbtkUrl convenience method. */
+  /** Emit the public serializedData convenience method. */
   private void emitToPbtkUrl(CodeWriter w) {
     w.blankLine();
     w.block(
-        "public func toPbtkUrl() -> String",
+        "public func serializedData() throws -> Data",
         () -> {
           w.line("var sb = \"\"");
           w.line("appendPbtkFields(&sb)");
-          w.line("return sb");
+          w.line("return Data(sb.utf8)");
         });
   }
 
   // ---------------------------------------------------------------------------
-  // Deserialization: FromPbtkUrl
+  // Deserialization: init(serializedData:)
   // ---------------------------------------------------------------------------
 
   /** Emit the internal parsePbtkTokens function that processes a token slice. */
@@ -1066,16 +1066,31 @@ public class PbtkSwiftGenerator implements LanguageGenerator {
     }
   }
 
-  /** Emit the public fromPbtkUrl static method. */
+  /** Emit the public init(serializedData:) initializer. */
   private void emitDeserializeFromPbtkUrl(CodeWriter w, String structName) {
     w.blankLine();
     w.block(
-        "public static func fromPbtkUrl(_ input: String) -> " + structName,
+        "public init(serializedData data: Data) throws",
         () -> {
-          w.block("if input.isEmpty", () -> w.line("return %s()", structName));
-          w.line("let tokens = pbtkTokenize(input)");
+          w.line("guard let input = String(data: data, encoding: .utf8) else {");
+          w.indent();
+          w.line(
+              "throw NSError(domain: \"%s\", code: -1, userInfo: "
+                  + "[NSLocalizedDescriptionKey: \"Invalid UTF-8 data\"])",
+              structName);
+          w.dedent();
+          w.line("}");
+          w.block(
+              "if input.isEmpty",
+              () -> {
+                w.line("self = %s()", structName);
+                w.line("return");
+              });
+          w.line("let tokens = %s.pbtkTokenize(input)", structName);
           w.line("var offset = 0");
-          w.line("return parsePbtkTokens(tokens, fieldCount: tokens.count, offset: &offset)");
+          w.line(
+              "self = %s.parsePbtkTokens(tokens, fieldCount: tokens.count, offset: &offset)",
+              structName);
         });
   }
 

@@ -381,8 +381,8 @@ public class CppCodeEmitter {
           w.line("nlohmann::json serialize() const;");
           w.line("static %s deserialize(const nlohmann::json& arr);", className);
           w.blankLine();
-          w.line("std::string to_json_string() const;");
-          w.line("static %s from_json_string(const std::string& json);", className);
+          w.line("bool SerializeToString(std::string* output) const;");
+          w.line("bool ParseFromString(const std::string& json);", className);
 
           w.dedent();
         });

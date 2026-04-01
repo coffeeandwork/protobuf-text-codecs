@@ -212,7 +212,7 @@ public class GoCodeEmitter {
   private Set<String> collectImports(ProtoMessage message) {
     Set<String> imports = new LinkedHashSet<>();
 
-    // Always need encoding/json for ToJsonString and FromJsonString
+    // Always need encoding/json for Marshal and Unmarshal
     imports.add("encoding/json");
     imports.add("fmt");
 

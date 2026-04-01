@@ -29,12 +29,8 @@ module Example
       result
     end
 
-    def to_json_string
-      JSON.generate(serialize)
-    end
-
-    def to_json_bytes
-      to_json_string.encode('UTF-8')
+    def self.encode(instance)
+      JSON.generate(instance.serialize)
     end
 
     def self.deserialize(data)
@@ -55,12 +51,8 @@ module Example
       obj
     end
 
-    def self.from_json_string(json_str)
-      deserialize(JSON.parse(json_str))
-    end
-
-    def self.from_json_bytes(data)
-      from_json_string(data.force_encoding('UTF-8'))
+    def self.decode(data)
+      deserialize(JSON.parse(data))
     end
 
     def inspect

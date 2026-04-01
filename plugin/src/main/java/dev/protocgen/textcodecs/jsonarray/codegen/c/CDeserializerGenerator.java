@@ -59,10 +59,10 @@ public class CDeserializerGenerator {
           w.line("return msg;");
         });
 
-    // TypeName* prefix_from_json_string(const char* json)
+    // TypeName* prefix_unpack(const char* json)
     w.blankLine();
     w.block(
-        typeName + "* " + funcPrefix + "_from_json_string(const char* json)",
+        typeName + "* " + funcPrefix + "_unpack(const char* json)",
         () -> {
           w.line("if (!json) return NULL;");
           w.line("cJSON* parsed = cJSON_Parse(json);");
@@ -76,7 +76,7 @@ public class CDeserializerGenerator {
   /** Generate deserialize function declarations for the header file. */
   public void generateDeclarations(CodeWriter w, String funcPrefix, String typeName) {
     w.line("%s* %s_deserialize(const cJSON* array);", typeName, funcPrefix);
-    w.line("%s* %s_from_json_string(const char* json);", typeName, funcPrefix);
+    w.line("%s* %s_unpack(const char* json);", typeName, funcPrefix);
   }
 
   private void emitFieldDeserialize(CodeWriter w, ProtoField field, String funcPrefix) {

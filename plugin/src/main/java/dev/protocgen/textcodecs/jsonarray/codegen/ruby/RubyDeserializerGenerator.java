@@ -63,19 +63,11 @@ public class RubyDeserializerGenerator {
     w.dedent();
     w.line("end");
 
-    // Convenience: deserialize from JSON string
+    // Convenience: decode from JSON string
     w.blankLine();
-    w.line("def self.from_json_string(json_str)");
+    w.line("def self.decode(data)");
     w.indent();
-    w.line("deserialize(JSON.parse(json_str))");
-    w.dedent();
-    w.line("end");
-
-    // Convenience: deserialize from bytes
-    w.blankLine();
-    w.line("def self.from_json_bytes(data)");
-    w.indent();
-    w.line("from_json_string(data.force_encoding('UTF-8'))");
+    w.line("deserialize(JSON.parse(data))");
     w.dedent();
     w.line("end");
   }

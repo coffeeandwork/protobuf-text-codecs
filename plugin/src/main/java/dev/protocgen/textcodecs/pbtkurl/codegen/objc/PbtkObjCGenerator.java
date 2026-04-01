@@ -161,10 +161,10 @@ public class PbtkObjCGenerator implements LanguageGenerator {
 
     // pbtk URL serialization methods
     w.line("/* pbtk URL serialization */");
-    w.line("- (NSString *)toPbtkUrl;");
+    w.line("- (NSData *)data;");
     w.blankLine();
     w.line("/* pbtk URL deserialization */");
-    w.line("+ (instancetype)fromPbtkUrl:(NSString *)input;");
+    w.line("+ (instancetype)parseFromData:(NSData *)data error:(NSError **)errorPtr;");
 
     w.blankLine();
     w.line("@end");
@@ -236,7 +236,7 @@ public class PbtkObjCGenerator implements LanguageGenerator {
     // Main @implementation
     w.line("@implementation %s", className);
 
-    // toPbtkUrl
+    // data
     emitSerializeMethod(w, message, className);
 
     // Internal: appendPbtkFields
@@ -245,7 +245,7 @@ public class PbtkObjCGenerator implements LanguageGenerator {
     // Internal: countPbtkFields
     emitCountFieldsMethod(w, message, className);
 
-    // fromPbtkUrl:
+    // parseFromData:error:
     emitDeserializeMethod(w, message, className);
 
     // Internal: parsePbtkTokens
@@ -327,11 +327,11 @@ public class PbtkObjCGenerator implements LanguageGenerator {
   private void emitSerializeMethod(CodeWriter w, ProtoMessage message, String className) {
     w.blankLine();
     w.block(
-        "- (NSString *)toPbtkUrl",
+        "- (NSData *)data",
         () -> {
           w.line("NSMutableString *buf = [NSMutableString string];");
           w.line("[self appendPbtkFieldsTo:buf];");
-          w.line("return [buf copy];");
+          w.line("return [buf dataUsingEncoding:NSUTF8StringEncoding];");
         });
   }
 
@@ -659,9 +659,23 @@ public class PbtkObjCGenerator implements LanguageGenerator {
   private void emitDeserializeMethod(CodeWriter w, ProtoMessage message, String className) {
     w.blankLine();
     w.block(
-        "+ (instancetype)fromPbtkUrl:(NSString *)input",
+        "+ (instancetype)parseFromData:(NSData *)data error:(NSError **)errorPtr",
         () -> {
-          w.line("if (!input || input.length == 0) return [[%s alloc] init];", className);
+          w.line("if (!data || data.length == 0) return [[%s alloc] init];", className);
+          w.line(
+              "NSString *input = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];");
+          w.line("if (!input) {");
+          w.indent();
+          w.line("if (errorPtr) {");
+          w.indent();
+          w.line(
+              "*errorPtr = [NSError errorWithDomain:@\"%s\" code:-1 userInfo:@{NSLocalizedDescriptionKey: @\"Invalid UTF-8 data\"}];",
+              className);
+          w.dedent();
+          w.line("}");
+          w.line("return nil;");
+          w.dedent();
+          w.line("}");
           w.line("NSArray<NSString *> *tokens = pbtk_tokenize(input);");
           w.line("NSInteger offset = 0;");
           w.line(
@@ -1073,8 +1087,8 @@ public class PbtkObjCGenerator implements LanguageGenerator {
     }
 
     w.blankLine();
-    w.line("- (NSString *)toPbtkUrl;");
-    w.line("+ (instancetype)fromPbtkUrl:(NSString *)input;");
+    w.line("- (NSData *)data;");
+    w.line("+ (instancetype)parseFromData:(NSData *)data error:(NSError **)errorPtr;");
 
     w.blankLine();
     w.line("@end");

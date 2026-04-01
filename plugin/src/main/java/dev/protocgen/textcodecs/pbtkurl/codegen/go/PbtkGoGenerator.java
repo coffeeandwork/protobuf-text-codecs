@@ -33,9 +33,9 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Go language code generator for pbtk URL encoding. Produces Go source files with ToPbtkUrl() and
- * DeserializeMsgFromPbtkUrl() methods. Generated code uses only Go stdlib (strings, strconv,
- * net/url, encoding/base64, fmt).
+ * Go language code generator for pbtk URL encoding. Produces Go source files with Marshal() and
+ * Unmarshal() methods. Generated code uses only Go stdlib (strings, strconv, net/url,
+ * encoding/base64, fmt).
  *
  * <p>The pbtk format encodes protobuf messages as URL strings: {@code
  * !<fieldNumber><typeChar><value>} where type chars are: b=bool(0/1), i=integer, f=float, d=double,
@@ -165,9 +165,9 @@ public class PbtkGoGenerator implements LanguageGenerator {
       emitStruct(w, nested, nestedName);
       emitCountPbtkFields(w, nested, nestedName);
       emitAppendPbtkFields(w, nested, nestedName);
-      emitToPbtkUrl(w, nestedName);
+      emitMarshal(w, nestedName);
       emitParsePbtkTokens(w, nested, nestedName);
-      emitDeserializeFromPbtkUrl(w, nestedName);
+      emitUnmarshal(w, nestedName);
     }
 
     // Nested enums
@@ -181,11 +181,11 @@ public class PbtkGoGenerator implements LanguageGenerator {
     // Serialization methods
     emitCountPbtkFields(w, message, structName);
     emitAppendPbtkFields(w, message, structName);
-    emitToPbtkUrl(w, structName);
+    emitMarshal(w, structName);
 
     // Deserialization methods
     emitParsePbtkTokens(w, message, structName);
-    emitDeserializeFromPbtkUrl(w, structName);
+    emitUnmarshal(w, structName);
 
     return w.toString();
   }
@@ -295,7 +295,7 @@ public class PbtkGoGenerator implements LanguageGenerator {
   }
 
   // ---------------------------------------------------------------------------
-  // Serialization: ToPbtkUrl
+  // Serialization: Marshal
   // ---------------------------------------------------------------------------
 
   /** Emit countPbtkFields method: counts how many tokens this message will produce. */
@@ -645,20 +645,20 @@ public class PbtkGoGenerator implements LanguageGenerator {
     }
   }
 
-  /** Emit the public ToPbtkUrl convenience method. */
-  private void emitToPbtkUrl(CodeWriter w, String structName) {
+  /** Emit the public Marshal convenience method: returns ([]byte, error). */
+  private void emitMarshal(CodeWriter w, String structName) {
     w.blankLine();
     w.block(
-        "func (m *" + structName + ") ToPbtkUrl() string",
+        "func (m *" + structName + ") Marshal() ([]byte, error)",
         () -> {
           w.line("var sb strings.Builder");
           w.line("m.appendPbtkFields(&sb)");
-          w.line("return sb.String()");
+          w.line("return []byte(sb.String()), nil");
         });
   }
 
   // ---------------------------------------------------------------------------
-  // Deserialization: FromPbtkUrl
+  // Deserialization: Unmarshal
   // ---------------------------------------------------------------------------
 
   /** Emit the internal parsePbtkTokens function that processes a token slice. */
@@ -1041,17 +1041,20 @@ public class PbtkGoGenerator implements LanguageGenerator {
     }
   }
 
-  /** Emit the public Deserialize convenience function. */
-  private void emitDeserializeFromPbtkUrl(CodeWriter w, String structName) {
+  /** Emit the public Unmarshal method on receiver: takes []byte, returns error. */
+  private void emitUnmarshal(CodeWriter w, String structName) {
     w.blankLine();
     w.block(
-        "func Deserialize" + structName + "FromPbtkUrl(input string) *" + structName,
+        "func (m *" + structName + ") Unmarshal(data []byte) error",
         () -> {
-          w.block("if input == \"\"", () -> w.line("return &%s{}", structName));
+          w.line("input := string(data)");
+          w.block("if input == \"\"", () -> w.line("return nil"));
           // Tokenize: split on '!'
           w.line("tokens := pbtkTokenize(input)");
           w.line("offset := 0");
-          w.line("return parse%sPbtkTokens(tokens, len(tokens), &offset)", structName);
+          w.line("parsed := parse%sPbtkTokens(tokens, len(tokens), &offset)", structName);
+          w.line("*m = *parsed");
+          w.line("return nil");
         });
 
     // Only emit the tokenizer once: check if it's the top-level call by including

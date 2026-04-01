@@ -155,7 +155,7 @@ LIMITATIONS:
 | Interface | Test Approach | Priority |
 |-----------|---------------|----------|
 | protoc -> plugin (stdin/stdout) | Shell: `protoc --plugin=... --jsonarray_out=...` for all 17 langs | Critical |
-| Generated Java compilation | `javac` on generated code + Jackson JARs | Critical |
+| Generated Java compilation | `javac` on generated code + runtime JARs (zero-dependency) | Critical |
 | Generated Java round-trip | Execute serialize→deserialize→compare in Java | Critical |
 | Generated Python round-trip | Execute serialize→deserialize→compare in Python | High |
 | Java ↔ Python cross-language | Serialize in Java, deserialize in Python (and vice versa) | High |

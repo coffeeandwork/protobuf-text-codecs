@@ -56,12 +56,13 @@ public class CppDeserializerGenerator {
           w.line("return obj;");
         });
 
-    // from_json_string convenience method
+    // ParseFromString method: takes const std::string&, returns bool
     w.blankLine();
     w.block(
-        "inline " + className + " " + className + "::from_json_string(const std::string& json)",
+        "inline bool " + className + "::ParseFromString(const std::string& json)",
         () -> {
-          w.line("return deserialize(nlohmann::json::parse(json));");
+          w.line("*this = deserialize(nlohmann::json::parse(json));");
+          w.line("return true;");
         });
   }
 

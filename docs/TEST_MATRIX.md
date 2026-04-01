@@ -95,7 +95,7 @@ LIMITATIONS:
 |-------------|-------------|--------------|------|--------|
 | IF-001: Plugin protocol | PluginRunnerTest | all 22 tests | Unit | Implemented |
 | IF-002: Language parameter | PluginRunnerTest | testDefaultLanguage, testAll24LanguageEntries | Unit | Implemented |
-| IF-003: Generated Java API | JavaCodeGenTest | testConvenienceMethods, testObjectMapperCaching | Unit | Implemented |
+| IF-003: Generated Java API | JavaCodeGenTest | testConvenienceMethods | Unit | Implemented |
 
 ## Coverage Summary
 

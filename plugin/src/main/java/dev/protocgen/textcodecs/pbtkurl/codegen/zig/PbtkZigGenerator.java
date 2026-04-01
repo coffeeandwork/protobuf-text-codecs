@@ -34,7 +34,7 @@ import java.util.Set;
 
 /**
  * Zig language code generator for pbtk URL encoding. Produces Zig source files with
- * toPbtkUrl()/fromPbtkUrl() serialization methods using the {@code !<fieldNumber><typeChar><value>}
+ * serialize()/deserialize() serialization methods using the {@code !<fieldNumber><typeChar><value>}
  * format.
  */
 public class PbtkZigGenerator implements LanguageGenerator {
@@ -116,11 +116,11 @@ public class PbtkZigGenerator implements LanguageGenerator {
         () -> {
           emitFields(w, message);
 
-          // toPbtkUrl
-          emitToPbtkUrl(w, message, structName);
+          // serialize
+          emitSerialize(w, message, structName);
 
-          // fromPbtkUrl
-          emitFromPbtkUrl(w, message, structName);
+          // deserialize
+          emitDeserialize(w, message, structName);
 
           // deinit
           emitDeinit(w, message, structName);
@@ -223,7 +223,7 @@ public class PbtkZigGenerator implements LanguageGenerator {
   // pbtk URL serialization
   // ---------------------------------------------------------------------------
 
-  private void emitToPbtkUrl(CodeWriter w, ProtoMessage message, String structName) {
+  private void emitSerialize(CodeWriter w, ProtoMessage message, String structName) {
     // Internal append helper
     w.blankLine();
     w.block(
@@ -249,7 +249,7 @@ public class PbtkZigGenerator implements LanguageGenerator {
     // Public method
     w.blankLine();
     w.block(
-        "pub fn toPbtkUrl(self: *const " + structName + ", allocator: std.mem.Allocator) ![]u8",
+        "pub fn serialize(self: *const " + structName + ", allocator: std.mem.Allocator) ![]u8",
         () -> {
           w.line("var buf = std.ArrayList(u8).init(allocator);");
           w.line("self.appendPbtkFields(&buf);");
@@ -493,7 +493,7 @@ public class PbtkZigGenerator implements LanguageGenerator {
   // pbtk URL deserialization
   // ---------------------------------------------------------------------------
 
-  private void emitFromPbtkUrl(CodeWriter w, ProtoMessage message, String structName) {
+  private void emitDeserialize(CodeWriter w, ProtoMessage message, String structName) {
     // Internal parser
     w.blankLine();
     w.block(
@@ -538,13 +538,13 @@ public class PbtkZigGenerator implements LanguageGenerator {
           w.line("return obj;");
         });
 
-    // Public fromPbtkUrl
+    // Public deserialize
     w.blankLine();
     w.block(
-        "pub fn fromPbtkUrl(input: []const u8, allocator: std.mem.Allocator) !" + structName,
+        "pub fn deserialize(data: []const u8, allocator: std.mem.Allocator) !" + structName,
         () -> {
-          w.line("if (input.len == 0) return %s{};", structName);
-          w.line("const trimmed = if (input[0] == '!') input[1..] else input;");
+          w.line("if (data.len == 0) return %s{};", structName);
+          w.line("const trimmed = if (data[0] == '!') data[1..] else data;");
           // Tokenize by splitting on '!'
           w.line("var token_list = std.ArrayList([]const u8).init(allocator);");
           w.line("defer token_list.deinit();");
@@ -810,8 +810,8 @@ public class PbtkZigGenerator implements LanguageGenerator {
         "pub const " + structName + " = struct",
         () -> {
           emitFields(w, nested);
-          emitToPbtkUrl(w, nested, structName);
-          emitFromPbtkUrl(w, nested, structName);
+          emitSerialize(w, nested, structName);
+          emitDeserialize(w, nested, structName);
           emitDeinit(w, nested, structName);
         });
   }

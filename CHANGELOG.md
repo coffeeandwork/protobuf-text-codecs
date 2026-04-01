@@ -28,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - Jackson dependency eliminated from generated Java code; replaced with zero-dependency built-in `JsonArrayWriter` and `JsonArrayReader`
-- `serialize(ObjectMapper)` and `deserialize(ArrayNode, ObjectMapper)` API methods removed in favor of `toJsonString()`/`fromJsonString()`
+- `serialize(ObjectMapper)` and `deserialize(ArrayNode, ObjectMapper)` API methods removed in favor of `toByteArray()`/`parseFrom()`
 
 ## [0.1.0] - 2026-03-19
 

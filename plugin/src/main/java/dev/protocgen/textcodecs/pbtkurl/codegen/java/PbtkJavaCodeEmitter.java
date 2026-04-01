@@ -27,7 +27,7 @@ import dev.protocgen.textcodecs.jsonarray.model.ProtoMessage;
 /**
  * Generates complete Java source files for proto messages with pbtk URL serialization. Produces
  * protoc-compatible immutable message classes with Builder pattern, field number constants, and
- * toPbtkUrl()/fromPbtkUrl() serialization methods.
+ * toByteArray()/parseFrom() serialization methods.
  */
 public class PbtkJavaCodeEmitter {
 
@@ -42,7 +42,7 @@ public class PbtkJavaCodeEmitter {
   public PbtkJavaCodeEmitter(JavaTypeMapper typeMapper, JavaNameResolver nameResolver) {
     this.typeMapper = typeMapper;
     this.nameResolver = nameResolver;
-    this.serializerGen = new PbtkJavaSerializerGenerator(nameResolver, typeMapper);
+    this.serializerGen = new PbtkJavaSerializerGenerator(typeMapper, nameResolver);
     this.deserializerGen = new PbtkJavaDeserializerGenerator(typeMapper, nameResolver);
   }
 
@@ -164,7 +164,9 @@ public class PbtkJavaCodeEmitter {
   }
 
   private void emitFields(CodeWriter w, ProtoMessage message) {
-    w.blankLine();
+    if (!message.getFields().isEmpty()) {
+      w.blankLine();
+    }
     for (ProtoField field : message.getFields()) {
       String javaType = typeMapper.languageType(field);
       String javaName = nameResolver.fieldName(field.getName());
@@ -233,7 +235,8 @@ public class PbtkJavaCodeEmitter {
       // Primary getter
       w.blankLine();
       emitDocComment(w, field.getComment());
-      if (field.getKind() == ProtoField.FieldKind.MESSAGE
+      if ((field.getKind() == ProtoField.FieldKind.MESSAGE
+              || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE)
           && !field.isRepeated()
           && !field.isMap()) {
         // Message field getters return default instance when null (protoc convention)
@@ -324,7 +327,10 @@ public class PbtkJavaCodeEmitter {
       }
 
       // has* method for fields with presence tracking
-      if (field.hasExplicitPresence() || field.getKind() == ProtoField.FieldKind.MESSAGE) {
+      if (field.hasExplicitPresence()
+          || (field.getKind() == ProtoField.FieldKind.MESSAGE
+              && !field.isRepeated()
+              && !field.isMap())) {
         w.blankLine();
         String hasName = "has" + pascalName;
         w.block(

@@ -57,19 +57,11 @@ public class SwiftDeserializerGenerator {
           w.line("return obj");
         });
 
-    // fromJsonString convenience static method
+    // init(serializedData:) convenience initializer
     w.blankLine();
     w.block(
-        "public static func fromJsonString(_ s: String) throws -> " + structName,
+        "public init(serializedData data: Data) throws",
         () -> {
-          w.line("guard let data = s.data(using: .utf8) else {");
-          w.indent();
-          w.line(
-              "throw NSError(domain: \"%s\", code: -1, userInfo: "
-                  + "[NSLocalizedDescriptionKey: \"Invalid UTF-8 string\"])",
-              structName);
-          w.dedent();
-          w.line("}");
           w.line(
               "guard let arr = try JSONSerialization.jsonObject(with: data, options: []) as? [Any]"
                   + " else {");
@@ -80,7 +72,8 @@ public class SwiftDeserializerGenerator {
               structName);
           w.dedent();
           w.line("}");
-          w.line("return deserialize(arr.map { $0 is NSNull ? nil : $0 })");
+          w.line("let parsed = %s.deserialize(arr.map { $0 is NSNull ? nil : $0 })", structName);
+          w.line("self = parsed");
         });
   }
 

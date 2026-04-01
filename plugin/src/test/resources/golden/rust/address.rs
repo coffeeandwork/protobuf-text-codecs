@@ -54,12 +54,8 @@ impl Address {
         Value::Array(arr)
     }
 
-    pub fn to_json_string(&self) -> Result<String, serde_json::Error> {
-        serde_json::to_string(&self.serialize())
-    }
-
-    pub fn to_json_bytes(&self) -> Result<Vec<u8>, serde_json::Error> {
-        Ok(self.to_json_string()?.into_bytes())
+    pub fn encode_to_vec(&self) -> Vec<u8> {
+        serde_json::to_vec(&self.serialize()).unwrap_or_default()
     }
 
     pub fn deserialize(arr: &Value) -> Result<Self, String> {
@@ -81,14 +77,9 @@ impl Address {
         Ok(obj)
     }
 
-    pub fn from_json_string(json: &str) -> Result<Self, String> {
-        let value: Value = serde_json::from_str(json).map_err(|e| e.to_string())?;
+    pub fn decode(data: &[u8]) -> Result<Self, String> {
+        let value: Value = serde_json::from_slice(data).map_err(|e| e.to_string())?;
         Self::deserialize(&value)
-    }
-
-    pub fn from_json_bytes(bytes: &[u8]) -> Result<Self, String> {
-        let json = std::str::from_utf8(bytes).map_err(|e| e.to_string())?;
-        Self::from_json_string(json)
     }
 }
 

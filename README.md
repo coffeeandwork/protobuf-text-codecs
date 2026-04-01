@@ -72,33 +72,49 @@ message User {
 ### JSON Array Format (Java)
 
 ```java
-User user = new User();
-user.setFirstname("Alice");
-user.setLastname("Smith");
-user.setAge(30);
-user.setAddress(new Address("123 Main Street", "Springfield", "IL", 62704));
+Address address = Address.newBuilder()
+    .setStreet("123 Main Street")
+    .setCity("Springfield")
+    .setState("IL")
+    .setZip(62704)
+    .build();
 
-String json = user.toJsonString();
+User user = User.newBuilder()
+    .setFirstname("Alice")
+    .setLastname("Smith")
+    .setAge(30)
+    .setAddress(address)
+    .build();
+
+byte[] data = user.toByteArray();
 // ["Alice","Smith",30,["123 Main Street","Springfield","IL",62704]]
 
 // Deserialize back
-User parsed = User.fromJsonString(json);
+User parsed = User.parseFrom(data);
 ```
 
 ### pbtk URL Format (Java)
 
 ```java
-User user = new User();
-user.setFirstname("Alice");
-user.setLastname("Smith");
-user.setAge(30);
-user.setAddress(new Address("123 Main Street", "Springfield", "IL", 62704));
+Address address = Address.newBuilder()
+    .setStreet("123 Main Street")
+    .setCity("Springfield")
+    .setState("IL")
+    .setZip(62704)
+    .build();
 
-String url = user.toPbtkUrl();
+User user = User.newBuilder()
+    .setFirstname("Alice")
+    .setLastname("Smith")
+    .setAge(30)
+    .setAddress(address)
+    .build();
+
+byte[] data = user.toByteArray();
 // !1sAlice!2sSmith!3i30!4m4!1s123+Main+Street!2sSpringfield!3sIL!4i62704
 
 // Deserialize back
-User parsed = User.fromPbtkUrl(url);
+User parsed = User.parseFrom(data);
 ```
 
 ---
@@ -392,51 +408,32 @@ In practice, most proto files use contiguous field numbers starting at 1, so no 
 
 Each generated class/struct provides serialization and deserialization methods. Method names follow each language's conventions.
 
-### JSON Array API
+### Serialization API
+
+Both formats use the **same method names per language**, matching each language's standard protobuf serialization API. The format is determined by which protoc plugin you run (`protoc-gen-jsonarray` or `protoc-gen-pbtkurl`), not by the method name. This lets you toggle between binary protobuf and compact text encoding by swapping the import.
 
 | Language | Serialize | Deserialize |
 |---|---|---|
-| Java | `user.toJsonString()` / `user.toJsonBytes()` | `User.fromJsonString(s)` / `User.fromJsonBytes(b)` |
-| Python | `user.to_json_string()` | `User.from_json_string(s)` |
-| Go | `user.ToJsonString()` | `UserFromJsonString(s)` |
-| JS / TS | `user.toJsonString()` | `User.fromJsonString(s)` |
-| C | `user_to_json_string(user)` | `user_from_json_string(s)` |
-| C++ | `user.toJsonString()` | `User::fromJsonString(s)` |
-| Rust | `user.to_json_string()` | `User::from_json_string(s)?` |
-| Zig | `user.toJsonString(alloc)` | `User.fromJsonString(s, alloc)` |
-| C# | `user.ToJsonString()` | `User.FromJsonString(s)` |
-| Kotlin | `user.toJsonString()` | `User.fromJsonString(s)` |
-| Swift | `user.toJsonString()` | `User.fromJsonString(s)` |
-| Dart | `user.toJsonString()` | `User.fromJsonString(s)` |
-| PHP | `$user->toJsonString()` | `User::fromJsonString($s)` |
-| Ruby | `user.to_json_string` | `User.from_json_string(s)` |
-| Objective-C | `[user toJsonString]` | `[User fromJsonString:s]` |
-| Perl | `$user->to_json_string()` | `User->from_json_string($s)` |
+| Java | `user.toByteArray()` | `User.parseFrom(data)` |
+| Python | `user.SerializeToString()` | `User.ParseFromString(data)` |
+| Go | `user.Marshal()` | `user.Unmarshal(data)` |
+| JS / TS | `user.encode()` | `User.decode(data)` |
+| C | `user_pack(user, buf)` | `user_unpack(data, len)` |
+| C++ | `user.SerializeToString(&s)` | `user.ParseFromString(s)` |
+| Rust | `user.encode_to_vec()` | `User::decode(data)?` |
+| Zig | `user.serialize(alloc)` | `User.deserialize(data, alloc)` |
+| C# | `user.ToByteArray()` | `User.ParseFrom(data)` |
+| Kotlin | `user.toByteArray()` | `User.parseFrom(data)` |
+| Swift | `try user.serializedData()` | `try User(serializedData: data)` |
+| Dart | `user.writeToBuffer()` | `User.fromBuffer(data)` |
+| PHP | `$user->serializeToString()` | `User::mergeFromString($data)` |
+| Ruby | `User.encode(user)` | `User.decode(data)` |
+| Objective-C | `[user data]` | `[User parseFromData:data error:&err]` |
+| Perl | `$user->encode()` | `User->decode($data)` |
 
-All languages also expose lower-level `serialize()`/`deserialize()` methods that work with the language's native JSON type (e.g., `serde_json::Value` in Rust, `cJSON*` in C). C requires explicit memory management via `user_free()` and `free()`.
+Java and C# also provide stream-based methods: `writeTo(OutputStream)` / `parseFrom(InputStream)` and `WriteTo(Stream)` / `ParseFrom(Stream)`.
 
-### pbtk URL API
-
-| Language | Serialize | Deserialize |
-|---|---|---|
-| Java | `user.toPbtkUrl()` | `User.fromPbtkUrl(s)` |
-| Python | `user.to_pbtk_url()` | `User.from_pbtk_url(s)` |
-| Go | `user.ToPbtkUrl()` | `UserFromPbtkUrl(s)` |
-| JS / TS | `user.toPbtkUrl()` | `User.fromPbtkUrl(s)` |
-| C | `user_to_pbtk_url(user)` | `user_from_pbtk_url(s)` |
-| C++ | `user.to_pbtk_url()` | `User::from_pbtk_url(s)` |
-| Rust | `user.to_pbtk_url()` | `User::from_pbtk_url(s)?` |
-| Zig | `user.toPbtkUrl(alloc)` | `User.fromPbtkUrl(s, alloc)` |
-| C# | `user.ToPbtkUrl()` | `User.FromPbtkUrl(s)` |
-| Kotlin | `user.toPbtkUrl()` | `User.fromPbtkUrl(s)` |
-| Swift | `user.toPbtkUrl()` | `User.fromPbtkUrl(s)` |
-| Dart | `user.toPbtkUrl()` | `User.fromPbtkUrl(s)` |
-| PHP | `$user->toPbtkUrl()` | `User::fromPbtkUrl($s)` |
-| Ruby | `user.to_pbtk_url` | `User.from_pbtk_url(s)` |
-| Objective-C | `[user toPbtkUrl]` | `[User fromPbtkUrl:s]` |
-| Perl | `$user->to_pbtk_url()` | `User->from_pbtk_url($s)` |
-
-No JSON library dependency — pure string manipulation. Generated classes have the same field accessors as the JSON array versions.
+All languages also expose lower-level internal methods that work with the language's native intermediate representation (e.g., `serde_json::Value` in Rust, `cJSON*` in C). C requires explicit memory management via `user_free()` and `free()`.
 
 ---
 
@@ -444,7 +441,7 @@ No JSON library dependency — pure string manipulation. Generated classes have 
 
 - **Both proto2 and proto3 are supported.** Proto2 features including required fields, optional fields with schema-specified defaults, and groups are handled. Extensions are incompatible with positional encoding and emit a warning (only base message fields are included).
 - **No `google.protobuf.Any` support.** Positional encoding requires knowing the message schema at compile time. `Any` embeds an arbitrary message whose type is only known at runtime, making positional encoding impossible. The plugin rejects files that use `Any` with a clear error.
-- **No streaming serialization.** Serialization builds a complete in-memory representation (array/list/slice) before encoding to JSON. Streaming directly to an output stream is not currently supported.
+- **In-memory serialization.** Serialization builds a complete in-memory representation before encoding. Java and C# provide `writeTo(OutputStream)` / `WriteTo(Stream)` convenience methods, but these still build the full output first.
 - **Single language per invocation.** Each `protoc` run produces output for one target language. To generate multiple languages, invoke `protoc` multiple times with different `lang=` values.
 
 ---

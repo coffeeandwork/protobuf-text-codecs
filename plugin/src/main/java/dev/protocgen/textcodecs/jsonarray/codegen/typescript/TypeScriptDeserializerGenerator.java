@@ -76,11 +76,12 @@ public class TypeScriptDeserializerGenerator {
           w.line("return obj;");
         });
 
-    // Convenience: fromJsonString with type annotation
+    // Convenience: decode - accepts Uint8Array
     w.blankLine();
     w.block(
-        "static fromJsonString(json: string): " + className,
+        "static decode(data: Uint8Array): " + className,
         () -> {
+          w.line("const json = new TextDecoder().decode(data);");
           w.line("return %s.deserialize(JSON.parse(json) as any[]);", className);
         });
   }

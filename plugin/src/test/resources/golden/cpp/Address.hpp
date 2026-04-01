@@ -41,8 +41,8 @@ class Address {
     nlohmann::json serialize() const;
     static Address deserialize(const nlohmann::json& arr);
 
-    std::string to_json_string() const;
-    static Address from_json_string(const std::string& json);
+    bool SerializeToString(std::string* output) const;
+    bool ParseFromString(const std::string& json);
 };
 
 inline nlohmann::json Address::serialize() const {
@@ -54,8 +54,10 @@ inline nlohmann::json Address::serialize() const {
   return arr;
 }
 
-inline std::string Address::to_json_string() const {
-  return serialize().dump();
+inline bool Address::SerializeToString(std::string* output) const {
+  if (!output) return false;
+  *output = serialize().dump();
+  return true;
 }
 
 inline Address Address::deserialize(const nlohmann::json& arr) {
@@ -76,8 +78,9 @@ inline Address Address::deserialize(const nlohmann::json& arr) {
   return obj;
 }
 
-inline Address Address::from_json_string(const std::string& json) {
-  return deserialize(nlohmann::json::parse(json));
+inline bool Address::ParseFromString(const std::string& json) {
+  *this = deserialize(nlohmann::json::parse(json));
+  return true;
 }
 
 } // namespace example

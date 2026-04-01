@@ -59,23 +59,25 @@ public class JavaDeserializerGenerator {
           w.line("return builder.build();");
         });
 
-    // Public: deserialize from JSON string
+    // Public: deserialize from byte[]
     w.blankLine();
     w.block(
-        "public static " + className + " fromJsonString(String json)",
+        "public static " + className + " parseFrom(byte[] data)",
         () -> {
+          w.line("String json = new String(data, java.nio.charset.StandardCharsets.UTF_8);");
           w.line(
               "java.util.List<Object> array = dev.protocgen.textcodecs.jsonarray.runtime.JsonArrayReader.parseArray(json);");
           w.line("return fromJsonArray(array);");
         });
 
-    // Public: deserialize from byte[]
+    // Public: deserialize from InputStream
     w.blankLine();
     w.block(
-        "public static " + className + " fromJsonBytes(byte[] bytes)",
+        "public static "
+            + className
+            + " parseFrom(java.io.InputStream input) throws java.io.IOException",
         () -> {
-          w.line(
-              "return fromJsonString(new String(bytes, java.nio.charset.StandardCharsets.UTF_8));");
+          w.line("return parseFrom(input.readAllBytes());");
         });
   }
 

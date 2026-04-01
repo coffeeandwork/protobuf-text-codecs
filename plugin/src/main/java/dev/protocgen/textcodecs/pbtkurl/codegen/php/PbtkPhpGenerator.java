@@ -34,7 +34,7 @@ import java.util.Set;
 
 /**
  * PHP language code generator for pbtk URL encoding. Produces PHP source files with
- * toPbtkUrl()/fromPbtkUrl() serialization methods.
+ * serializeToString()/mergeFromString() serialization methods.
  *
  * <p>The pbtk URL format encodes protobuf messages as URL strings using the syntax: {@code
  * !<fieldNumber><typeChar><value>} where type chars are: b=bool(0/1), i=integer, f=float, d=double,
@@ -387,7 +387,7 @@ public class PbtkPhpGenerator implements LanguageGenerator {
   }
 
   // ---------------------------------------------------------------------------
-  // Serializer: toPbtkUrl()
+  // Serializer: serializeToString()
   // ---------------------------------------------------------------------------
 
   private void emitSerializer(CodeWriter w, ProtoMessage message) {
@@ -422,12 +422,12 @@ public class PbtkPhpGenerator implements LanguageGenerator {
     w.dedent();
     w.line("}");
 
-    // toPbtkUrl(): string
+    // serializeToString(): string
     w.blankLine();
     w.line("/**");
-    w.line(" * Serialize this message to a pbtk URL-encoded string.");
+    w.line(" * Serialize this message to a string.");
     w.line(" */");
-    w.line("public function toPbtkUrl(): string");
+    w.line("public function serializeToString(): string");
     w.line("{");
     w.indent();
     w.line("$parts = [];");
@@ -655,7 +655,7 @@ public class PbtkPhpGenerator implements LanguageGenerator {
   }
 
   // ---------------------------------------------------------------------------
-  // Deserializer: fromPbtkUrl()
+  // Deserializer: mergeFromString()
   // ---------------------------------------------------------------------------
 
   private void emitDeserializer(
@@ -663,12 +663,12 @@ public class PbtkPhpGenerator implements LanguageGenerator {
     // Internal: parsePbtkTokens(array $tokens, int $fieldCount, array &$offset): self
     emitParseFromTokens(w, message, className, useStatements);
 
-    // Public: fromPbtkUrl(string $inputStr): self
+    // Public: mergeFromString(string $data): self
     w.blankLine();
     w.line("/**");
-    w.line(" * Deserialize a pbtk URL-encoded string into a %s instance.", className);
+    w.line(" * Deserialize from a string into a %s instance.", className);
     w.line(" */");
-    w.line("public static function fromPbtkUrl(string $inputStr): self");
+    w.line("public static function mergeFromString(string $inputStr): self");
     w.line("{");
     w.indent();
     w.line("if ($inputStr === '') {");

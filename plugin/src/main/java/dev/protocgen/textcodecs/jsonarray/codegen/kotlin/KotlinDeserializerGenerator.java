@@ -59,22 +59,15 @@ public class KotlinDeserializerGenerator {
           w.line("return builder.build()");
         });
 
-    // Public: deserialize from JSON string
-    w.blankLine();
-    w.block(
-        "fun fromJsonString(json: String): " + className,
-        () -> {
-          w.line(
-              "val array = dev.protocgen.textcodecs.jsonarray.runtime.JsonArrayReader.parseArray(json)");
-          w.line("return fromJsonArray(array)");
-        });
-
     // Public: deserialize from ByteArray
     w.blankLine();
     w.block(
-        "fun fromJsonBytes(bytes: ByteArray): " + className,
+        "fun parseFrom(bytes: ByteArray): " + className,
         () -> {
-          w.line("return fromJsonString(String(bytes, Charsets.UTF_8))");
+          w.line("val json = String(bytes, Charsets.UTF_8)");
+          w.line(
+              "val array = dev.protocgen.textcodecs.jsonarray.runtime.JsonArrayReader.parseArray(json)");
+          w.line("return fromJsonArray(array)");
         });
   }
 

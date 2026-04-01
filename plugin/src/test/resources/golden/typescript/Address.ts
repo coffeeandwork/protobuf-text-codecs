@@ -59,8 +59,8 @@ class Address {
     return this.serialize();
   }
 
-  toJsonString(): string {
-    return JSON.stringify(this.serialize());
+  encode(): Uint8Array {
+    return new TextEncoder().encode(JSON.stringify(this.serialize()));
   }
 
   static deserialize(data: any[] | string): Address {
@@ -82,7 +82,8 @@ class Address {
     return obj;
   }
 
-  static fromJsonString(json: string): Address {
+  static decode(data: Uint8Array): Address {
+    const json = new TextDecoder().decode(data);
     return Address.deserialize(JSON.parse(json) as any[]);
   }
 

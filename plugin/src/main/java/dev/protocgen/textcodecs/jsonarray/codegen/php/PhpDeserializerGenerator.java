@@ -66,28 +66,16 @@ public class PhpDeserializerGenerator {
     w.dedent();
     w.line("}");
 
-    // fromJsonString convenience
+    // mergeFromString convenience
     w.blankLine();
     w.line("/**");
-    w.line(" * Deserialize from a JSON string.");
+    w.line(" * Deserialize from a string.");
     w.line(" */");
-    w.line("public static function fromJsonString(string $jsonStr): self");
+    w.line("public static function mergeFromString(string $data): self");
     w.line("{");
     w.indent();
-    w.line("$data = json_decode($jsonStr, true, 512, JSON_THROW_ON_ERROR);");
-    w.line("return self::deserialize($data);");
-    w.dedent();
-    w.line("}");
-
-    // fromJsonBytes convenience
-    w.blankLine();
-    w.line("/**");
-    w.line(" * Deserialize from JSON-encoded bytes.");
-    w.line(" */");
-    w.line("public static function fromJsonBytes(string $data): self");
-    w.line("{");
-    w.indent();
-    w.line("return self::fromJsonString($data);");
+    w.line("$decoded = json_decode($data, true, 512, JSON_THROW_ON_ERROR);");
+    w.line("return self::deserialize($decoded);");
     w.dedent();
     w.line("}");
   }

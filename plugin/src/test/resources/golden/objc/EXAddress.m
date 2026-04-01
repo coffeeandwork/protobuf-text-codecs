@@ -14,11 +14,9 @@
     return [array copy];
 }
 
-- (NSString *)toJsonString {
+- (NSData *)data {
     NSArray *array = [self toJsonArray];
-    NSData *data = [NSJSONSerialization dataWithJSONObject:array options:0 error:nil];
-    if (!data) return nil;
-    return [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    return [NSJSONSerialization dataWithJSONObject:array options:0 error:nil];
 }
 
 + (instancetype)fromJsonArray:(NSArray *)array {
@@ -58,11 +56,11 @@
     return msg;
 }
 
-+ (instancetype)fromJsonString:(NSString *)jsonString {
-    if (!jsonString) return nil;
-    NSData *data = [jsonString dataUsingEncoding:NSUTF8StringEncoding];
++ (instancetype)parseFromData:(NSData *)data error:(NSError **)errorPtr {
     if (!data) return nil;
-    NSArray *array = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+    NSError *parseError = nil;
+    NSArray *array = [NSJSONSerialization JSONObjectWithData:data options:0 error:&parseError];
+    if (parseError && errorPtr) { *errorPtr = parseError; return nil; }
     if (![array isKindOfClass:[NSArray class]]) return nil;
     return [EXAddress fromJsonArray:array];
 }

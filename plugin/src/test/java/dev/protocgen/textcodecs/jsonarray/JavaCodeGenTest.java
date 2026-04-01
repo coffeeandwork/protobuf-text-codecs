@@ -1104,7 +1104,7 @@ class JavaCodeGenTest {
     // Uses StringBuilder-based serialization instead
     assertTrue(
         code.contains("appendJsonArray(StringBuilder sb)"), "appendJsonArray method present");
-    assertTrue(code.contains("JsonArrayReader.parseArray("), "fromJsonString uses JsonArrayReader");
+    assertTrue(code.contains("JsonArrayReader.parseArray("), "parseFrom uses JsonArrayReader");
   }
 
   // ======================================================================
@@ -1183,7 +1183,7 @@ class JavaCodeGenTest {
   }
 
   // ======================================================================
-  // 21. toJsonString / fromJsonString / toJsonBytes / fromJsonBytes
+  // 21. toByteArray / writeTo / parseFrom convenience methods
   // ======================================================================
 
   @Test
@@ -1195,12 +1195,13 @@ class JavaCodeGenTest {
             .build();
     String code = generateSingleMessage(msg);
 
-    assertTrue(code.contains("public String toJsonString()"), "toJsonString method");
-    assertTrue(code.contains("public byte[] toJsonBytes()"), "toJsonBytes method");
+    assertTrue(code.contains("public byte[] toByteArray()"), "toByteArray method");
+    assertTrue(code.contains("public void writeTo(java.io.OutputStream output)"), "writeTo method");
     assertTrue(
-        code.contains("public static Msg fromJsonString(String json)"), "fromJsonString method");
+        code.contains("public static Msg parseFrom(byte[] data)"), "parseFrom(byte[]) method");
     assertTrue(
-        code.contains("public static Msg fromJsonBytes(byte[] bytes)"), "fromJsonBytes method");
+        code.contains("public static Msg parseFrom(java.io.InputStream input)"),
+        "parseFrom(InputStream) method");
   }
 
   // ======================================================================

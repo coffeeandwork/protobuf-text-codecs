@@ -59,10 +59,10 @@ public class CSerializerGenerator {
           w.line("return array;");
         });
 
-    // char* prefix_to_json_string(const TypeName* msg)
+    // char* prefix_pack(const TypeName* msg)
     w.blankLine();
     w.block(
-        "char* " + funcPrefix + "_to_json_string(const " + typeName + "* msg)",
+        "char* " + funcPrefix + "_pack(const " + typeName + "* msg)",
         () -> {
           w.line("cJSON* json = %s_serialize(msg);", funcPrefix);
           w.line("char* str = cJSON_PrintUnformatted(json);");
@@ -74,7 +74,7 @@ public class CSerializerGenerator {
   /** Generate serialize function declarations for the header file. */
   public void generateDeclarations(CodeWriter w, String funcPrefix, String typeName) {
     w.line("cJSON* %s_serialize(const %s* msg);", funcPrefix, typeName);
-    w.line("char* %s_to_json_string(const %s* msg);", funcPrefix, typeName);
+    w.line("char* %s_pack(const %s* msg);", funcPrefix, typeName);
   }
 
   private void emitFieldSerialize(CodeWriter w, ProtoField field, String funcPrefix) {

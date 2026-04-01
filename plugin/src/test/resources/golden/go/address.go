@@ -21,13 +21,13 @@ func (m *Address) Serialize() []any {
 	return arr
 }
 
-func (m *Address) ToJsonString() (string, error) {
+func (m *Address) Marshal() ([]byte, error) {
 	arr := m.Serialize()
 	data, err := json.Marshal(arr)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return string(data), nil
+	return data, nil
 }
 
 func DeserializeAddress(arr []any) (*Address, error) {
@@ -56,10 +56,15 @@ func DeserializeAddress(arr []any) (*Address, error) {
 	return obj, nil
 }
 
-func AddressFromJsonString(s string) (*Address, error) {
+func (m *Address) Unmarshal(data []byte) error {
 	var arr []any
-	if err := json.Unmarshal([]byte(s), &arr); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal JSON: %w", err)
+	if err := json.Unmarshal(data, &arr); err != nil {
+		return fmt.Errorf("failed to unmarshal JSON: %w", err)
 	}
-	return DeserializeAddress(arr)
+	parsed, err := DeserializeAddress(arr)
+	if err != nil {
+		return err
+	}
+	*m = *parsed
+	return nil
 }

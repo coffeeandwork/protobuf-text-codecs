@@ -24,8 +24,8 @@ import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoMessage;
 
 /**
- * Generates the fromPbtkUrl() method body for Java classes. Parses pbtk URL-encoded strings using
- * the {@code !<fieldNumber><typeChar><value>} format.
+ * Generates the parseFrom() method body for Java pbtk URL classes. Parses pbtk URL-encoded strings
+ * using the {@code !<fieldNumber><typeChar><value>} format.
  *
  * <p>Uses Builder pattern: constructs a Builder, calls setters on it, then calls build() to produce
  * an immutable message instance.
@@ -44,16 +44,26 @@ public class PbtkJavaDeserializerGenerator {
     // Internal parser that takes a token list and offset
     emitParseFromTokens(w, message, className);
 
-    // Public convenience: parse from string
+    // Public: deserialize from byte[]
     w.blankLine();
     w.block(
-        "public static " + className + " fromPbtkUrl(String input)",
+        "public static " + className + " parseFrom(byte[] data)",
         () -> {
-          w.line(
-              "if (input == null || input.isEmpty()) return %s.getDefaultInstance();", className);
+          w.line("String input = new String(data, java.nio.charset.StandardCharsets.UTF_8);");
+          w.line("if (input.isEmpty()) return %s.getDefaultInstance();", className);
           w.line("java.util.List<String> tokens = tokenizePbtk(input);");
           w.line("int[] offset = {0};");
           w.line("return parsePbtkTokens(tokens, tokens.size(), offset);");
+        });
+
+    // Public: deserialize from InputStream
+    w.blankLine();
+    w.block(
+        "public static "
+            + className
+            + " parseFrom(java.io.InputStream input) throws java.io.IOException",
+        () -> {
+          w.line("return parseFrom(input.readAllBytes());");
         });
 
     // Tokenizer: split on '!' and return list of tokens
@@ -129,7 +139,8 @@ public class PbtkJavaDeserializerGenerator {
             emitMapDeserialize(w, field);
           } else if (field.isRepeated()) {
             emitRepeatedDeserialize(w, field);
-          } else if (field.getKind() == ProtoField.FieldKind.MESSAGE) {
+          } else if (field.getKind() == ProtoField.FieldKind.MESSAGE
+              || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
             emitMessageDeserialize(w, field, setterCall);
           } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
             emitEnumDeserialize(w, field, setterCall);

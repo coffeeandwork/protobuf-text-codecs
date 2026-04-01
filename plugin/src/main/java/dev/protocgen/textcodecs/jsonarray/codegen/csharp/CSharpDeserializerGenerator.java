@@ -59,21 +59,24 @@ public class CSharpDeserializerGenerator {
           w.line("return builder.Build();");
         });
 
-    // Public: deserialize from JSON string
+    // Public: deserialize from byte[]
     w.blankLine();
     w.block(
-        "public static " + className + " FromJsonString(string json)",
+        "public static " + className + " ParseFrom(byte[] bytes)",
         () -> {
+          w.line("var json = System.Text.Encoding.UTF8.GetString(bytes);");
           w.line("using var doc = JsonDocument.Parse(json);");
           w.line("return FromJsonArray(doc.RootElement);");
         });
 
-    // Public: deserialize from byte[]
+    // Public: deserialize from Stream
     w.blankLine();
     w.block(
-        "public static " + className + " FromJsonBytes(byte[] bytes)",
+        "public static " + className + " ParseFrom(System.IO.Stream input)",
         () -> {
-          w.line("return FromJsonString(System.Text.Encoding.UTF8.GetString(bytes));");
+          w.line("using var ms = new System.IO.MemoryStream();");
+          w.line("input.CopyTo(ms);");
+          w.line("return ParseFrom(ms.ToArray());");
         });
   }
 

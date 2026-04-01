@@ -73,16 +73,16 @@ public class JavaScriptSerializerGenerator {
           w.line("return this.serialize();");
         });
 
-    // toJsonString() convenience
+    // encode() convenience - returns Uint8Array
     w.blankLine();
     w.line("/**");
-    w.line(" * Serialize this message to a JSON string.");
-    w.line(" * @returns {string} The JSON string.");
+    w.line(" * Encode this message to a Uint8Array.");
+    w.line(" * @returns {Uint8Array} The encoded bytes.");
     w.line(" */");
     w.block(
-        "toJsonString()",
+        "encode()",
         () -> {
-          w.line("return JSON.stringify(this.serialize());");
+          w.line("return new TextEncoder().encode(JSON.stringify(this.serialize()));");
         });
   }
 

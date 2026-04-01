@@ -78,19 +78,11 @@ class Address
     }
 
     /**
-     * Serialize this message to a JSON string.
+     * Serialize this message to a string.
      */
-    public function toJsonString(): string
+    public function serializeToString(): string
     {
         return json_encode($this->serialize(), JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
-    }
-
-    /**
-     * Serialize this message to JSON-encoded bytes.
-     */
-    public function toJsonBytes(): string
-    {
-        return $this->toJsonString();
     }
 
     /**
@@ -119,20 +111,12 @@ class Address
     }
 
     /**
-     * Deserialize from a JSON string.
+     * Deserialize from a string.
      */
-    public static function fromJsonString(string $jsonStr): self
+    public static function mergeFromString(string $data): self
     {
-        $data = json_decode($jsonStr, true, 512, JSON_THROW_ON_ERROR);
-        return self::deserialize($data);
-    }
-
-    /**
-     * Deserialize from JSON-encoded bytes.
-     */
-    public static function fromJsonBytes(string $data): self
-    {
-        return self::fromJsonString($data);
+        $decoded = json_decode($data, true, 512, JSON_THROW_ON_ERROR);
+        return self::deserialize($decoded);
     }
 
     public function __toString(): string

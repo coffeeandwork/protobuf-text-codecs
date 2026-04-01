@@ -34,7 +34,7 @@ import java.util.Set;
 
 /**
  * Perl language code generator for pbtk URL encoding. Produces Perl module (.pm) files with
- * to_pbtk_url()/from_pbtk_url() serialization methods.
+ * encode()/decode() serialization methods.
  *
  * <p>The pbtk URL format encodes protobuf messages as URL strings using the syntax: {@code
  * !<fieldNumber><typeChar><value>} where type chars are: b=bool(0/1), i=integer, f=float, d=double,
@@ -305,7 +305,7 @@ public class PbtkPerlGenerator implements LanguageGenerator {
   }
 
   // ---------------------------------------------------------------------------
-  // Serializer: to_pbtk_url()
+  // Serializer: encode()
   // ---------------------------------------------------------------------------
 
   private void emitSerializer(CodeWriter w, ProtoMessage message) {
@@ -337,9 +337,9 @@ public class PbtkPerlGenerator implements LanguageGenerator {
     w.dedent();
     w.line("}");
 
-    // to_pbtk_url: public serialize method
+    // encode: public serialize method
     w.blankLine();
-    w.line("sub to_pbtk_url {");
+    w.line("sub encode {");
     w.indent();
     w.line("my ($self) = @_;");
     w.line("my @parts;");
@@ -581,7 +581,7 @@ public class PbtkPerlGenerator implements LanguageGenerator {
   }
 
   // ---------------------------------------------------------------------------
-  // Deserializer: from_pbtk_url()
+  // Deserializer: decode()
   // ---------------------------------------------------------------------------
 
   private void emitDeserializer(CodeWriter w, ProtoMessage message, Set<String> lazyImports) {
@@ -590,9 +590,9 @@ public class PbtkPerlGenerator implements LanguageGenerator {
     // Internal: _parse_pbtk_tokens
     emitParseFromTokens(w, message, className, lazyImports);
 
-    // Public: from_pbtk_url
+    // Public: decode
     w.blankLine();
-    w.line("sub from_pbtk_url {");
+    w.line("sub decode {");
     w.indent();
     w.line("my ($class, $input_str) = @_;");
     w.line("if (!defined($input_str) || $input_str eq \"\") {");

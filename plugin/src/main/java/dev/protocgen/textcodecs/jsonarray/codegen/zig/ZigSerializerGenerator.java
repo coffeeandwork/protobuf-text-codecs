@@ -37,7 +37,7 @@ public class ZigSerializerGenerator {
   public void generate(CodeWriter w, ProtoMessage message, String structName) {
     w.blankLine();
     w.block(
-        "pub fn serialize(self: *const "
+        "pub fn serializeToValue(self: *const "
             + structName
             + ", allocator: std.mem.Allocator) !json.Value",
         () -> {
@@ -56,14 +56,12 @@ public class ZigSerializerGenerator {
           w.line("return json.Value{ .array = json.Array.fromOwnedSlice(allocator, arr) };");
         });
 
-    // toJsonString convenience method
+    // Public serialize method: returns []u8
     w.blankLine();
     w.block(
-        "pub fn toJsonString(self: *const "
-            + structName
-            + ", allocator: std.mem.Allocator) ![]const u8",
+        "pub fn serialize(self: *const " + structName + ", allocator: std.mem.Allocator) ![]u8",
         () -> {
-          w.line("const value = try self.serialize(allocator);");
+          w.line("const value = try self.serializeToValue(allocator);");
           w.line("var string = std.ArrayList(u8).init(allocator);");
           w.line("defer string.deinit();");
           w.line("try value.jsonStringify(.{}, string.writer());");
@@ -146,7 +144,7 @@ public class ZigSerializerGenerator {
     w.block(
         "if (" + zigField + ") |val|",
         () -> {
-          w.line("arr[%d] = try val.serialize(allocator);", pos);
+          w.line("arr[%d] = try val.serializeToValue(allocator);", pos);
         });
     w.block(
         "else",
@@ -165,7 +163,7 @@ public class ZigSerializerGenerator {
               () -> {
                 if (field.getKind() == ProtoField.FieldKind.MESSAGE
                     || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
-                  w.line("list_arr[idx] = try item.serialize(allocator);");
+                  w.line("list_arr[idx] = try item.serializeToValue(allocator);");
                 } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
                   w.line("list_arr[idx] = json.Value{ .integer = @intFromEnum(item) };");
                 } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
@@ -233,7 +231,9 @@ public class ZigSerializerGenerator {
               () -> {
                 if (field.getKind() == ProtoField.FieldKind.MESSAGE
                     || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
-                  w.line(".%s => |msg| { arr[%d] = try msg.serialize(allocator); },", tagName, pos);
+                  w.line(
+                      ".%s => |msg| { arr[%d] = try msg.serializeToValue(allocator); },",
+                      tagName, pos);
                 } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
                   w.line(
                       ".%s => |val| { arr[%d] = json.Value{ .integer = @intFromEnum(val) }; },",
@@ -284,7 +284,7 @@ public class ZigSerializerGenerator {
   /** Convert a map value expression to a json.Value expression. */
   private String mapValueToJson(ProtoField field, String valueExpr) {
     if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE) {
-      return "try " + valueExpr + ".serialize(allocator)";
+      return "try " + valueExpr + ".serializeToValue(allocator)";
     }
     if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
       return "json.Value{ .integer = @intFromEnum(" + valueExpr + ") }";

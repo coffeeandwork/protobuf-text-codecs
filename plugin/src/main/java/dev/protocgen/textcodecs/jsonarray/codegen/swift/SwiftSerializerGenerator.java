@@ -57,14 +57,13 @@ public class SwiftSerializerGenerator {
           w.line("return arr");
         });
 
-    // toJsonString convenience method
+    // serializedData convenience method - returns Data
     w.blankLine();
     w.block(
-        "public func toJsonString() throws -> String",
+        "public func serializedData() throws -> Data",
         () -> {
           w.line("let arr = serialize()");
-          w.line("let data = try JSONSerialization.data(withJSONObject: arr, options: [])");
-          w.line("return String(data: data, encoding: .utf8)!");
+          w.line("return try JSONSerialization.data(withJSONObject: arr, options: [])");
         });
   }
 

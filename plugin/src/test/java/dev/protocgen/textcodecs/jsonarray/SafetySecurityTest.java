@@ -252,12 +252,12 @@ class SafetySecurityTest {
 
     String code = generateAll(msg, lang);
     // int32 must not be serialized as string in any language
+    // Note: toString() appears as a display method in JS/TS/Dart/PHP — exclude those false
+    // positives
     assertFalse(
         code.contains("String.valueOf(this.count)")
             || code.contains("str(self._count)")
-            || code.contains("toString(")
-                && code.contains("count")
-                && !code.contains("toJsonString"),
+            || (code.contains("count.toString(") || code.contains("toString(this.count)")),
         lang + ": int32 should NOT be encoded as string");
   }
 
@@ -301,7 +301,7 @@ class SafetySecurityTest {
   }
 
   /**
-   * SR-002 / HAZ-002: enum fields must produce JSON number encoding (not name strings) in all 9
+   * SR-002 / HAZ-002: enum fields must produce JSON number encoding (not name strings) in all 17
    * languages.
    *
    * <p>Verifies enum values are encoded as their integer value.
@@ -343,10 +343,40 @@ class SafetySecurityTest {
             .build();
 
     String code = generateAll(msg, lang);
-    // The generated code should reference the enum with integer values 0 and 1 in its definition
+
+    // Negative assertion: enum values must NOT appear as string literals in serialization
+    assertFalse(
+        code.contains("\"UNKNOWN\"") && code.contains("\"ACTIVE\""),
+        lang + ": enum values should be serialized as integers, not name strings");
+
+    // Positive assertion: language-specific integer encoding pattern must be present.
+    // Languages like Java/Kotlin use getNumber(); C#/Swift use casts or .rawValue;
+    // Python/JS/TS/Dart store enums as plain integers, so the enum definition maps
+    // constant names to integer values (e.g. "UNKNOWN = 0", "UNKNOWN: 0").
+    Map<String, List<String>> enumIntPatterns =
+        Map.ofEntries(
+            Map.entry("java", List.of("getNumber()")),
+            Map.entry("kotlin", List.of("getNumber()")),
+            Map.entry("csharp", List.of("(int)")),
+            Map.entry("swift", List.of(".rawValue")),
+            Map.entry("cpp", List.of("static_cast<int>")),
+            Map.entry("c", List.of("(int)")),
+            Map.entry("rust", List.of("as i32")),
+            Map.entry("go", List.of("int32(")),
+            Map.entry("python", List.of("UNKNOWN = 0", "ACTIVE = 1")),
+            Map.entry("javascript", List.of("UNKNOWN: 0", "ACTIVE: 1")),
+            Map.entry("typescript", List.of("UNKNOWN: 0", "ACTIVE: 1")),
+            Map.entry("zig", List.of("@intFromEnum(")),
+            Map.entry("dart", List.of("UNKNOWN = 0", "ACTIVE = 1")),
+            Map.entry("php", List.of("$this->")),
+            Map.entry("ruby", List.of("status")),
+            Map.entry("objc", List.of("status")),
+            Map.entry("perl", List.of("status")));
+    List<String> patterns = enumIntPatterns.get(lang);
+    boolean foundPattern = patterns.stream().anyMatch(code::contains);
     assertTrue(
-        code.contains("0") && code.contains("1"),
-        lang + ": enum must define integer values 0 and 1");
+        foundPattern,
+        lang + ": expected enum-to-integer pattern " + patterns + " not found in generated code");
   }
 
   // ======================================================================

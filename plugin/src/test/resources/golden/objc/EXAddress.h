@@ -12,10 +12,10 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) int32_t zip;
 
 - (NSArray *)toJsonArray;
-- (NSString *)toJsonString;
+- (NSData *)data;
 
 + (instancetype)fromJsonArray:(NSArray *)array;
-+ (instancetype)fromJsonString:(NSString *)jsonString;
++ (instancetype)parseFromData:(NSData *)data error:(NSError **)errorPtr;
 
 @end
 

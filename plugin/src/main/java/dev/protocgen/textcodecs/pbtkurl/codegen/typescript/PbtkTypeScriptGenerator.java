@@ -35,8 +35,7 @@ import java.util.Set;
 
 /**
  * TypeScript language code generator for pbtk URL encoding. Produces TypeScript source files with
- * typed toPbtkUrl()/fromPbtkUrl() serialization using the {@code !<fieldNumber><typeChar><value>}
- * format.
+ * typed encode()/decode() serialization using the {@code !<fieldNumber><typeChar><value>} format.
  */
 public class PbtkTypeScriptGenerator implements LanguageGenerator {
 
@@ -259,7 +258,7 @@ public class PbtkTypeScriptGenerator implements LanguageGenerator {
   }
 
   // ---------------------------------------------------------------------------
-  // toPbtkUrl() — serialization
+  // encode() — serialization
   // ---------------------------------------------------------------------------
 
   private void emitToPbtkUrl(CodeWriter w, ProtoMessage message) {
@@ -285,14 +284,14 @@ public class PbtkTypeScriptGenerator implements LanguageGenerator {
           }
         });
 
-    // toPbtkUrl() — public method
+    // encode() — public method
     w.blankLine();
     w.block(
-        "toPbtkUrl(): string",
+        "encode(): Uint8Array",
         () -> {
           w.line("const parts: string[] = [];");
           w.line("this._appendPbtkFields(parts);");
-          w.line("return parts.join('');");
+          w.line("return new TextEncoder().encode(parts.join(''));");
         });
   }
 
@@ -463,7 +462,7 @@ public class PbtkTypeScriptGenerator implements LanguageGenerator {
   }
 
   // ---------------------------------------------------------------------------
-  // fromPbtkUrl() — deserialization
+  // decode() — deserialization
   // ---------------------------------------------------------------------------
 
   private void emitFromPbtkUrl(
@@ -501,11 +500,12 @@ public class PbtkTypeScriptGenerator implements LanguageGenerator {
           w.line("return obj;");
         });
 
-    // fromPbtkUrl — public static method
+    // decode — public static method
     w.blankLine();
     w.block(
-        "static fromPbtkUrl(input: string): " + className,
+        "static decode(data: Uint8Array): " + className,
         () -> {
+          w.line("const input: string = new TextDecoder().decode(data);");
           w.line("if (input == null || input.length === 0) return new %s();", className);
           w.line("const tokens: string[] = %s._tokenizePbtk(input);", className);
           w.line("const offset: {v: number} = {v: 0};");

@@ -32,7 +32,7 @@ import java.util.List;
 
 /**
  * C# language code generator for pbtk URL encoding. Produces C# source files with
- * ToPbtkUrl()/FromPbtkUrl() serialization methods using pure string manipulation (StringBuilder,
+ * ToByteArray()/ParseFrom() serialization methods using pure string manipulation (StringBuilder,
  * Uri.EscapeDataString).
  */
 public class PbtkCSharpGenerator implements LanguageGenerator {
@@ -250,14 +250,23 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
           w.line("return count;");
         });
 
-    // Public ToPbtkUrl
+    // Public ToByteArray
     w.blankLine();
     w.block(
-        "public string ToPbtkUrl()",
+        "public byte[] ToByteArray()",
         () -> {
           w.line("var sb = new StringBuilder();");
           w.line("AppendPbtkFields(sb);");
-          w.line("return sb.ToString();");
+          w.line("return System.Text.Encoding.UTF8.GetBytes(sb.ToString());");
+        });
+
+    // Public convenience: write to Stream
+    w.blankLine();
+    w.block(
+        "public void WriteTo(System.IO.Stream output)",
+        () -> {
+          w.line("var bytes = ToByteArray();");
+          w.line("output.Write(bytes, 0, bytes.Length);");
         });
   }
 
@@ -459,15 +468,26 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
     // Internal parser that takes a token list and offset
     emitParseFromTokens(w, message, className);
 
-    // Public FromPbtkUrl
+    // Public ParseFrom
     w.blankLine();
     w.block(
-        "public static " + className + " FromPbtkUrl(string input)",
+        "public static " + className + " ParseFrom(byte[] bytes)",
         () -> {
+          w.line("var input = System.Text.Encoding.UTF8.GetString(bytes);");
           w.line("if (string.IsNullOrEmpty(input)) return %s.GetDefaultInstance();", className);
           w.line("var tokens = TokenizePbtk(input);");
           w.line("int[] offset = {0};");
           w.line("return ParsePbtkTokens(tokens, tokens.Count, offset);");
+        });
+
+    // Public: deserialize from Stream
+    w.blankLine();
+    w.block(
+        "public static " + className + " ParseFrom(System.IO.Stream input)",
+        () -> {
+          w.line("using var ms = new System.IO.MemoryStream();");
+          w.line("input.CopyTo(ms);");
+          w.line("return ParseFrom(ms.ToArray());");
         });
 
     // Tokenizer

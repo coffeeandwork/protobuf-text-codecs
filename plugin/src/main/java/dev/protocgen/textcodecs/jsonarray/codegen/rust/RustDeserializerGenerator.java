@@ -57,22 +57,13 @@ public class RustDeserializerGenerator {
           w.line("Ok(obj)");
         });
 
-    // Convenience: deserialize from JSON string
+    // Convenience: decode from &[u8]
     w.blankLine();
     w.block(
-        "pub fn from_json_string(json: &str) -> Result<Self, String>",
+        "pub fn decode(data: &[u8]) -> Result<Self, String>",
         () -> {
-          w.line("let value: Value = serde_json::from_str(json).map_err(|e| e.to_string())?;");
+          w.line("let value: Value = serde_json::from_slice(data).map_err(|e| e.to_string())?;");
           w.line("Self::deserialize(&value)");
-        });
-
-    // Convenience: deserialize from bytes
-    w.blankLine();
-    w.block(
-        "pub fn from_json_bytes(bytes: &[u8]) -> Result<Self, String>",
-        () -> {
-          w.line("let json = std::str::from_utf8(bytes).map_err(|e| e.to_string())?;");
-          w.line("Self::from_json_string(json)");
         });
   }
 

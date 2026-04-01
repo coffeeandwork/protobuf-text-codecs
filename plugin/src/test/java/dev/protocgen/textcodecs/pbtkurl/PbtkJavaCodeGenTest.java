@@ -74,9 +74,9 @@ class PbtkJavaCodeGenTest {
 
     String code = generatedCode(file);
 
-    // Should generate toPbtkUrl method
-    assertTrue(code.contains("toPbtkUrl"), "Missing toPbtkUrl method");
-    assertTrue(code.contains("fromPbtkUrl"), "Missing fromPbtkUrl method");
+    // Should generate toByteArray and parseFrom methods
+    assertTrue(code.contains("toByteArray"), "Missing toByteArray method");
+    assertTrue(code.contains("parseFrom"), "Missing parseFrom method");
 
     // Serializer should use !1s prefix and URL encoding
     assertTrue(code.contains("!1s"), "Missing field 1 string prefix");
@@ -389,8 +389,8 @@ class PbtkJavaCodeGenTest {
 
     String code = generatedCode(file);
     assertTrue(code.contains("public final class Empty"), "Missing class declaration");
-    assertTrue(code.contains("toPbtkUrl"), "Missing toPbtkUrl method");
-    assertTrue(code.contains("fromPbtkUrl"), "Missing fromPbtkUrl method");
+    assertTrue(code.contains("toByteArray"), "Missing toByteArray method");
+    assertTrue(code.contains("parseFrom"), "Missing parseFrom method");
     assertTrue(code.contains("appendPbtkFields"), "Missing appendPbtkFields method");
     assertTrue(code.contains("countPbtkFields"), "Missing countPbtkFields method");
   }

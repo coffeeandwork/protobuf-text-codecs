@@ -56,13 +56,13 @@ public class DartSerializerGenerator {
           w.line("return array;");
         });
 
-    // toJsonString() convenience
+    // writeToBuffer() convenience - returns Uint8List
     w.blankLine();
-    w.line("/// Serialize this message to a JSON string.");
+    w.line("/// Serialize this message to a Uint8List.");
     w.block(
-        "String toJsonString()",
+        "Uint8List writeToBuffer()",
         () -> {
-          w.line("return jsonEncode(serialize());");
+          w.line("return Uint8List.fromList(utf8.encode(jsonEncode(serialize())));");
         });
   }
 

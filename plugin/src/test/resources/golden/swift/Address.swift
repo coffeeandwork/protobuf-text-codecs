@@ -18,10 +18,9 @@ public struct Address {
         return arr
     }
 
-    public func toJsonString() throws -> String {
+    public func serializedData() throws -> Data {
         let arr = serialize()
-        let data = try JSONSerialization.data(withJSONObject: arr, options: [])
-        return String(data: data, encoding: .utf8)!
+        return try JSONSerialization.data(withJSONObject: arr, options: [])
     }
 
     public static func deserialize(_ arr: [Any?]) -> Address {
@@ -50,13 +49,11 @@ public struct Address {
         return obj
     }
 
-    public static func fromJsonString(_ s: String) throws -> Address {
-        guard let data = s.data(using: .utf8) else {
-            throw NSError(domain: "Address", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid UTF-8 string"])
-        }
+    public init(serializedData data: Data) throws {
         guard let arr = try JSONSerialization.jsonObject(with: data, options: []) as? [Any] else {
             throw NSError(domain: "Address", code: -1, userInfo: [NSLocalizedDescriptionKey: "Expected JSON array"])
         }
-        return deserialize(arr.map { $0 is NSNull ? nil : $0 })
+        let parsed = Address.deserialize(arr.map { $0 is NSNull ? nil : $0 })
+        self = parsed
     }
 }

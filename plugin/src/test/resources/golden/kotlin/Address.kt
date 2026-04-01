@@ -29,14 +29,10 @@ class Address private constructor(builder: Builder) {
         sb.append(']')
     }
 
-    fun toJsonString(): String {
+    fun toByteArray(): ByteArray {
         val sb = StringBuilder(128)
         appendJsonArray(sb)
-        return sb.toString()
-    }
-
-    fun toJsonBytes(): ByteArray {
-        return toJsonString().toByteArray(Charsets.UTF_8)
+        return sb.toString().toByteArray(Charsets.UTF_8)
     }
 
     override fun toString(): String {
@@ -168,13 +164,10 @@ class Address private constructor(builder: Builder) {
             return builder.build()
         }
 
-        fun fromJsonString(json: String): Address {
+        fun parseFrom(bytes: ByteArray): Address {
+            val json = String(bytes, Charsets.UTF_8)
             val array = dev.protocgen.textcodecs.jsonarray.runtime.JsonArrayReader.parseArray(json)
             return fromJsonArray(array)
-        }
-
-        fun fromJsonBytes(bytes: ByteArray): Address {
-            return fromJsonString(String(bytes, Charsets.UTF_8))
         }
     }
 }

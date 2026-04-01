@@ -11,7 +11,7 @@ cJSON* example_address_serialize(const example_Address* msg) {
   return array;
 }
 
-char* example_address_to_json_string(const example_Address* msg) {
+char* example_address_pack(const example_Address* msg) {
   cJSON* json = example_address_serialize(msg);
   char* str = cJSON_PrintUnformatted(json);
   cJSON_Delete(json);
@@ -56,7 +56,7 @@ example_Address* example_address_deserialize(const cJSON* array) {
   return msg;
 }
 
-example_Address* example_address_from_json_string(const char* json) {
+example_Address* example_address_unpack(const char* json) {
   if (!json) return NULL;
   cJSON* parsed = cJSON_Parse(json);
   if (!parsed) return NULL;

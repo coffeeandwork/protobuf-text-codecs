@@ -37,7 +37,7 @@ public class ObjCSerializerGenerator {
   /** Generate the serialize method declarations for the header file. */
   public void generateDeclarations(CodeWriter w, String className) {
     w.line("- (NSArray *)toJsonArray;");
-    w.line("- (NSString *)toJsonString;");
+    w.line("- (NSData *)data;");
   }
 
   /** Generate the serialize method implementations for the .m file. */
@@ -62,16 +62,13 @@ public class ObjCSerializerGenerator {
           w.line("return [array copy];");
         });
 
-    // toJsonString
+    // data - returns NSData *
     w.blankLine();
     w.block(
-        "- (NSString *)toJsonString",
+        "- (NSData *)data",
         () -> {
           w.line("NSArray *array = [self toJsonArray];");
-          w.line(
-              "NSData *data = [NSJSONSerialization dataWithJSONObject:array options:0 error:nil];");
-          w.line("if (!data) return nil;");
-          w.line("return [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];");
+          w.line("return [NSJSONSerialization dataWithJSONObject:array options:0 error:nil];");
         });
   }
 

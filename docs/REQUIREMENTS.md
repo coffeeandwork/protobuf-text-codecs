@@ -25,7 +25,7 @@ LIMITATIONS:
 - **ID:** FR-001
 - **Type:** Functional
 - **Priority:** Critical
-- **Derived From:** SYSTEM_ANALYSIS.md Section 15; `MessageAnalyzer.java:45`
+- **Derived From:** SYSTEM_ANALYSIS.md Section 15; `MessageAnalyzer.analyze()`
 - **Statement:** The system SHALL serialize each proto message as a JSON array where each field occupies position `field_number - 1` (0-indexed).
 - **Rationale:** This is the core encoding invariant that all 17 language generators must implement identically.
 - **Verification:** Test
@@ -35,7 +35,7 @@ LIMITATIONS:
 - **ID:** FR-002
 - **Type:** Functional
 - **Priority:** Critical
-- **Derived From:** `JavaSerializerGenerator.java:34`
+- **Derived From:** `JavaSerializerGenerator.emitSerializer()`
 - **Statement:** The system SHALL emit JSON `null` at array positions corresponding to field numbers that have no field defined (gaps in field numbering).
 - **Verification:** Test
 - **Acceptance Criteria:** A message with fields 1 and 3 (no field 2) produces a 3-element array `[val1, null, val3]`.
@@ -53,7 +53,7 @@ LIMITATIONS:
 - **ID:** FR-004
 - **Type:** Functional
 - **Priority:** Critical
-- **Derived From:** `JavaSerializerGenerator.java:148-155`
+- **Derived From:** `JavaSerializerGenerator` nested message handling
 - **Statement:** The system SHALL encode nested message fields as nested JSON arrays. Unset message fields SHALL be encoded as JSON `null`.
 - **Verification:** Test
 - **Acceptance Criteria:** `User{address: Address{city: "SF"}}` serializes with a nested array at the address position.
@@ -62,7 +62,7 @@ LIMITATIONS:
 - **ID:** FR-005
 - **Type:** Functional
 - **Priority:** Critical
-- **Derived From:** `JavaSerializerGenerator.java:157-184`
+- **Derived From:** `JavaSerializerGenerator` repeated field handling
 - **Statement:** The system SHALL encode repeated fields as JSON arrays within their positional slot. Empty repeated fields SHALL serialize as empty JSON arrays `[]`, not `null`.
 - **Verification:** Test
 - **Acceptance Criteria:** `repeated string tags = ["a","b"]` produces `["a","b"]` at the field's position; empty list produces `[]`.
@@ -71,7 +71,7 @@ LIMITATIONS:
 - **ID:** FR-006
 - **Type:** Functional
 - **Priority:** Critical
-- **Derived From:** `JavaSerializerGenerator.java:186-217`
+- **Derived From:** `JavaSerializerGenerator` map field handling
 - **Statement:** The system SHALL encode map fields with string keys as JSON objects and map fields with non-string keys as JSON arrays of `[key, value]` pairs.
 - **Verification:** Test
 - **Acceptance Criteria:** `map<string,int32>{"a":1}` produces `{"a":1}`; `map<int32,string>{42:"x"}` produces `[[42,"x"]]`.
@@ -80,7 +80,7 @@ LIMITATIONS:
 - **ID:** FR-007
 - **Type:** Functional
 - **Priority:** High
-- **Derived From:** `JavaSerializerGenerator.java:134-146`
+- **Derived From:** `JavaSerializerGenerator` enum handling
 - **Statement:** The system SHALL encode enum fields as their integer value (not the enum name string).
 - **Verification:** Test
 - **Acceptance Criteria:** An enum field set to `ACTIVE` (value 1) serializes as `1`.
@@ -89,7 +89,7 @@ LIMITATIONS:
 - **ID:** FR-008
 - **Type:** Functional
 - **Priority:** High
-- **Derived From:** `JavaSerializerGenerator.java:66-77`
+- **Derived From:** `JavaSerializerGenerator` oneof handling
 - **Statement:** The system SHALL serialize only the active oneof member's value at its position. All inactive oneof member positions SHALL be `null`.
 - **Verification:** Test
 - **Acceptance Criteria:** A oneof with `email`(24) and `phone`(25): setting email produces `[..., "test@x.com", null, ...]`; setting phone produces `[..., null, "555-1234", ...]`.
@@ -98,7 +98,7 @@ LIMITATIONS:
 - **ID:** FR-009
 - **Type:** Functional
 - **Priority:** High
-- **Derived From:** `JavaSerializerGenerator.java:114-123`
+- **Derived From:** `JavaSerializerGenerator` optional presence handling
 - **Statement:** The system SHALL serialize proto3 `optional` scalar fields as JSON `null` when not explicitly set, and as the field value when set (even if set to the default value).
 - **Verification:** Test
 - **Acceptance Criteria:** `optional int32 x` not set -> `null`; set to 0 -> `0`.
@@ -107,7 +107,7 @@ LIMITATIONS:
 - **ID:** FR-010
 - **Type:** Functional
 - **Priority:** High
-- **Derived From:** `MessageAnalyzer.java:61`, `PluginRunner.java:84-97`
+- **Derived From:** `MessageAnalyzer.analyze()`, `PluginRunner.run()`
 - **Statement:** The system SHALL accept proto2 syntax files. Required fields SHALL always be serialized. Optional fields SHALL use presence tracking. Schema-specified default values SHALL be applied during deserialization when a field is absent.
 - **Verification:** Test
 - **Acceptance Criteria:** Proto2 `optional string name = 1 [default = "unknown"]`: absent field deserializes to `"unknown"`, not `""`.
@@ -118,7 +118,7 @@ LIMITATIONS:
 - **ID:** FR-011
 - **Type:** Functional
 - **Priority:** Critical
-- **Derived From:** `PluginRunner.java:28-41`
+- **Derived From:** `PluginRunner.GENERATORS` map
 - **Statement:** The system SHALL generate serialization/deserialization code for: Java, Python, JavaScript, TypeScript, C, C++, Rust, Zig, Go, C#, Kotlin, Swift, Dart, PHP, Ruby, Objective-C, and Perl, selected via the `lang=` parameter.
 - **Verification:** Test
 - **Acceptance Criteria:** `protoc --jsonarray_out=lang=X` produces compilable/parseable source files for each of the 17 languages.
@@ -136,7 +136,7 @@ LIMITATIONS:
 - **ID:** FR-013
 - **Type:** Functional
 - **Priority:** High
-- **Derived From:** `PythonCodeEmitter.java:99-150`, all `*CodeEmitter.java` cross-file import methods
+- **Derived From:** `PythonCodeEmitter.emitImports()`, all `*CodeEmitter` cross-file import methods
 - **Statement:** When a message in file A references a type defined in file B, the generated code SHALL include the appropriate import/include/require/use statement for the target language.
 - **Verification:** Test
 - **Acceptance Criteria:** `User` referencing `Address` from a separate file produces `from .address import Address` (Python), `#include "address.h"` (C), `use super::address::Address` (Rust), etc.
@@ -147,7 +147,7 @@ LIMITATIONS:
 - **ID:** FR-014
 - **Type:** Functional
 - **Priority:** Critical
-- **Derived From:** `Main.java:12-31`
+- **Derived From:** `Main.main()`
 - **Statement:** The system SHALL read a `CodeGeneratorRequest` from stdin, process it, and write a `CodeGeneratorResponse` to stdout, per the protoc plugin protocol.
 - **Verification:** Test
 - **Acceptance Criteria:** `protoc --plugin=protoc-gen-jsonarray=./plugin --jsonarray_out=./out file.proto` succeeds and produces output files.
@@ -156,7 +156,7 @@ LIMITATIONS:
 - **ID:** FR-015
 - **Type:** Functional
 - **Priority:** High
-- **Derived From:** `PluginRunner.java:44-52`
+- **Derived From:** `PluginRunner.run()`
 - **Statement:** The system SHALL report errors via `CodeGeneratorResponse.error` (not via exit code), per the protoc plugin protocol. Error messages SHALL be prefixed with `protoc-gen-jsonarray:`.
 - **Verification:** Test
 - **Acceptance Criteria:** An invalid request produces a response with `.hasError() == true` and `.getError()` starting with `protoc-gen-jsonarray:`.
@@ -165,7 +165,7 @@ LIMITATIONS:
 - **ID:** FR-016
 - **Type:** Functional
 - **Priority:** Low
-- **Derived From:** `Main.java:14-18`
+- **Derived From:** `Main.main()` version check
 - **Statement:** When invoked with `--version`, the system SHALL print `protoc-gen-jsonarray <version>` to stdout and exit with code 0.
 - **Verification:** Test
 - **Acceptance Criteria:** `./protoc-gen-jsonarray --version` outputs `protoc-gen-jsonarray 0.2.0`.
@@ -185,7 +185,7 @@ LIMITATIONS:
 - **ID:** FR-018
 - **Type:** Functional
 - **Priority:** High
-- **Derived From:** `MessageAnalyzer.java:124-129`, HAZ-004
+- **Derived From:** `MessageAnalyzer.analyze()` Any rejection, HAZ-004
 - **Statement:** The system SHALL reject proto files that use `google.protobuf.Any` with a clear error message explaining that positional encoding requires compile-time schema knowledge.
 - **Verification:** Test
 - **Acceptance Criteria:** A message with an `Any` field produces an error response containing "google.protobuf.Any is not supported".
@@ -238,7 +238,7 @@ LIMITATIONS:
 - **ID:** SEC-001
 - **Type:** Security
 - **Priority:** High
-- **Derived From:** HAZ-004; `MessageAnalyzer.java:91`
+- **Derived From:** HAZ-004; `MessageAnalyzer.validateFieldName()`
 - **Statement:** The system SHALL validate all proto field names against the regex `[a-zA-Z_][a-zA-Z0-9_]*` and reject fields with invalid names via `IllegalArgumentException`.
 - **Verification:** Test (MessageAnalyzerTest)
 
@@ -246,7 +246,7 @@ LIMITATIONS:
 - **ID:** SEC-002
 - **Type:** Security
 - **Priority:** High
-- **Derived From:** HAZ-005; `PluginRunner.java:114`
+- **Derived From:** HAZ-005; `PluginRunner.run()` path validation
 - **Statement:** The system SHALL reject any generated output file path containing `..` to prevent directory traversal attacks via malicious package names.
 - **Verification:** Test
 
@@ -311,8 +311,8 @@ LIMITATIONS:
 - **ID:** IF-003
 - **Type:** Interface
 - **Priority:** High
-- **Statement:** Generated Java classes SHALL provide: `toJsonString()` returning `String`; `toJsonBytes()` returning `byte[]`; `static fromJsonString(String)`; `static fromJsonBytes(byte[])`. Serialization uses the built-in `JsonArrayWriter`; deserialization uses the built-in `JsonArrayReader`. No external JSON library is required.
-- **Format:** `String`/`byte[]` for all public API methods; zero external dependencies
+- **Statement:** Generated Java classes SHALL provide: `toByteArray()` returning `byte[]`; `static parseFrom(byte[])`; `writeTo(OutputStream)`; `static parseFrom(InputStream)`. Method names mirror protobuf-java's standard API. Serialization uses the built-in `JsonArrayWriter`; deserialization uses the built-in `JsonArrayReader`. No external JSON library is required.
+- **Format:** `byte[]`/`InputStream`/`OutputStream` for all public API methods; zero external dependencies
 
 ---
 
@@ -324,7 +324,7 @@ LIMITATIONS:
 ### DR-001: Default Language is Java
 - **ID:** DR-001
 - **Type:** Derived
-- **Inferred From:** `PluginRunner.java:104,112`
+- **Inferred From:** `PluginRunner.parseLanguage()`
 - **Observed Behavior:** When no `lang=` parameter is specified, the plugin defaults to Java.
 - **Proposed Requirement:** When no `lang=` parameter is provided, the system SHALL default to generating Java code.
 - **Confidence:** High
@@ -333,7 +333,7 @@ LIMITATIONS:
 ### DR-002: Proto2 Extensions Emit Warning
 - **ID:** DR-002
 - **Type:** Derived
-- **Inferred From:** `PluginRunner.java:89-109`
+- **Inferred From:** `PluginRunner.run()` extension handling
 - **Observed Behavior:** Proto2 extension ranges and extension fields emit a warning to stderr but do not cause generation failure. Only base message fields are included.
 - **Proposed Requirement:** The system SHALL emit a diagnostic warning to stderr when processing files with extensions, and SHALL generate code only for base message fields (not extension fields).
 - **Confidence:** High
@@ -342,7 +342,7 @@ LIMITATIONS:
 ### DR-003: Sparse Field Numbering Warning
 - **ID:** DR-003
 - **Type:** Derived
-- **Inferred From:** `MessageAnalyzer.java:70-79`
+- **Inferred From:** `MessageAnalyzer.analyze()` sparse numbering warning
 - **Observed Behavior:** When `maxFieldNumber > 2 * fieldCount`, the plugin emits a warning to stderr about sparse numbering producing many null gaps.
 - **Proposed Requirement:** The system SHALL warn (not error) when a message has sparse field numbering (max number exceeds 2x field count).
 - **Confidence:** Medium

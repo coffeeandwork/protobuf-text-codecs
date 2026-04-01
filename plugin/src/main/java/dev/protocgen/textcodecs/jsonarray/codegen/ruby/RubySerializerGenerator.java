@@ -55,19 +55,11 @@ public class RubySerializerGenerator {
     w.dedent();
     w.line("end");
 
-    // to_json_string convenience
+    // self.encode class method
     w.blankLine();
-    w.line("def to_json_string");
+    w.line("def self.encode(instance)");
     w.indent();
-    w.line("JSON.generate(serialize)");
-    w.dedent();
-    w.line("end");
-
-    // to_json_bytes convenience
-    w.blankLine();
-    w.line("def to_json_bytes");
-    w.indent();
-    w.line("to_json_string.encode('UTF-8')");
+    w.line("JSON.generate(instance.serialize)");
     w.dedent();
     w.line("end");
   }

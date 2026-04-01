@@ -37,7 +37,7 @@ public class ObjCDeserializerGenerator {
   /** Generate deserialize method declarations for the header file. */
   public void generateDeclarations(CodeWriter w, String className) {
     w.line("+ (instancetype)fromJsonArray:(NSArray *)array;");
-    w.line("+ (instancetype)fromJsonString:(NSString *)jsonString;");
+    w.line("+ (instancetype)parseFromData:(NSData *)data error:(NSError **)errorPtr;");
   }
 
   /** Generate the deserialize method implementations for the .m file. */
@@ -64,16 +64,16 @@ public class ObjCDeserializerGenerator {
           w.line("return msg;");
         });
 
-    // fromJsonString:
+    // parseFromData:error:
     w.blankLine();
     w.block(
-        "+ (instancetype)fromJsonString:(NSString *)jsonString",
+        "+ (instancetype)parseFromData:(NSData *)data error:(NSError **)errorPtr",
         () -> {
-          w.line("if (!jsonString) return nil;");
-          w.line("NSData *data = [jsonString dataUsingEncoding:NSUTF8StringEncoding];");
           w.line("if (!data) return nil;");
+          w.line("NSError *parseError = nil;");
           w.line(
-              "NSArray *array = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];");
+              "NSArray *array = [NSJSONSerialization JSONObjectWithData:data options:0 error:&parseError];");
+          w.line("if (parseError && errorPtr) { *errorPtr = parseError; return nil; }");
           w.line("if (![array isKindOfClass:[NSArray class]]) return nil;");
           w.line("return [%s fromJsonArray:array];", className);
         });

@@ -57,21 +57,12 @@ public class PerlSerializerGenerator {
     w.dedent();
     w.line("}");
 
-    // to_json_string convenience
+    // encode convenience
     w.blankLine();
-    w.line("sub to_json_string {");
+    w.line("sub encode {");
     w.indent();
     w.line("my ($self) = @_;");
     w.line("return encode_json($self->serialize());");
-    w.dedent();
-    w.line("}");
-
-    // to_json_bytes convenience (same as to_json_string in Perl, bytes are strings)
-    w.blankLine();
-    w.line("sub to_json_bytes {");
-    w.indent();
-    w.line("my ($self) = @_;");
-    w.line("return $self->to_json_string();");
     w.dedent();
     w.line("}");
   }

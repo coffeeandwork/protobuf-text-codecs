@@ -35,7 +35,7 @@ import java.util.Set;
 
 /**
  * Python language code generator for pbtk URL encoding. Produces Python source files with
- * to_pbtk_url()/from_pbtk_url() serialization methods.
+ * SerializeToString()/ParseFromString() serialization methods.
  *
  * <p>The pbtk URL format encodes protobuf messages as URL strings using the syntax: {@code
  * !<fieldNumber><typeChar><value>} where type chars are: b=bool(0/1), i=integer, f=float, d=double,
@@ -340,7 +340,7 @@ public class PbtkPythonGenerator implements LanguageGenerator {
   }
 
   // ---------------------------------------------------------------------------
-  // Serializer: to_pbtk_url()
+  // Serializer: SerializeToString()
   // ---------------------------------------------------------------------------
 
   private void emitSerializer(CodeWriter w, ProtoMessage message) {
@@ -368,9 +368,9 @@ public class PbtkPythonGenerator implements LanguageGenerator {
     w.line("return count");
     w.dedent();
 
-    // to_pbtk_url(self): public serialize method
+    // SerializeToString(self): public serialize method
     w.blankLine();
-    w.line("def to_pbtk_url(self):");
+    w.line("def SerializeToString(self):");
     w.indent();
     w.line("\"\"\"Serialize this message to a pbtk URL-encoded string.\"\"\"");
     w.line("parts = []");
@@ -602,7 +602,7 @@ public class PbtkPythonGenerator implements LanguageGenerator {
   }
 
   // ---------------------------------------------------------------------------
-  // Deserializer: from_pbtk_url()
+  // Deserializer: ParseFromString()
   // ---------------------------------------------------------------------------
 
   private void emitDeserializer(
@@ -610,10 +610,10 @@ public class PbtkPythonGenerator implements LanguageGenerator {
     // Internal: _parse_pbtk_tokens(cls, tokens, field_count, offset)
     emitParseFromTokens(w, message, className, lazyImports);
 
-    // Public: from_pbtk_url(cls, input_str)
+    // Public: ParseFromString(cls, input_str)
     w.blankLine();
     w.line("@classmethod");
-    w.line("def from_pbtk_url(cls, input_str):");
+    w.line("def ParseFromString(cls, input_str):");
     w.indent();
     w.line("\"\"\"Deserialize a pbtk URL-encoded string into a %s instance.\"\"\"", className);
     w.line("if not input_str:");

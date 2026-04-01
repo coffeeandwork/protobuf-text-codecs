@@ -57,14 +57,9 @@ sub serialize {
     return \@result;
 }
 
-sub to_json_string {
+sub encode {
     my ($self) = @_;
     return encode_json($self->serialize());
-}
-
-sub to_json_bytes {
-    my ($self) = @_;
-    return $self->to_json_string();
 }
 
 sub deserialize {
@@ -86,14 +81,9 @@ sub deserialize {
     return $obj;
 }
 
-sub from_json_string {
-    my ($class, $json_str) = @_;
-    return $class->deserialize(decode_json($json_str));
-}
-
-sub from_json_bytes {
+sub decode {
     my ($class, $data) = @_;
-    return $class->from_json_string($data);
+    return $class->deserialize(decode_json($data));
 }
 
 1;

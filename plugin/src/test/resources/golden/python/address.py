@@ -53,13 +53,9 @@ class Address:
         result.append(self._zip)
         return result
 
-    def to_json_string(self):
-        """Serialize this message to a JSON string."""
-        return json.dumps(self.serialize())
-
-    def to_json_bytes(self):
-        """Serialize this message to JSON-encoded bytes."""
-        return self.to_json_string().encode("utf-8")
+    def SerializeToString(self):
+        """Serialize this message to a JSON-encoded bytes string."""
+        return json.dumps(self.serialize()).encode("utf-8")
 
     @classmethod
     def deserialize(cls, data):
@@ -77,14 +73,9 @@ class Address:
         return obj
 
     @classmethod
-    def from_json_string(cls, json_str):
-        """Deserialize from a JSON string."""
-        return cls.deserialize(json.loads(json_str))
-
-    @classmethod
-    def from_json_bytes(cls, data):
-        """Deserialize from JSON-encoded bytes."""
-        return cls.from_json_string(data.decode("utf-8"))
+    def ParseFromString(cls, data):
+        """Deserialize from a JSON-encoded bytes string."""
+        return cls.deserialize(json.loads(data))
 
     def __repr__(self):
         return f"Address(street={self._street!r}, city={self._city!r}, state={self._state!r}, zip={self._zip!r})"

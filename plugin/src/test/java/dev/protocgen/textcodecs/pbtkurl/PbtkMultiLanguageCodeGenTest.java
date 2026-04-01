@@ -59,8 +59,8 @@ class PbtkMultiLanguageCodeGenTest {
                 "python",
                 Map.ofEntries(
                     Map.entry("scalar_field_decl", List.of("self._name", "self._age")),
-                    Map.entry("pbtk_serialize", List.of("def to_pbtk_url(self):")),
-                    Map.entry("pbtk_deserialize", List.of("def from_pbtk_url(cls,")),
+                    Map.entry("pbtk_serialize", List.of("def SerializeToString(self):")),
+                    Map.entry("pbtk_deserialize", List.of("def ParseFromString(cls,")),
                     Map.entry("pbtk_prefix", List.of("!1s")),
                     Map.entry("string_url_encode", List.of("urllib.parse.quote(")),
                     Map.entry("bytes_base64", List.of("base64.b64encode(")),
@@ -72,8 +72,8 @@ class PbtkMultiLanguageCodeGenTest {
                 "javascript",
                 Map.ofEntries(
                     Map.entry("scalar_field_decl", List.of("this.name = \"\"", "this.age = 0")),
-                    Map.entry("pbtk_serialize", List.of("toPbtkUrl()")),
-                    Map.entry("pbtk_deserialize", List.of("static fromPbtkUrl(")),
+                    Map.entry("pbtk_serialize", List.of("encode()")),
+                    Map.entry("pbtk_deserialize", List.of("static decode(")),
                     Map.entry("pbtk_prefix", List.of("!1s")),
                     Map.entry("string_url_encode", List.of("encodeURIComponent(")),
                     Map.entry("bytes_base64", List.of("toString('base64')", "btoa(")),
@@ -85,8 +85,8 @@ class PbtkMultiLanguageCodeGenTest {
                 "typescript",
                 Map.ofEntries(
                     Map.entry("scalar_field_decl", List.of("this.name = \"\"", "this.age = 0")),
-                    Map.entry("pbtk_serialize", List.of("toPbtkUrl()")),
-                    Map.entry("pbtk_deserialize", List.of("static fromPbtkUrl(")),
+                    Map.entry("pbtk_serialize", List.of("encode()")),
+                    Map.entry("pbtk_deserialize", List.of("static decode(")),
                     Map.entry("pbtk_prefix", List.of("!1s")),
                     Map.entry("string_url_encode", List.of("encodeURIComponent(")),
                     Map.entry("bytes_base64", List.of("toString('base64')", "btoa(")),
@@ -98,8 +98,8 @@ class PbtkMultiLanguageCodeGenTest {
                 "c",
                 Map.ofEntries(
                     Map.entry("scalar_field_decl", List.of("char*", "int32_t")),
-                    Map.entry("pbtk_serialize", List.of("_to_pbtk_url(")),
-                    Map.entry("pbtk_deserialize", List.of("_from_pbtk_url(")),
+                    Map.entry("pbtk_serialize", List.of("_pack(")),
+                    Map.entry("pbtk_deserialize", List.of("_unpack(")),
                     Map.entry("pbtk_prefix", List.of("!1s")),
                     Map.entry("string_url_encode", List.of("pbtk_url_encode(")),
                     Map.entry("bytes_base64", List.of("pbtk_base64_encode(")),
@@ -111,8 +111,8 @@ class PbtkMultiLanguageCodeGenTest {
                 "cpp",
                 Map.ofEntries(
                     Map.entry("scalar_field_decl", List.of("std::string", "int32_t")),
-                    Map.entry("pbtk_serialize", List.of("to_pbtk_url() const")),
-                    Map.entry("pbtk_deserialize", List.of("from_pbtk_url(")),
+                    Map.entry("pbtk_serialize", List.of("SerializeToString(std::string*")),
+                    Map.entry("pbtk_deserialize", List.of("ParseFromString(")),
                     Map.entry("pbtk_prefix", List.of("!1s")),
                     Map.entry("string_url_encode", List.of("url_encode(")),
                     Map.entry("bytes_base64", List.of("base64_encode(")),
@@ -124,8 +124,8 @@ class PbtkMultiLanguageCodeGenTest {
                 "rust",
                 Map.ofEntries(
                     Map.entry("scalar_field_decl", List.of("String", "i32")),
-                    Map.entry("pbtk_serialize", List.of("pub fn to_pbtk_url(&self)")),
-                    Map.entry("pbtk_deserialize", List.of("pub fn from_pbtk_url(")),
+                    Map.entry("pbtk_serialize", List.of("pub fn encode_to_vec(&self)")),
+                    Map.entry("pbtk_deserialize", List.of("pub fn decode(")),
                     Map.entry("pbtk_prefix", List.of("!1s")),
                     Map.entry("string_url_encode", List.of("urlencoding::encode(")),
                     Map.entry("bytes_base64", List.of("general_purpose::STANDARD.encode(")),
@@ -137,8 +137,8 @@ class PbtkMultiLanguageCodeGenTest {
                 "zig",
                 Map.ofEntries(
                     Map.entry("scalar_field_decl", List.of("[]const u8", "i32")),
-                    Map.entry("pbtk_serialize", List.of("pub fn toPbtkUrl(")),
-                    Map.entry("pbtk_deserialize", List.of("pub fn fromPbtkUrl(")),
+                    Map.entry("pbtk_serialize", List.of("pub fn serialize(")),
+                    Map.entry("pbtk_deserialize", List.of("pub fn deserialize(")),
                     Map.entry("pbtk_prefix", List.of("!1s")),
                     Map.entry("string_url_encode", List.of("std.Uri.percentEncode(")),
                     Map.entry("bytes_base64", List.of("std.base64")),
@@ -150,8 +150,8 @@ class PbtkMultiLanguageCodeGenTest {
                 "go",
                 Map.ofEntries(
                     Map.entry("scalar_field_decl", List.of("string", "int32")),
-                    Map.entry("pbtk_serialize", List.of("ToPbtkUrl()")),
-                    Map.entry("pbtk_deserialize", List.of("DeserializeMsgFromPbtkUrl(")),
+                    Map.entry("pbtk_serialize", List.of("Marshal()")),
+                    Map.entry("pbtk_deserialize", List.of("Unmarshal(")),
                     Map.entry("pbtk_prefix", List.of("!1s")),
                     Map.entry("string_url_encode", List.of("url.QueryEscape(")),
                     Map.entry("bytes_base64", List.of("base64.StdEncoding.EncodeToString(")),
@@ -163,9 +163,9 @@ class PbtkMultiLanguageCodeGenTest {
                 "csharp",
                 Map.ofEntries(
                     Map.entry("scalar_field_decl", List.of("string", "int")),
-                    Map.entry("pbtk_serialize", List.of("public string ToPbtkUrl()")),
+                    Map.entry("pbtk_serialize", List.of("public byte[] ToByteArray()")),
                     Map.entry(
-                        "pbtk_deserialize", List.of("public static", "FromPbtkUrl(string input)")),
+                        "pbtk_deserialize", List.of("public static", "ParseFrom(byte[] data)")),
                     Map.entry("pbtk_prefix", List.of("!1s")),
                     Map.entry("string_url_encode", List.of("Uri.EscapeDataString(")),
                     Map.entry("bytes_base64", List.of("Convert.ToBase64String(")),
@@ -177,8 +177,8 @@ class PbtkMultiLanguageCodeGenTest {
                 "kotlin",
                 Map.ofEntries(
                     Map.entry("scalar_field_decl", List.of("val", "String", "Int")),
-                    Map.entry("pbtk_serialize", List.of("fun toPbtkUrl(): String")),
-                    Map.entry("pbtk_deserialize", List.of("fun fromPbtkUrl(input: String)")),
+                    Map.entry("pbtk_serialize", List.of("fun toByteArray(): ByteArray")),
+                    Map.entry("pbtk_deserialize", List.of("fun parseFrom(bytes: ByteArray)")),
                     Map.entry("pbtk_prefix", List.of("!1s")),
                     Map.entry("string_url_encode", List.of("java.net.URLEncoder.encode(")),
                     Map.entry(
@@ -191,8 +191,8 @@ class PbtkMultiLanguageCodeGenTest {
                 "swift",
                 Map.ofEntries(
                     Map.entry("scalar_field_decl", List.of("public var", "String", "Int32")),
-                    Map.entry("pbtk_serialize", List.of("func toPbtkUrl() -> String")),
-                    Map.entry("pbtk_deserialize", List.of("static func fromPbtkUrl(")),
+                    Map.entry("pbtk_serialize", List.of("func serializedData() throws -> Data")),
+                    Map.entry("pbtk_deserialize", List.of("init(serializedData")),
                     Map.entry("pbtk_prefix", List.of("!1s")),
                     Map.entry(
                         "string_url_encode",
@@ -206,8 +206,8 @@ class PbtkMultiLanguageCodeGenTest {
                 "dart",
                 Map.ofEntries(
                     Map.entry("scalar_field_decl", List.of("String", "int")),
-                    Map.entry("pbtk_serialize", List.of("String toPbtkUrl()")),
-                    Map.entry("pbtk_deserialize", List.of("static", "fromPbtkUrl(String")),
+                    Map.entry("pbtk_serialize", List.of("Uint8List writeToBuffer()")),
+                    Map.entry("pbtk_deserialize", List.of("static", "fromBuffer(Uint8List")),
                     Map.entry("pbtk_prefix", List.of("!1s")),
                     Map.entry("string_url_encode", List.of("Uri.encodeComponent(")),
                     Map.entry("bytes_base64", List.of("base64Encode(")),
@@ -219,8 +219,10 @@ class PbtkMultiLanguageCodeGenTest {
                 "php",
                 Map.ofEntries(
                     Map.entry("scalar_field_decl", List.of("string $", "int $")),
-                    Map.entry("pbtk_serialize", List.of("public function toPbtkUrl(): string")),
-                    Map.entry("pbtk_deserialize", List.of("public static function fromPbtkUrl(")),
+                    Map.entry(
+                        "pbtk_serialize", List.of("public function serializeToString(): string")),
+                    Map.entry(
+                        "pbtk_deserialize", List.of("public static function mergeFromString(")),
                     Map.entry("pbtk_prefix", List.of("!1s")),
                     Map.entry("string_url_encode", List.of("rawurlencode(")),
                     Map.entry("bytes_base64", List.of("base64_encode(")),
@@ -232,8 +234,8 @@ class PbtkMultiLanguageCodeGenTest {
                 "ruby",
                 Map.ofEntries(
                     Map.entry("scalar_field_decl", List.of("attr_accessor")),
-                    Map.entry("pbtk_serialize", List.of("def to_pbtk_url")),
-                    Map.entry("pbtk_deserialize", List.of("def self.from_pbtk_url(")),
+                    Map.entry("pbtk_serialize", List.of("def self.encode")),
+                    Map.entry("pbtk_deserialize", List.of("def self.decode(")),
                     Map.entry("pbtk_prefix", List.of("!1s")),
                     Map.entry("string_url_encode", List.of("CGI.escape(")),
                     Map.entry("bytes_base64", List.of("Base64.strict_encode64(")),
@@ -245,10 +247,11 @@ class PbtkMultiLanguageCodeGenTest {
                 "objc",
                 Map.ofEntries(
                     Map.entry("scalar_field_decl", List.of("@property", "NSString", "int32_t")),
-                    Map.entry("pbtk_serialize", List.of("- (NSString *)toPbtkUrl")),
+                    Map.entry("pbtk_serialize", List.of("- (NSData *)data")),
                     Map.entry(
                         "pbtk_deserialize",
-                        List.of("+ (instancetype)fromPbtkUrl:(NSString *)input")),
+                        List.of(
+                            "+ (instancetype)parseFromData:(NSData *)data error:(NSError **)errorPtr")),
                     Map.entry("pbtk_prefix", List.of("!1s")),
                     Map.entry("string_url_encode", List.of("pbtk_url_encode(")),
                     Map.entry("bytes_base64", List.of("pbtk_base64_encode(")),
@@ -260,8 +263,8 @@ class PbtkMultiLanguageCodeGenTest {
                 "perl",
                 Map.ofEntries(
                     Map.entry("scalar_field_decl", List.of("$self->{")),
-                    Map.entry("pbtk_serialize", List.of("sub to_pbtk_url {")),
-                    Map.entry("pbtk_deserialize", List.of("sub from_pbtk_url {")),
+                    Map.entry("pbtk_serialize", List.of("sub encode {")),
+                    Map.entry("pbtk_deserialize", List.of("sub decode {")),
                     Map.entry("pbtk_prefix", List.of("!1s")),
                     Map.entry("string_url_encode", List.of("uri_escape_utf8(")),
                     Map.entry("bytes_base64", List.of("encode_base64(")),

@@ -59,12 +59,14 @@ protobuf-text-codecs/
 ├── test-protos/                      # 5 test .proto files
 ├── integration-tests/                # Shell-based integration tests (4 files)
 ├── protoc-gen-jsonarray              # Bash wrapper script
+├── protoc-gen-pbtkurl               # Bash wrapper script (pbtk URL format)
 ├── docs/                             # Documentation
 │   ├── archive/                      # Historical documents
 │   │   ├── BUG_CATALOG_v0.1.md
 │   │   └── PLAN.md
 │   └── SYSTEM_ANALYSIS.md           # This file
 ├── build.gradle  settings.gradle     # Groovy DSL build files
+├── SECURITY.md  NOTICE               # Security policy and notices
 └── LICENSE  README.md  CHANGELOG.md  CONTRIBUTING.md
 ```
 
@@ -79,11 +81,11 @@ Key directories:
 
 | Entry Point | Type | Location | Description |
 |-------------|------|----------|-------------|
-| `main()` | CLI (protoc plugin) | `Main.java:12` | Reads CodeGeneratorRequest from stdin, writes CodeGeneratorResponse to stdout |
-| `--version` flag | CLI | `Main.java:14-18` | Prints `protoc-gen-jsonarray 0.2.0` to stdout and exits |
-| `protoc-gen-jsonarray` | Shell wrapper | `protoc-gen-jsonarray:1` | Validates java/JAR existence, delegates to Main |
-| `PluginRunner.run()` | Internal API | `PluginRunner.java:44` | Core orchestration — can be called programmatically (used by 1,066 unit tests) |
-| `LanguageGenerator.generate()` | Internal API | `LanguageGenerator.java:15` | Per-language code generation interface (17 implementations) |
+| `Main.main()` | CLI (protoc plugin) | `Main.java` | Reads CodeGeneratorRequest from stdin, writes CodeGeneratorResponse to stdout |
+| `Main.main()` --version | CLI | `Main.java` | Prints `protoc-gen-jsonarray 0.2.0` to stdout and exits |
+| `protoc-gen-jsonarray` | Shell wrapper | `protoc-gen-jsonarray` | Validates java/JAR existence, delegates to Main |
+| `PluginRunner.run()` | Internal API | `PluginRunner.java` | Core orchestration — can be called programmatically (used by 1,066 unit tests) |
+| `LanguageGenerator.generate()` | Internal API | `LanguageGenerator.java` | Per-language code generation interface (17 implementations) |
 
 ## 4. Components
 
@@ -91,9 +93,9 @@ Key directories:
 
 | Component | Location | Purpose | Lines | Test Coverage |
 |-----------|----------|---------|-------|---------------|
-| PluginRunner | `PluginRunner.java` | Orchestration, parameter parsing, language dispatch, path validation | 195 | 93.3% (22 tests) |
+| PluginRunner | `PluginRunner.java` | Orchestration, parameter parsing, language dispatch, path validation | ~198 | 93.3% (22 tests) |
 | ProtoFileProcessor | `ProtoFileProcessor.java` | Proto file analysis, comment extraction, model construction | 124 | 95.5% (indirect) |
-| MessageAnalyzer | `MessageAnalyzer.java` | Proto descriptor → ProtoMessage conversion, field ordering, validation | 368 | 96.9% (37 tests) |
+| MessageAnalyzer | `MessageAnalyzer.java` | Proto descriptor → ProtoMessage conversion, field ordering, validation | ~387 | 96.9% (37 tests) |
 | TypeRegistry | `model/TypeRegistry.java` | Global type catalog for cross-file resolution | 93 | 100% (14 tests) |
 | ProtoField | `model/ProtoField.java` | Field model with builder, validation | 297 | 100% |
 | ProtoMessage | `model/ProtoMessage.java` | Message model, field position mapping | 154 | 91.5% |
@@ -239,13 +241,13 @@ None. The plugin is completely stateless across invocations. Within a single inv
 
 | Boundary | Location | Untrusted Input | Validation | Residual Risk |
 |----------|----------|-----------------|------------|---------------|
-| stdin (protoc protocol) | `Main.java:14` | Binary protobuf from protoc | protobuf-java validates wire format | A hand-crafted binary could bypass protoc's semantic validation |
-| Field names | `MessageAnalyzer.java:91` | Proto field identifiers | Regex `[a-zA-Z_][a-zA-Z0-9_]*` rejects invalid chars | None — regex is strict |
+| stdin (protoc protocol) | `Main.main()` | Binary protobuf from protoc | protobuf-java validates wire format | A hand-crafted binary could bypass protoc's semantic validation |
+| Field names | `MessageAnalyzer.validateFieldName()` | Proto field identifiers | Regex `[a-zA-Z_][a-zA-Z0-9_]*` rejects invalid chars | None — regex is strict |
 | Message/enum names | `KeywordUtil.escape*()` | Proto type identifiers | Keyword escaping applied per-language | [ASSUMED_BEHAVIOR] Not validated against regex like field names |
-| Type references | `MessageAnalyzer.java:124` | Fully-qualified proto type names | `Any` rejected; `simpleTypeName()` extracts last segment | A crafted type_name like `.evil.Foo; malicious_code()` could inject if not stripped to simple name [ASSUMED_BEHAVIOR — protoc validates type names upstream] |
-| Output file paths | `PluginRunner.java:114` | Package names → file paths | Rejects paths containing `..` | Does not check for absolute paths or null bytes |
-| Language parameter | `PluginRunner.java:102` | `lang=` from protoc parameter | Validated against GENERATORS map (allowlist) | None |
-| Proto2 default values | `JavaDeserializerGenerator.java:243` | Schema-specified string/numeric defaults | Escapes `\n`, `\r`, `\t`, `\0`, `\`, `"` ; special-cases `inf`/`nan` | [INCOMPLETE_ANALYSIS] Only Java generator validated; other languages may not escape defaults |
+| Type references | `MessageAnalyzer.analyze()` | Fully-qualified proto type names | `Any` rejected; `simpleTypeName()` extracts last segment | A crafted type_name like `.evil.Foo; malicious_code()` could inject if not stripped to simple name [ASSUMED_BEHAVIOR — protoc validates type names upstream] |
+| Output file paths | `PluginRunner.run()` | Package names → file paths | Rejects paths containing `..` | Does not check for absolute paths or null bytes |
+| Language parameter | `PluginRunner.parseLanguage()` | `lang=` from protoc parameter | Validated against GENERATORS map (allowlist) | None |
+| Proto2 default values | `JavaDeserializerGenerator.schemaDefaultExpression()` | Schema-specified string/numeric defaults | Escapes `\n`, `\r`, `\t`, `\0`, `\`, `"` ; special-cases `inf`/`nan` | [INCOMPLETE_ANALYSIS] Only Java generator validated; other languages may not escape defaults |
 
 **Key trust assumption:** The plugin trusts that `protoc` provides valid, spec-compliant `CodeGeneratorRequest` messages. All validation is defense-in-depth against a hypothetical attacker who can inject a crafted CodeGeneratorRequest (which requires local code execution to run the plugin directly, at which point the attacker already has arbitrary code execution).
 
@@ -352,8 +354,8 @@ The generated code runs in the user's application with fundamentally different c
 
 | Boundary | Input | Validation in Generated Code |
 |----------|-------|------------------------------|
-| `fromJsonString(String)` | Untrusted JSON string | JSON parsing via built-in reader (Java) or library (json/serde/cJSON); type mismatches caught by parser |
-| `deserialize(ArrayNode)` | Parsed JSON array | Bounds checking (`size > pos`); null checking (`!isNull()`) |
+| `parseFrom(byte[])` | Untrusted serialized data | JSON parsing via built-in reader (Java) or library (json/serde/cJSON); type mismatches caught by parser |
+| `fromJsonArray(List<Object>)` | Parsed JSON array | Bounds checking (`size > pos`); null checking (`!= null`) |
 | Base64 decoding | String from JSON | Library-provided decoding; malformed base64 → empty bytes or exception |
 | int64 string parsing | String or number from JSON | `Long.parseLong` / `strconv.ParseInt` with fallback to numeric |
 

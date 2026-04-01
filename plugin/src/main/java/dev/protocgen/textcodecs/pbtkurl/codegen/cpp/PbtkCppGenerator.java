@@ -397,8 +397,8 @@ public class PbtkCppGenerator implements LanguageGenerator {
 
           // pbtk URL declarations
           w.blankLine();
-          w.line("std::string to_pbtk_url() const;");
-          w.line("static %s from_pbtk_url(const std::string& input);", className);
+          w.line("bool SerializeToString(std::string* output) const;");
+          w.line("bool ParseFromString(const std::string& input);", className);
 
           w.dedent();
         });
@@ -481,14 +481,14 @@ public class PbtkCppGenerator implements LanguageGenerator {
     // append_pbtk_fields
     emitAppendFieldsMethod(w, message, className);
 
-    // to_pbtk_url
+    // SerializeToString
     emitSerializeMethod(w, message, className);
 
     // tokenizer + parse_pbtk_tokens
     emitTokenizerMethod(w, className);
     emitParseTokensMethod(w, message, className);
 
-    // from_pbtk_url
+    // ParseFromString
     emitDeserializeMethod(w, message, className);
   }
 
@@ -895,11 +895,13 @@ public class PbtkCppGenerator implements LanguageGenerator {
   private void emitSerializeMethod(CodeWriter w, ProtoMessage message, String className) {
     w.blankLine();
     w.block(
-        "inline std::string " + className + "::to_pbtk_url() const",
+        "inline bool " + className + "::SerializeToString(std::string* output) const",
         () -> {
+          w.line("if (!output) return false;");
           w.line("std::ostringstream oss;");
           w.line("%s_append_pbtk_fields(oss, *this);", className);
-          w.line("return oss.str();");
+          w.line("*output = oss.str();");
+          w.line("return true;");
         });
   }
 
@@ -1131,14 +1133,15 @@ public class PbtkCppGenerator implements LanguageGenerator {
   private void emitDeserializeMethod(CodeWriter w, ProtoMessage message, String className) {
     w.blankLine();
     w.block(
-        "inline " + className + " " + className + "::from_pbtk_url(const std::string& input)",
+        "inline bool " + className + "::ParseFromString(const std::string& input)",
         () -> {
-          w.line("if (input.empty()) return %s{};", className);
+          w.line("if (input.empty()) { *this = %s{}; return true; }", className);
           w.line("auto tokens = %s_tokenize_pbtk(input);", className);
           w.line("size_t offset = 0;");
           w.line(
-              "return %s_parse_pbtk_tokens(tokens, static_cast<int>(tokens.size()), offset);",
+              "*this = %s_parse_pbtk_tokens(tokens, static_cast<int>(tokens.size()), offset);",
               className);
+          w.line("return true;");
         });
   }
 

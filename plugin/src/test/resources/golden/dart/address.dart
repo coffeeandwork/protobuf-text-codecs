@@ -62,9 +62,9 @@ class Address {
     return array;
   }
 
-  /// Serialize this message to a JSON string.
-  String toJsonString() {
-    return jsonEncode(serialize());
+  /// Serialize this message to a Uint8List.
+  Uint8List writeToBuffer() {
+    return Uint8List.fromList(utf8.encode(jsonEncode(serialize())));
   }
 
   /// Deserialize from a positional JSON array.
@@ -86,9 +86,9 @@ class Address {
     return obj;
   }
 
-  /// Deserialize from a JSON string.
-  factory Address.fromJsonString(String json) {
-    return Address.deserialize(jsonDecode(json) as List<dynamic>);
+  /// Deserialize from a Uint8List.
+  factory Address.fromBuffer(Uint8List buffer) {
+    return Address.deserialize(jsonDecode(utf8.decode(buffer)) as List<dynamic>);
   }
 
   @override

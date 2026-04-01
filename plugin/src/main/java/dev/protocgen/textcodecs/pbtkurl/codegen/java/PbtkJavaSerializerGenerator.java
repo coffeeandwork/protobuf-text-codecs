@@ -24,8 +24,8 @@ import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoMessage;
 
 /**
- * Generates the toPbtkUrl() method body for Java classes. Produces pbtk URL-encoded strings using
- * the Google Maps protobuf text format: {@code !<fieldNumber><typeChar><value>}.
+ * Generates the toByteArray() method body for Java pbtk URL classes. Produces pbtk URL-encoded
+ * strings using the Google Maps protobuf text format: {@code !<fieldNumber><typeChar><value>}.
  *
  * <p>Works with immutable message classes: reads fields via getters on the message instance.
  */
@@ -34,9 +34,9 @@ public class PbtkJavaSerializerGenerator {
   private final JavaNameResolver nameResolver;
   private final JavaTypeMapper typeMapper;
 
-  public PbtkJavaSerializerGenerator(JavaNameResolver nameResolver, JavaTypeMapper typeMapper) {
-    this.nameResolver = nameResolver;
+  public PbtkJavaSerializerGenerator(JavaTypeMapper typeMapper, JavaNameResolver nameResolver) {
     this.typeMapper = typeMapper;
+    this.nameResolver = nameResolver;
   }
 
   public void generate(CodeWriter w, ProtoMessage message) {
@@ -62,14 +62,22 @@ public class PbtkJavaSerializerGenerator {
           w.line("return count;");
         });
 
-    // Public serialize method
+    // Public: serialize to byte[]
     w.blankLine();
     w.block(
-        "public String toPbtkUrl()",
+        "public byte[] toByteArray()",
         () -> {
           w.line("StringBuilder sb = new StringBuilder();");
           w.line("appendPbtkFields(sb);");
-          w.line("return sb.toString();");
+          w.line("return sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);");
+        });
+
+    // Public: serialize to OutputStream
+    w.blankLine();
+    w.block(
+        "public void writeTo(java.io.OutputStream output) throws java.io.IOException",
+        () -> {
+          w.line("output.write(toByteArray());");
         });
   }
 
@@ -92,6 +100,8 @@ public class PbtkJavaSerializerGenerator {
       emitMapSerialize(w, field, javaField, fieldNum);
     } else if (field.isRepeated()) {
       emitRepeatedSerialize(w, field, javaField, fieldNum);
+    } else if (field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
+      emitMessageSerialize(w, field, javaField, fieldNum);
     } else if (field.getKind() == ProtoField.FieldKind.MESSAGE) {
       emitMessageSerialize(w, field, javaField, fieldNum);
     } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
@@ -103,7 +113,9 @@ public class PbtkJavaSerializerGenerator {
 
   private void emitSingleFieldSerialize(
       CodeWriter w, ProtoField field, String javaField, int fieldNum) {
-    if (field.getKind() == ProtoField.FieldKind.MESSAGE) {
+    if (field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
+      emitMessageSerialize(w, field, javaField, fieldNum);
+    } else if (field.getKind() == ProtoField.FieldKind.MESSAGE) {
       emitMessageSerialize(w, field, javaField, fieldNum);
     } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
       emitEnumSerialize(w, field, javaField, fieldNum);
@@ -287,6 +299,8 @@ public class PbtkJavaSerializerGenerator {
       } else {
         w.line("count += %s.size();", javaField);
       }
+    } else if (field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
+      w.line("if (%s != null) count++;", javaField);
     } else if (field.getKind() == ProtoField.FieldKind.MESSAGE) {
       w.line("if (%s != null) count++;", javaField);
     } else if (field.hasExplicitPresence() && !field.isRequired()) {

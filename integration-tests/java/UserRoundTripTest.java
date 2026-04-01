@@ -52,7 +52,7 @@ public class UserRoundTripTest {
                 .setAddress(address)
                 .build();
 
-        String json = user.toJsonString();
+        String json = new String(user.toByteArray(), java.nio.charset.StandardCharsets.UTF_8);
         System.out.println("  Serialized: " + json);
 
         if (EXPECTED_JSON.equals(json)) {
@@ -66,7 +66,7 @@ public class UserRoundTripTest {
     private static void testDeserialize() {
         System.out.println("--- Test: Deserialize User from JSON ---");
 
-        User user = User.fromJsonString(EXPECTED_JSON);
+        User user = User.parseFrom(EXPECTED_JSON.getBytes(java.nio.charset.StandardCharsets.UTF_8));
 
         check("firstname", "Alice", user.getFirstname());
         check("lastname", "Smith", user.getLastname());
@@ -99,9 +99,9 @@ public class UserRoundTripTest {
                 .setAddress(address)
                 .build();
 
-        String json1 = original.toJsonString();
-        User deserialized = User.fromJsonString(json1);
-        String json2 = deserialized.toJsonString();
+        String json1 = new String(original.toByteArray(), java.nio.charset.StandardCharsets.UTF_8);
+        User deserialized = User.parseFrom(json1.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        String json2 = new String(deserialized.toByteArray(), java.nio.charset.StandardCharsets.UTF_8);
 
         if (json1.equals(json2)) {
             pass("Round-trip produces identical JSON");

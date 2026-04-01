@@ -84,14 +84,15 @@ namespace Example {
             sb.Append(']');
         }
 
-        public string ToJsonString() {
+        public byte[] ToByteArray() {
             var sb = new StringBuilder(128);
             AppendJsonArray(sb);
-            return sb.ToString();
+            return System.Text.Encoding.UTF8.GetBytes(sb.ToString());
         }
 
-        public byte[] ToJsonBytes() {
-            return System.Text.Encoding.UTF8.GetBytes(ToJsonString());
+        public void WriteTo(System.IO.Stream output) {
+            var bytes = ToByteArray();
+            output.Write(bytes, 0, bytes.Length);
         }
 
         internal static Address FromJsonArray(JsonElement array) {
@@ -112,13 +113,16 @@ namespace Example {
             return builder.Build();
         }
 
-        public static Address FromJsonString(string json) {
+        public static Address ParseFrom(byte[] bytes) {
+            var json = System.Text.Encoding.UTF8.GetString(bytes);
             using var doc = JsonDocument.Parse(json);
             return FromJsonArray(doc.RootElement);
         }
 
-        public static Address FromJsonBytes(byte[] bytes) {
-            return FromJsonString(System.Text.Encoding.UTF8.GetString(bytes));
+        public static Address ParseFrom(System.IO.Stream input) {
+            using var ms = new System.IO.MemoryStream();
+            input.CopyTo(ms);
+            return ParseFrom(ms.ToArray());
         }
 
         public override string ToString() {

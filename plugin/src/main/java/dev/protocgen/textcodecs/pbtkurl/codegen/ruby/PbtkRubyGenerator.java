@@ -34,7 +34,7 @@ import java.util.Set;
 
 /**
  * Ruby language code generator for pbtk URL encoding. Produces Ruby source files with
- * to_pbtk_url/from_pbtk_url serialization methods.
+ * self.encode/self.decode serialization methods.
  *
  * <p>The pbtk URL format encodes protobuf messages as URL strings using the syntax: {@code
  * !<fieldNumber><typeChar><value>} where type chars are: b=bool(0/1), i=integer, f=float, d=double,
@@ -334,7 +334,7 @@ public class PbtkRubyGenerator implements LanguageGenerator {
   }
 
   // ---------------------------------------------------------------------------
-  // Serializer: to_pbtk_url
+  // Serializer: self.encode
   // ---------------------------------------------------------------------------
 
   private void emitSerializer(CodeWriter w, ProtoMessage message) {
@@ -364,12 +364,12 @@ public class PbtkRubyGenerator implements LanguageGenerator {
     w.dedent();
     w.line("end");
 
-    // to_pbtk_url: public serialize method
+    // self.encode: public serialize class method
     w.blankLine();
-    w.line("def to_pbtk_url");
+    w.line("def self.encode(instance)");
     w.indent();
     w.line("parts = []");
-    w.line("_append_pbtk_fields(parts)");
+    w.line("instance._append_pbtk_fields(parts)");
     w.line("parts.join");
     w.dedent();
     w.line("end");
@@ -589,7 +589,7 @@ public class PbtkRubyGenerator implements LanguageGenerator {
   }
 
   // ---------------------------------------------------------------------------
-  // Deserializer: from_pbtk_url
+  // Deserializer: self.decode
   // ---------------------------------------------------------------------------
 
   private void emitDeserializer(
@@ -597,12 +597,12 @@ public class PbtkRubyGenerator implements LanguageGenerator {
     // Internal: _parse_pbtk_tokens(tokens, field_count, offset)
     emitParseFromTokens(w, message, className, lazyImports);
 
-    // Public: from_pbtk_url(input_str)
+    // Public: self.decode(data)
     w.blankLine();
-    w.line("def self.from_pbtk_url(input_str)");
+    w.line("def self.decode(data)");
     w.indent();
-    w.line("return new if input_str.nil? || input_str.empty?");
-    w.line("tokens = _tokenize_pbtk(input_str)");
+    w.line("return new if data.nil? || data.empty?");
+    w.line("tokens = _tokenize_pbtk(data)");
     w.line("offset = [0]");
     w.line("_parse_pbtk_tokens(tokens, tokens.length, offset)");
     w.dedent();

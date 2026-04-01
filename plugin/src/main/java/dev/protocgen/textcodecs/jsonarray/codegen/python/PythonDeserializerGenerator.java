@@ -64,22 +64,13 @@ public class PythonDeserializerGenerator {
     w.line("return obj");
     w.dedent();
 
-    // Convenience: deserialize from JSON string
+    // Convenience: deserialize from serialized bytes
     w.blankLine();
     w.line("@classmethod");
-    w.line("def from_json_string(cls, json_str):");
+    w.line("def ParseFromString(cls, data):");
     w.indent();
-    w.line("\"\"\"Deserialize from a JSON string.\"\"\"");
-    w.line("return cls.deserialize(json.loads(json_str))");
-    w.dedent();
-
-    // Convenience: deserialize from bytes
-    w.blankLine();
-    w.line("@classmethod");
-    w.line("def from_json_bytes(cls, data):");
-    w.indent();
-    w.line("\"\"\"Deserialize from JSON-encoded bytes.\"\"\"");
-    w.line("return cls.from_json_string(data.decode(\"utf-8\"))");
+    w.line("\"\"\"Deserialize from a JSON-encoded bytes string.\"\"\"");
+    w.line("return cls.deserialize(json.loads(data))");
     w.dedent();
   }
 

@@ -34,7 +34,8 @@ import java.util.Set;
 
 /**
  * Dart language code generator for pbtk URL encoding. Produces Dart class files with
- * toPbtkUrl()/fromPbtkUrl() serialization using the {@code !<fieldNumber><typeChar><value>} format.
+ * writeToBuffer()/fromBuffer() serialization using the {@code !<fieldNumber><typeChar><value>}
+ * format.
  */
 public class PbtkDartGenerator implements LanguageGenerator {
 
@@ -238,7 +239,7 @@ public class PbtkDartGenerator implements LanguageGenerator {
   }
 
   // ---------------------------------------------------------------------------
-  // toPbtkUrl() -- serialization
+  // writeToBuffer() -- serialization
   // ---------------------------------------------------------------------------
 
   private void emitToPbtkUrl(CodeWriter w, ProtoMessage message) {
@@ -266,15 +267,15 @@ public class PbtkDartGenerator implements LanguageGenerator {
           }
         });
 
-    // toPbtkUrl() -- public method
+    // writeToBuffer() -- public method
     w.blankLine();
-    w.line("/// Serialize this message to a pbtk URL-encoded string.");
+    w.line("/// Serialize this message to a Uint8List.");
     w.block(
-        "String toPbtkUrl()",
+        "Uint8List writeToBuffer()",
         () -> {
           w.line("final parts = <String>[];");
           w.line("_appendPbtkFields(parts);");
-          w.line("return parts.join('');");
+          w.line("return Uint8List.fromList(utf8.encode(parts.join('')));");
         });
   }
 
@@ -449,7 +450,7 @@ public class PbtkDartGenerator implements LanguageGenerator {
   }
 
   // ---------------------------------------------------------------------------
-  // fromPbtkUrl() -- deserialization
+  // fromBuffer() -- deserialization
   // ---------------------------------------------------------------------------
 
   private void emitFromPbtkUrl(CodeWriter w, ProtoMessage message, String className) {
@@ -488,12 +489,13 @@ public class PbtkDartGenerator implements LanguageGenerator {
           w.line("return obj;");
         });
 
-    // fromPbtkUrl -- public static method
+    // fromBuffer -- public factory constructor
     w.blankLine();
-    w.line("/// Deserialize from a pbtk URL-encoded string.");
+    w.line("/// Deserialize from a Uint8List.");
     w.block(
-        "static " + className + " fromPbtkUrl(String input)",
+        "static " + className + " fromBuffer(Uint8List buffer)",
         () -> {
+          w.line("final input = utf8.decode(buffer);");
           w.line("if (input.isEmpty) return %s();", className);
           w.line("final tokens = %s._tokenizePbtk(input);", className);
           w.line("final offset = [0];");

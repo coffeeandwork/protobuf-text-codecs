@@ -35,8 +35,8 @@ import java.util.Set;
 
 /**
  * Rust language code generator for pbtk URL encoding. Produces Rust source files with
- * to_pbtk_url()/from_pbtk_url() serialization methods using the {@code
- * !<fieldNumber><typeChar><value>} format.
+ * encode_to_vec()/decode() serialization methods using the {@code !<fieldNumber><typeChar><value>}
+ * format.
  */
 public class PbtkRustGenerator implements LanguageGenerator {
 
@@ -165,14 +165,14 @@ public class PbtkRustGenerator implements LanguageGenerator {
           emitAppendPbtkFields(w, message);
           emitCountPbtkFields(w, message);
 
-          // Public serialize method
+          // Public serialize method: returns Vec<u8>
           w.blankLine();
           w.block(
-              "pub fn to_pbtk_url(&self) -> String",
+              "pub fn encode_to_vec(&self) -> Vec<u8>",
               () -> {
                 w.line("let mut s = String::new();");
                 w.line("self.append_pbtk_fields(&mut s);");
-                w.line("s");
+                w.line("s.into_bytes()");
               });
 
           // Public deserialize method
@@ -592,16 +592,17 @@ public class PbtkRustGenerator implements LanguageGenerator {
           w.line("obj");
         });
 
-    // Public from_pbtk_url
+    // Public decode: takes &[u8], returns Result<Self>
     w.blankLine();
     w.block(
-        "pub fn from_pbtk_url(input: &str) -> Self",
+        "pub fn decode(data: &[u8]) -> Result<Self, String>",
         () -> {
-          w.line("if input.is_empty() { return Self::default(); }");
+          w.line("let input = std::str::from_utf8(data).map_err(|e| e.to_string())?;");
+          w.line("if input.is_empty() { return Ok(Self::default()); }");
           w.line("let trimmed = if input.starts_with('!') { &input[1..] } else { input };");
           w.line("let tokens: Vec<&str> = trimmed.split('!').collect();");
           w.line("let mut offset: usize = 0;");
-          w.line("Self::parse_pbtk_tokens(&tokens, tokens.len(), &mut offset)");
+          w.line("Ok(Self::parse_pbtk_tokens(&tokens, tokens.len(), &mut offset))");
         });
   }
 
@@ -850,11 +851,11 @@ public class PbtkRustGenerator implements LanguageGenerator {
 
           w.blankLine();
           w.block(
-              "pub fn to_pbtk_url(&self) -> String",
+              "pub fn encode_to_vec(&self) -> Vec<u8>",
               () -> {
                 w.line("let mut s = String::new();");
                 w.line("self.append_pbtk_fields(&mut s);");
-                w.line("s");
+                w.line("s.into_bytes()");
               });
 
           emitFromPbtkUrl(w, nested, structName);

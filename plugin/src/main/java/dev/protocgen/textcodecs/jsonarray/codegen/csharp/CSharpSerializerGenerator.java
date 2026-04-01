@@ -60,22 +60,23 @@ public class CSharpSerializerGenerator {
           w.line("sb.Append(']');");
         });
 
-    // Public convenience: serialize to JSON string
-    w.blankLine();
-    w.block(
-        "public string ToJsonString()",
-        () -> {
-          w.line("var sb = new StringBuilder(%d);", Math.max(64, message.getMaxFieldNumber() * 32));
-          w.line("AppendJsonArray(sb);");
-          w.line("return sb.ToString();");
-        });
-
     // Public convenience: serialize to byte[]
     w.blankLine();
     w.block(
-        "public byte[] ToJsonBytes()",
+        "public byte[] ToByteArray()",
         () -> {
-          w.line("return System.Text.Encoding.UTF8.GetBytes(ToJsonString());");
+          w.line("var sb = new StringBuilder(%d);", Math.max(64, message.getMaxFieldNumber() * 32));
+          w.line("AppendJsonArray(sb);");
+          w.line("return System.Text.Encoding.UTF8.GetBytes(sb.ToString());");
+        });
+
+    // Public convenience: write to Stream
+    w.blankLine();
+    w.block(
+        "public void WriteTo(System.IO.Stream output)",
+        () -> {
+          w.line("var bytes = ToByteArray();");
+          w.line("output.Write(bytes, 0, bytes.Length);");
         });
   }
 

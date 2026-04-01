@@ -40,7 +40,7 @@ import java.util.Set;
  *
  * <ol>
  *   <li>message_name.h - struct definition and function declarations
- *   <li>message_name.c - function implementations (to_pbtk_url, from_pbtk_url, free)
+ *   <li>message_name.c - function implementations (pack, unpack, free)
  * </ol>
  *
  * <p>For top-level enums, only a .h file is produced (enums need no implementation).
@@ -155,10 +155,10 @@ public class PbtkCGenerator implements LanguageGenerator {
     // Function declarations
     w.blankLine();
     w.line("/* pbtk URL serialization */");
-    w.line("char* %s_to_pbtk_url(const %s* msg);", funcPrefix, typeName);
+    w.line("char* %s_pack(const %s* msg);", funcPrefix, typeName);
     w.blankLine();
     w.line("/* pbtk URL deserialization */");
-    w.line("%s* %s_from_pbtk_url(const char* input);", typeName, funcPrefix);
+    w.line("%s* %s_unpack(const char* input);", typeName, funcPrefix);
     w.blankLine();
     w.line("/* Memory management */");
     w.line("void %s_free(%s* msg);", funcPrefix, typeName);
@@ -861,7 +861,7 @@ public class PbtkCGenerator implements LanguageGenerator {
   private void emitSerializeFunction(
       CodeWriter w, ProtoMessage message, String funcPrefix, String typeName) {
     w.block(
-        "char* " + funcPrefix + "_to_pbtk_url(const " + typeName + "* msg)",
+        "char* " + funcPrefix + "_pack(const " + typeName + "* msg)",
         () -> {
           w.line("if (!msg) return NULL;");
           w.line("pbtk_buf_t buf;");
@@ -1127,7 +1127,7 @@ public class PbtkCGenerator implements LanguageGenerator {
   private void emitDeserializeFunction(
       CodeWriter w, ProtoMessage message, String funcPrefix, String typeName) {
     w.block(
-        typeName + "* " + funcPrefix + "_from_pbtk_url(const char* input)",
+        typeName + "* " + funcPrefix + "_unpack(const char* input)",
         () -> {
           w.line("if (!input || input[0] == '\\0') return NULL;");
           w.blankLine();
@@ -1339,8 +1339,8 @@ public class PbtkCGenerator implements LanguageGenerator {
     emitStructDef(w, nested, typeName, funcPrefix, pkg);
 
     w.blankLine();
-    w.line("char* %s_to_pbtk_url(const %s* msg);", funcPrefix, typeName);
-    w.line("%s* %s_from_pbtk_url(const char* input);", typeName, funcPrefix);
+    w.line("char* %s_pack(const %s* msg);", funcPrefix, typeName);
+    w.line("%s* %s_unpack(const char* input);", typeName, funcPrefix);
     w.line("void %s_free(%s* msg);", funcPrefix, typeName);
 
     for (ProtoMessage deepNested : nested.getNestedMessages()) {

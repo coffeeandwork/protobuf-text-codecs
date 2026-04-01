@@ -32,7 +32,7 @@ The wrapper scripts at the repository root (`protoc-gen-jsonarray`, `protoc-gen-
 ./gradlew :plugin:test
 
 # Run a specific test class
-./gradlew :plugin:test --tests "dev.protocgen.textcodecs.jsonarray.codegen.java.JavaGeneratorTest"
+./gradlew :plugin:test --tests "dev.protocgen.textcodecs.jsonarray.JavaCodeGenTest"
 ```
 
 ### Golden-File Tests

@@ -28,7 +28,7 @@ import java.util.List;
 
 /**
  * Java language code generator for pbtk URL encoding. Produces Java source files with
- * toPbtkUrl()/fromPbtkUrl() serialization methods.
+ * toByteArray()/parseFrom() serialization methods.
  */
 public class PbtkJavaGenerator implements LanguageGenerator {
 

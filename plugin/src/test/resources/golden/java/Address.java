@@ -71,14 +71,14 @@ public final class Address {
         sb.append(']');
     }
 
-    public String toJsonString() {
+    public byte[] toByteArray() {
         StringBuilder sb = new StringBuilder(128);
         appendJsonArray(sb);
-        return sb.toString();
+        return sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
     }
 
-    public byte[] toJsonBytes() {
-        return toJsonString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    public void writeTo(java.io.OutputStream output) throws java.io.IOException {
+        output.write(toByteArray());
     }
 
     @SuppressWarnings("unchecked")
@@ -100,13 +100,14 @@ public final class Address {
         return builder.build();
     }
 
-    public static Address fromJsonString(String json) {
+    public static Address parseFrom(byte[] data) {
+        String json = new String(data, java.nio.charset.StandardCharsets.UTF_8);
         java.util.List<Object> array = dev.protocgen.textcodecs.jsonarray.runtime.JsonArrayReader.parseArray(json);
         return fromJsonArray(array);
     }
 
-    public static Address fromJsonBytes(byte[] bytes) {
-        return fromJsonString(new String(bytes, java.nio.charset.StandardCharsets.UTF_8));
+    public static Address parseFrom(java.io.InputStream input) throws java.io.IOException {
+        return parseFrom(input.readAllBytes());
     }
 
     @Override

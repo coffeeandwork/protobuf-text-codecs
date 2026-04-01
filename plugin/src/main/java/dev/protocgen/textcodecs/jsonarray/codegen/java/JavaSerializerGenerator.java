@@ -60,24 +60,24 @@ public class JavaSerializerGenerator {
           w.line("sb.append(']');");
         });
 
-    // Public convenience: serialize to JSON string
+    // Public: serialize to byte[]
     w.blankLine();
     w.block(
-        "public String toJsonString()",
+        "public byte[] toByteArray()",
         () -> {
           w.line(
               "StringBuilder sb = new StringBuilder(%d);",
               Math.max(64, message.getMaxFieldNumber() * 32));
           w.line("appendJsonArray(sb);");
-          w.line("return sb.toString();");
+          w.line("return sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);");
         });
 
-    // Public convenience: serialize to byte[]
+    // Public: serialize to OutputStream
     w.blankLine();
     w.block(
-        "public byte[] toJsonBytes()",
+        "public void writeTo(java.io.OutputStream output) throws java.io.IOException",
         () -> {
-          w.line("return toJsonString().getBytes(java.nio.charset.StandardCharsets.UTF_8);");
+          w.line("output.write(toByteArray());");
         });
   }
 

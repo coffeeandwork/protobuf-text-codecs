@@ -23,11 +23,11 @@ typedef struct {
 
 /* Serialization */
 cJSON* example_address_serialize(const example_Address* msg);
-char* example_address_to_json_string(const example_Address* msg);
+char* example_address_pack(const example_Address* msg);
 
 /* Deserialization */
 example_Address* example_address_deserialize(const cJSON* array);
-example_Address* example_address_from_json_string(const char* json);
+example_Address* example_address_unpack(const char* json);
 
 /* Memory management */
 void example_address_free(example_Address* msg);

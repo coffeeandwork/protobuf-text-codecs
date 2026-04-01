@@ -32,7 +32,7 @@ import java.util.List;
 
 /**
  * Kotlin language code generator for pbtk URL encoding. Produces Kotlin source files with
- * toPbtkUrl()/fromPbtkUrl() serialization methods. Generated code uses only Kotlin/JVM stdlib
+ * toByteArray()/parseFrom() serialization methods. Generated code uses only Kotlin/JVM stdlib
  * (StringBuilder, URLEncoder, URLDecoder, Base64).
  *
  * <p>The pbtk format encodes protobuf messages as URL strings: {@code
@@ -351,7 +351,7 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
   }
 
   // ---------------------------------------------------------------------------
-  // Serializer (toPbtkUrl)
+  // Serializer (toByteArray)
   // ---------------------------------------------------------------------------
 
   private void emitSerializer(CodeWriter w, ProtoMessage message) {
@@ -377,14 +377,14 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
           w.line("return count");
         });
 
-    // toPbtkUrl
+    // toByteArray
     w.blankLine();
     w.block(
-        "fun toPbtkUrl(): String",
+        "fun toByteArray(): ByteArray",
         () -> {
           w.line("val sb = StringBuilder()");
           w.line("appendPbtkFields(sb)");
-          w.line("return sb.toString()");
+          w.line("return sb.toString().toByteArray(Charsets.UTF_8)");
         });
   }
 
@@ -595,7 +595,7 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
   }
 
   // ---------------------------------------------------------------------------
-  // Deserializer (fromPbtkUrl) -- emitted inside companion object
+  // Deserializer (parseFrom) -- emitted inside companion object
   // ---------------------------------------------------------------------------
 
   private void emitDeserializer(CodeWriter w, ProtoMessage message, String className) {
@@ -631,12 +631,13 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
           w.line("return builder.build()");
         });
 
-    // fromPbtkUrl
+    // parseFrom
     w.blankLine();
     w.line("@JvmStatic");
     w.block(
-        "fun fromPbtkUrl(input: String): " + className,
+        "fun parseFrom(bytes: ByteArray): " + className,
         () -> {
+          w.line("val input = String(bytes, Charsets.UTF_8)");
           w.line("if (input.isEmpty()) return %s.getDefaultInstance()", className);
           w.line("val tokens = tokenizePbtk(input)");
           w.line("val offset = intArrayOf(0)");

@@ -34,7 +34,7 @@ import java.util.Set;
 
 /**
  * JavaScript language code generator for pbtk URL encoding. Produces ES6 class files with
- * toPbtkUrl()/fromPbtkUrl() serialization using the {@code !<fieldNumber><typeChar><value>} format.
+ * encode()/decode() serialization using the {@code !<fieldNumber><typeChar><value>} format.
  */
 public class PbtkJavaScriptGenerator implements LanguageGenerator {
 
@@ -238,7 +238,7 @@ public class PbtkJavaScriptGenerator implements LanguageGenerator {
   }
 
   // ---------------------------------------------------------------------------
-  // toPbtkUrl() — serialization
+  // encode() — serialization
   // ---------------------------------------------------------------------------
 
   private void emitToPbtkUrl(CodeWriter w, ProtoMessage message) {
@@ -266,18 +266,18 @@ public class PbtkJavaScriptGenerator implements LanguageGenerator {
           }
         });
 
-    // toPbtkUrl() — public method
+    // encode() — public method
     w.blankLine();
     w.line("/**");
-    w.line(" * Serialize this message to a pbtk URL-encoded string.");
-    w.line(" * @returns {string}");
+    w.line(" * Encode this message to a Uint8Array.");
+    w.line(" * @returns {Uint8Array}");
     w.line(" */");
     w.block(
-        "toPbtkUrl()",
+        "encode()",
         () -> {
           w.line("const parts = [];");
           w.line("this._appendPbtkFields(parts);");
-          w.line("return parts.join('');");
+          w.line("return new TextEncoder().encode(parts.join(''));");
         });
   }
 
@@ -448,7 +448,7 @@ public class PbtkJavaScriptGenerator implements LanguageGenerator {
   }
 
   // ---------------------------------------------------------------------------
-  // fromPbtkUrl() — deserialization
+  // decode() — deserialization
   // ---------------------------------------------------------------------------
 
   private void emitFromPbtkUrl(
@@ -492,16 +492,17 @@ public class PbtkJavaScriptGenerator implements LanguageGenerator {
           w.line("return obj;");
         });
 
-    // fromPbtkUrl — public static method
+    // decode — public static method
     w.blankLine();
     w.line("/**");
-    w.line(" * Deserialize from a pbtk URL-encoded string.");
-    w.line(" * @param {string} input");
+    w.line(" * Decode from a Uint8Array or string.");
+    w.line(" * @param {Uint8Array|string} data");
     w.line(" * @returns {%s}", className);
     w.line(" */");
     w.block(
-        "static fromPbtkUrl(input)",
+        "static decode(data)",
         () -> {
+          w.line("const input = typeof data === 'string' ? data : new TextDecoder().decode(data);");
           w.line("if (input == null || input.length === 0) return new %s();", className);
           w.line("const tokens = %s._tokenizePbtk(input);", className);
           w.line("const offset = {v: 0};");

@@ -63,27 +63,15 @@ public class PhpSerializerGenerator {
     w.dedent();
     w.line("}");
 
-    // toJsonString convenience
+    // serializeToString convenience
     w.blankLine();
     w.line("/**");
-    w.line(" * Serialize this message to a JSON string.");
+    w.line(" * Serialize this message to a string.");
     w.line(" */");
-    w.line("public function toJsonString(): string");
+    w.line("public function serializeToString(): string");
     w.line("{");
     w.indent();
     w.line("return json_encode($this->serialize(), JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);");
-    w.dedent();
-    w.line("}");
-
-    // toJsonBytes convenience (PHP strings are byte sequences)
-    w.blankLine();
-    w.line("/**");
-    w.line(" * Serialize this message to JSON-encoded bytes.");
-    w.line(" */");
-    w.line("public function toJsonBytes(): string");
-    w.line("{");
-    w.indent();
-    w.line("return $this->toJsonString();");
     w.dedent();
     w.line("}");
   }

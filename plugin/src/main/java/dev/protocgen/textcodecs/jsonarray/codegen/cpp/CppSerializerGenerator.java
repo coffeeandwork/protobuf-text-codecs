@@ -55,12 +55,14 @@ public class CppSerializerGenerator {
           w.line("return arr;");
         });
 
-    // to_json_string convenience method
+    // SerializeToString method: takes std::string* output, returns bool
     w.blankLine();
     w.block(
-        "inline std::string " + className + "::to_json_string() const",
+        "inline bool " + className + "::SerializeToString(std::string* output) const",
         () -> {
-          w.line("return serialize().dump();");
+          w.line("if (!output) return false;");
+          w.line("*output = serialize().dump();");
+          w.line("return true;");
         });
   }
 

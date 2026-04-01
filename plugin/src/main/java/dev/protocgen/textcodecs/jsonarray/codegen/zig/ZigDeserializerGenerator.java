@@ -37,7 +37,8 @@ public class ZigDeserializerGenerator {
   public void generate(CodeWriter w, ProtoMessage message, String structName) {
     w.blankLine();
     w.block(
-        "pub fn deserialize(value: json.Value, allocator: std.mem.Allocator) !" + structName,
+        "pub fn deserializeFromValue(value: json.Value, allocator: std.mem.Allocator) !"
+            + structName,
         () -> {
           w.line("const arr = value.array.items;");
           w.line("const size = arr.len;");
@@ -60,14 +61,14 @@ public class ZigDeserializerGenerator {
           w.line("return obj;");
         });
 
-    // fromJsonString convenience function
+    // Public deserialize method: takes []u8 data and allocator
     w.blankLine();
     w.block(
-        "pub fn fromJsonString(input: []const u8, allocator: std.mem.Allocator) !" + structName,
+        "pub fn deserialize(data: []const u8, allocator: std.mem.Allocator) !" + structName,
         () -> {
-          w.line("const parsed = try std.json.parseFromSlice(json.Value, allocator, input, .{});");
+          w.line("const parsed = try std.json.parseFromSlice(json.Value, allocator, data, .{});");
           w.line("defer parsed.deinit();");
-          w.line("return try deserialize(parsed.value, allocator);");
+          w.line("return try deserializeFromValue(parsed.value, allocator);");
         });
   }
 
@@ -135,7 +136,7 @@ public class ZigDeserializerGenerator {
   private void emitMessageDeserialize(
       CodeWriter w, ProtoField field, String zigField, String elemExpr) {
     String msgType = ZigNameResolver.simpleTypeName(field.getTypeReference());
-    w.line("%s = try %s.deserialize(%s, allocator);", zigField, msgType, elemExpr);
+    w.line("%s = try %s.deserializeFromValue(%s, allocator);", zigField, msgType, elemExpr);
   }
 
   private void emitRepeatedDeserialize(
@@ -148,7 +149,8 @@ public class ZigDeserializerGenerator {
           if (field.getKind() == ProtoField.FieldKind.MESSAGE
               || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
             String msgType = ZigNameResolver.simpleTypeName(field.getTypeReference());
-            w.line("try %s.append(try %s.deserialize(elem, allocator));", zigField, msgType);
+            w.line(
+                "try %s.append(try %s.deserializeFromValue(elem, allocator));", zigField, msgType);
           } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
             w.line("try %s.append(@enumFromInt(@as(i64, elem.integer)));", zigField);
           } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
@@ -201,7 +203,7 @@ public class ZigDeserializerGenerator {
               || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
             String msgType = ZigNameResolver.simpleTypeName(field.getTypeReference());
             w.line(
-                "%s = .{ .%s = try %s.deserialize(arr[%d], allocator) };",
+                "%s = .{ .%s = try %s.deserializeFromValue(arr[%d], allocator) };",
                 unionField, tagName, msgType, pos);
           } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
             w.line(
@@ -237,7 +239,7 @@ public class ZigDeserializerGenerator {
   private String mapValueReadExpr(ProtoField field, String elemExpr) {
     if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE) {
       String msgType = ZigNameResolver.simpleTypeName(field.getMapValueTypeReference());
-      return "try " + msgType + ".deserialize(" + elemExpr + ", allocator)";
+      return "try " + msgType + ".deserializeFromValue(" + elemExpr + ", allocator)";
     }
     if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
       return "@enumFromInt(@as(i64, " + elemExpr + ".integer))";

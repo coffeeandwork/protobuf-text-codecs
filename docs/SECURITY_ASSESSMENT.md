@@ -37,14 +37,14 @@ Vulnerability classes NOT covered:
 
 | Boundary | Location | Protection | Assessment |
 |----------|----------|------------|------------|
-| stdin parsing | `Main.java:24` | protobuf-java wire format validation | Adequate for well-formed input |
-| Field names → generated code | `MessageAnalyzer.java:179` | Regex `[a-zA-Z_][a-zA-Z0-9_]*` | **Adequate** |
-| Message/enum names → generated code | `MessageAnalyzer.java:67,142` | Regex `[a-zA-Z_][a-zA-Z0-9_]*` + keyword escaping | **Fixed** (VULN-001) |
+| stdin parsing | `Main.main()` | protobuf-java wire format validation | Adequate for well-formed input |
+| Field names → generated code | `MessageAnalyzer.validateFieldName()` | Regex `[a-zA-Z_][a-zA-Z0-9_]*` | **Adequate** |
+| Message/enum names → generated code | `MessageAnalyzer.analyze()` | Regex `[a-zA-Z_][a-zA-Z0-9_]*` + keyword escaping | **Fixed** (VULN-001) |
 | Type references → generated code | `TypeRegistry.registerFile()` | Validated at registration time | **Fixed** (VULN-002) |
 | Default values → generated code | `schemaDefaultExpression()` | String escaping + bool/numeric/enum regex validation | **Fixed** (VULN-003) |
 | Source comments → generated code | `JavaCodeEmitter.emitDocComment()` | `*/` escaped to `* /` | **Fixed** (VULN-005) |
-| Package names → file paths | `PluginRunner.java:121` | Rejects `..`, `/`, `\0` | **Fixed** (VULN-004) |
-| Language parameter | `PluginRunner.java:64` | Allowlist | Adequate |
+| Package names → file paths | `PluginRunner.run()` | Rejects `..`, `/`, `\0` | **Fixed** (VULN-004) |
+| Language parameter | `PluginRunner.parseLanguage()` | Allowlist | Adequate |
 
 ### Key Trust Assumption
 
@@ -94,24 +94,24 @@ Not applicable. The plugin has no authentication, authorization, or user identit
 
 - **Severity:** High
 - **Category:** CWE-94 (Improper Control of Generation of Code)
-- **Location:** `MessageAnalyzer.java:66` (message names used without validation)
-- **Description:** Field names are validated against `[a-zA-Z_][a-zA-Z0-9_]*` at line 91, but message names from `descriptor.getName()` are not. Message names flow directly into generated class/struct/type declarations in all 17 languages.
+- **Location:** `MessageAnalyzer.analyze()` (message names used without validation)
+- **Description:** Field names are validated against `[a-zA-Z_][a-zA-Z0-9_]*` in `validateFieldName()`, but message names from `descriptor.getName()` are not. Message names flow directly into generated class/struct/type declarations in all 17 languages.
 - **Evidence:**
 ```java
-// MessageAnalyzer.java:66 — message name used without validation
+// MessageAnalyzer.analyze() — message name used without validation
 String fullName = parentFullName + descriptor.getName();
-// JavaCodeEmitter.java:48 — emitted into generated Java
+// JavaCodeEmitter.emitClass() — emitted into generated Java
 w.block("public class " + className, () -> { ... });
 ```
 - **Risk:** A crafted `CodeGeneratorRequest` (bypassing protoc) with a message named `Foo { } class Evil { static { Runtime.getRuntime().exec("evil"); } } class Dummy` would produce compilable Java containing arbitrary code. Exploitation requires local code execution to craft the request.
-- **Recommendation:** Add `descriptor.getName().matches("[a-zA-Z_][a-zA-Z0-9_]*")` validation in the `analyze()` method.
+- **Recommendation:** Add `descriptor.getName().matches("[a-zA-Z_][a-zA-Z0-9_]*")` validation in `MessageAnalyzer.analyze()`.
 - **Status:** **Fixed**
 
 ### VULN-002: `simpleTypeName()` returns unsanitized type segment — code injection
 
 - **Severity:** High
 - **Category:** CWE-94 (Code Injection)
-- **Location:** `JavaSerializerGenerator.java:356`, `JavaDeserializerGenerator.java:304`, `JavaTypeMapper.java:165`, `PythonDeserializerGenerator.java:246` (and equivalents in all 17 generators)
+- **Location:** `JavaSerializerGenerator`, `JavaDeserializerGenerator`, `JavaTypeMapper`, `PythonDeserializerGenerator` (and equivalents in all 17 generators)
 - **Description:** `simpleTypeName()` extracts the substring after the last `.` in a type reference and injects it into generated code (type casts, static method calls). If the last segment contains `()`, `;`, `{}`, the generated code becomes injectable.
 - **Evidence:**
 ```java
@@ -127,7 +127,7 @@ return lastDot >= 0 ? protoFullName.substring(lastDot + 1) : protoFullName;
 
 - **Severity:** High
 - **Category:** CWE-94 (Code Injection)
-- **Location:** `JavaDeserializerGenerator.java:277,262,300` and `JavaTypeMapper.java:94,68,117`
+- **Location:** `JavaDeserializerGenerator.schemaDefaultExpression()` and `JavaTypeMapper.defaultValueExpression()`
 - **Description:** Proto2 schema default values for `TYPE_BOOL` and integer types are emitted verbatim into generated code. The `TYPE_STRING` case properly escapes, but bool (`true`/`false`) and numeric defaults are not validated.
 - **Evidence:**
 ```java
@@ -142,7 +142,7 @@ default -> defaultValue;        // raw string for int32 etc.
 
 - **Severity:** Medium
 - **Category:** CWE-22 (Path Traversal)
-- **Location:** `PluginRunner.java:116`
+- **Location:** `PluginRunner.run()` path validation
 - **Description:** The path check rejects `..` but not absolute paths (`/etc/cron.d/Evil.java`) or null bytes.
 - **Evidence:**
 ```java
@@ -160,7 +160,7 @@ if (name.contains("..") || name.startsWith("/") || name.contains("\0"))
 
 - **Severity:** Low
 - **Category:** CWE-94 (Code Injection via Comments)
-- **Location:** `JavaCodeEmitter.java:397-417`
+- **Location:** `JavaCodeEmitter.emitDocComment()`
 - **Description:** Proto source comments are emitted into Javadoc blocks without escaping `*/`. A comment containing `*/ public void evil() {} /*` would close the Javadoc and inject Java code.
 - **Evidence:**
 ```java
@@ -174,7 +174,7 @@ w.line(" * %s", trimmed); // trimmed contains raw comment text
 
 - **Severity:** Low
 - **Category:** CWE-400 (Uncontrolled Resource Consumption)
-- **Location:** `MessageAnalyzer.java:70-79` (warning only, no limit)
+- **Location:** `MessageAnalyzer.analyze()` sparse numbering check (warning only, no limit)
 - **Description:** A message with field numbers 1 and 536870911 (max proto field number) would generate serialize code with ~537 million `addNull()` calls.
 - **Risk:** Build-time DoS — the generated source file would be enormous and compilation would be very slow or fail with OOM.
 - **Recommendation:** Add a configurable hard limit (e.g., 10,000) on max field number and reject with an error.
@@ -200,7 +200,7 @@ for (int i = 0; i < count; i++) { msg->field[i] = ...; } // NULL deref if calloc
 
 - **Severity:** Medium
 - **Category:** CWE-787 (Out-of-bounds Write)
-- **Location:** `runtime/c/src/codec.c:96`
+- **Location:** `runtime/c/src/codec.c` `jsonarray_base64_decode()`
 - **Description:** The `jsonarray_base64_decode` function does not validate that input length is a multiple of 4. Non-standard lengths could cause size miscalculation.
 - **Risk:** Malformed base64 input in JSON could trigger incorrect memory allocation size.
 - **Recommendation:** Add `if (input_len % 4 != 0) return NULL;` or implement proper padding tolerance.
@@ -210,7 +210,7 @@ for (int i = 0; i < count; i++) { msg->field[i] = ...; } // NULL deref if calloc
 
 - **Severity:** Low
 - **Category:** CWE-94 (Code Injection)
-- **Location:** `PythonCodeEmitter.java:57`
+- **Location:** `PythonCodeEmitter.emitDocstring()`
 - **Description:** The message full name is emitted into a triple-quoted Python docstring without escaping `"""`. A crafted message name containing `"""` could close the docstring and inject Python code.
 - **Risk:** Same as VULN-001 — requires crafted message name.
 - **Recommendation:** Escape `"""` sequences or validate message names (per VULN-001 fix).
@@ -220,15 +220,15 @@ for (int i = 0; i < count; i++) { msg->field[i] = ...; } // NULL deref if calloc
 
 | ID | Severity | Category | Location | Exploitability |
 |----|----------|----------|----------|---------------|
-| VULN-001 | High | CWE-94: Code Injection | MessageAnalyzer.java:66 | Requires crafted CodeGeneratorRequest |
+| VULN-001 | High | CWE-94: Code Injection | `MessageAnalyzer.analyze()` | Requires crafted CodeGeneratorRequest |
 | VULN-002 | High | CWE-94: Code Injection | simpleTypeName() in all generators | Requires crafted CodeGeneratorRequest |
 | VULN-003 | High | CWE-94: Code Injection | schemaDefaultExpression() | Requires crafted CodeGeneratorRequest |
-| VULN-004 | Medium | CWE-22: Path Traversal | PluginRunner.java:116 | Requires crafted CodeGeneratorRequest; protoc may mitigate |
-| VULN-005 | Low | CWE-94: Comment Injection | JavaCodeEmitter.java:397 | Attacker controls .proto file |
-| VULN-006 | Low | CWE-400: DoS | MessageAnalyzer.java:70 | Requires extreme field numbers |
+| VULN-004 | Medium | CWE-22: Path Traversal | `PluginRunner.run()` | Requires crafted CodeGeneratorRequest; protoc may mitigate |
+| VULN-005 | Low | CWE-94: Comment Injection | `JavaCodeEmitter.emitDocComment()` | Attacker controls .proto file |
+| VULN-006 | Low | CWE-400: DoS | `MessageAnalyzer.analyze()` | Requires extreme field numbers |
 | VULN-007 | Medium | CWE-190/476: Overflow/NULL | CDeserializerGenerator.java | Malicious JSON input to generated C code |
-| VULN-008 | Medium | CWE-787: OOB Write | codec.c:96 | Malformed base64 in JSON input to C runtime |
-| VULN-009 | Low | CWE-94: Code Injection | PythonCodeEmitter.java:57 | Requires crafted message name |
+| VULN-008 | Medium | CWE-787: OOB Write | `codec.c` `jsonarray_base64_decode()` | Malformed base64 in JSON input to C runtime |
+| VULN-009 | Low | CWE-94: Code Injection | `PythonCodeEmitter.emitDocstring()` | Requires crafted message name |
 
 ## 4. Secure Code Practices Assessment
 

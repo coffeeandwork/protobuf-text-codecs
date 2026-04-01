@@ -57,13 +57,15 @@ public class DartDeserializerGenerator {
           w.line("return obj;");
         });
 
-    // Convenience: fromJsonString
+    // Convenience: fromBuffer - factory constructor taking Uint8List
     w.blankLine();
-    w.line("/// Deserialize from a JSON string.");
+    w.line("/// Deserialize from a Uint8List.");
     w.block(
-        "factory " + className + ".fromJsonString(String json)",
+        "factory " + className + ".fromBuffer(Uint8List buffer)",
         () -> {
-          w.line("return %s.deserialize(jsonDecode(json) as List<dynamic>);", className);
+          w.line(
+              "return %s.deserialize(jsonDecode(utf8.decode(buffer)) as List<dynamic>);",
+              className);
         });
   }
 

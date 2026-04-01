@@ -58,19 +58,19 @@ public class GoSerializerGenerator {
           w.line("return arr");
         });
 
-    // ToJsonString convenience method
+    // Marshal convenience method: returns ([]byte, error)
     w.blankLine();
     w.block(
-        "func (m *" + structName + ") ToJsonString() (string, error)",
+        "func (m *" + structName + ") Marshal() ([]byte, error)",
         () -> {
           w.line("arr := m.Serialize()");
           w.line("data, err := json.Marshal(arr)");
           w.block(
               "if err != nil",
               () -> {
-                w.line("return \"\", err");
+                w.line("return nil, err");
               });
-          w.line("return string(data), nil");
+          w.line("return data, nil");
         });
   }
 

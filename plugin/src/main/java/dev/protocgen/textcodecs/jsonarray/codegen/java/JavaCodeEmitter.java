@@ -501,7 +501,7 @@ public class JavaCodeEmitter {
           // Presence tracking for builder
           if (hasPresenceTrackedFields(message)) {
             w.blankLine();
-            w.line("final java.util.BitSet presentFields_ = new java.util.BitSet();");
+            w.line("private final java.util.BitSet presentFields_ = new java.util.BitSet();");
           }
 
           // Oneof case tracking in builder

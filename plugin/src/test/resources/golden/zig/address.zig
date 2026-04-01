@@ -7,7 +7,7 @@ pub const Address = struct {
     state: []const u8 = "",
     zip: i32 = 0,
 
-    pub fn serialize(self: *const Address, allocator: std.mem.Allocator) !json.Value {
+    pub fn serializeToValue(self: *const Address, allocator: std.mem.Allocator) !json.Value {
         var arr = try allocator.alloc(json.Value, 4);
         arr[0] = json.Value{ .string = self.street };
         arr[1] = json.Value{ .string = self.city };
@@ -16,15 +16,15 @@ pub const Address = struct {
         return json.Value{ .array = json.Array.fromOwnedSlice(allocator, arr) };
     }
 
-    pub fn toJsonString(self: *const Address, allocator: std.mem.Allocator) ![]const u8 {
-        const value = try self.serialize(allocator);
+    pub fn serialize(self: *const Address, allocator: std.mem.Allocator) ![]u8 {
+        const value = try self.serializeToValue(allocator);
         var string = std.ArrayList(u8).init(allocator);
         defer string.deinit();
         try value.jsonStringify(.{}, string.writer());
         return try string.toOwnedSlice();
     }
 
-    pub fn deserialize(value: json.Value, allocator: std.mem.Allocator) !Address {
+    pub fn deserializeFromValue(value: json.Value, allocator: std.mem.Allocator) !Address {
         const arr = value.array.items;
         const size = arr.len;
         var obj: Address = undefined;
@@ -48,10 +48,10 @@ pub const Address = struct {
         return obj;
     }
 
-    pub fn fromJsonString(input: []const u8, allocator: std.mem.Allocator) !Address {
-        const parsed = try std.json.parseFromSlice(json.Value, allocator, input, .{});
+    pub fn deserialize(data: []const u8, allocator: std.mem.Allocator) !Address {
+        const parsed = try std.json.parseFromSlice(json.Value, allocator, data, .{});
         defer parsed.deinit();
-        return try deserialize(parsed.value, allocator);
+        return try deserializeFromValue(parsed.value, allocator);
     }
 
     pub fn deinit(self: *Address, allocator: std.mem.Allocator) void {

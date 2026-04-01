@@ -79,16 +79,17 @@ public class JavaScriptDeserializerGenerator {
           w.line("return obj;");
         });
 
-    // Convenience: fromJsonString
+    // Convenience: decode - accepts Uint8Array or string
     w.blankLine();
     w.line("/**");
-    w.line(" * Deserialize from a JSON string.");
-    w.line(" * @param {string} json - The JSON string.");
+    w.line(" * Decode from a Uint8Array or string.");
+    w.line(" * @param {Uint8Array|string} data - The encoded data.");
     w.line(" * @returns {%s} The deserialized message.", className);
     w.line(" */");
     w.block(
-        "static fromJsonString(json)",
+        "static decode(data)",
         () -> {
+          w.line("const json = typeof data === 'string' ? data : new TextDecoder().decode(data);");
           w.line("return %s.deserialize(JSON.parse(json));", className);
         });
   }
