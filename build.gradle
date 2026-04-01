@@ -12,6 +12,26 @@ allprojects {
     }
 }
 
+// Configure git to use the project's pre-push hook automatically.
+// Runs once on first build; subsequent builds skip if already set.
+tasks.register('installGitHooks') {
+    description = 'Configures git to use .githooks (pre-push: spotless + tests)'
+    onlyIf { file('.git').exists() }
+    doLast {
+        def result = providers.exec {
+            commandLine 'git', 'config', 'core.hooksPath'
+            ignoreExitValue = true
+        }
+        def current = result.standardOutput.asText.get().trim()
+        if (current != '.githooks') {
+            exec { commandLine 'git', 'config', 'core.hooksPath', '.githooks' }
+            logger.lifecycle('Git hooks configured: core.hooksPath = .githooks')
+        }
+    }
+}
+
+tasks.named('build') { dependsOn 'installGitHooks' }
+
 subprojects {
     apply plugin: 'java'
     apply plugin: 'com.diffplug.spotless'
