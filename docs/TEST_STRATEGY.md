@@ -58,11 +58,11 @@ LIMITATIONS:
 
 | Metric | Value | Assessment |
 |--------|-------|------------|
-| Test files | 19 classes | Adequate for current scope |
+| Test files | 21 classes | Adequate for current scope |
 | Total tests | 1,090 | Good — comprehensive for core + all 17 languages + schema evolution |
 | Instruction coverage | 73.9% | Good overall; gaps in non-Java generators |
 | Line coverage | 76.6% | Good overall |
-| Integration tests | 2 shell scripts (9 assertions) | Minimal but effective |
+| Integration tests | 3 shell scripts (9 assertions) | Minimal but effective |
 | Cross-language tests | Java ↔ Python only | Insufficient for 17-language claim |
 
 ### 2.2 Coverage by Criticality
@@ -336,11 +336,14 @@ plugin/src/test/java/dev/protocgen/textcodecs/jsonarray/
 └── ../pbtkurl/
     ├── PbtkJavaCodeGenTest.java     # E2E: pbtk Java code generation
     ├── PbtkMultiLanguageCodeGenTest.java  # E2E: pbtk 16 non-Java languages
-    └── PbtkSafetySecurityTest.java  # Safety/security tests for pbtk format
+    ├── PbtkSafetySecurityTest.java  # Safety/security tests for pbtk format
+    ├── PbtkSchemaEvolutionTest.java  # Schema evolution across all 17 langs, pbtk format
+    └── PbtkJavaSchemaEvolutionTest.java  # Java-specific pbtk schema evolution patterns
 
 integration-tests/
 ├── cross-language-test.sh           # System: Java ↔ Python round-trip
 ├── schema-evolution-test.sh         # System: forward/backward compat
+├── proto2-proto3-migration-test.sh  # System: proto2/proto3 migration compat
 ├── java/UserRoundTripTest.java      # System: Java serialize/deserialize
 └── python/user_round_trip_test.py   # System: Python serialize/deserialize
 

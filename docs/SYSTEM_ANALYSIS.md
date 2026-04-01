@@ -50,7 +50,7 @@ protobuf-text-codecs/
 │       │       ├── csharp/ kotlin/ swift/ dart/
 │       │       ├── php/ ruby/ objc/ perl/
 │       │       └── LanguageGenerator.java (interface)
-│       └── test/java/.../            # 19 test files
+│       └── test/java/.../            # 21 test files
 ├── runtime/                          # Per-language runtime libraries
 │   ├── java/  (zero-dependency, 2 classes)
 │   ├── c/     (cJSON-based, 2 files)
@@ -417,7 +417,7 @@ The core encoding format that all generated code must implement:
 | SchemaEvolutionTest | 119 | Schema evolution across all 17 languages, both formats (parameterized) |
 | JavaSchemaEvolutionTest | 15 | Java-specific schema evolution patterns (array sizing, bounds, gaps, oneofs) |
 
-**Total: 1,090 tests (19 test classes). Overall coverage: 73.9% instructions, 76.6% lines.**
+**Total: 1,090 tests (21 test classes). Overall coverage: 73.9% instructions, 76.6% lines.**
 
 Integration tests (not in JUnit):
 - Cross-language round-trip (Java ↔ Python): 5 assertions

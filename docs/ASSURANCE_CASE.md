@@ -194,10 +194,10 @@ LIMITATIONS:
 | Total tests | 1,090 |
 | Tests passing | 1,090 (100%) |
 | Tests failing | 0 |
-| Test files | 19 classes |
+| Test files | 21 classes |
 | Parameterized test methods | 25+ (expanding to 1,090 test invocations across 17 languages) |
 | Golden file snapshots | 17 (one per language) |
-| Integration test scripts | 2 (cross-language, schema-evolution) |
+| Integration test scripts | 3 (cross-language, schema-evolution, proto2-proto3-migration) |
 
 ### JaCoCo Coverage (current HEAD)
 

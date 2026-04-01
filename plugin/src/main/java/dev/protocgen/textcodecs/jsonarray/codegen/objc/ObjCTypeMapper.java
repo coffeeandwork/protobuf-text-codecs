@@ -18,6 +18,7 @@ package dev.protocgen.textcodecs.jsonarray.codegen.objc;
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import dev.protocgen.textcodecs.jsonarray.codegen.TypeMapper;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Maps proto types to Objective-C types, default values, and related expressions. Uses Foundation
@@ -194,6 +195,103 @@ public class ObjCTypeMapper implements TypeMapper {
   public boolean isUnsignedInt64(FieldDescriptorProto.Type type) {
     return type == FieldDescriptorProto.Type.TYPE_UINT64
         || type == FieldDescriptorProto.Type.TYPE_FIXED64;
+  }
+
+  /**
+   * Format a proto2 schema-specified default value string as an Objective-C expression (VULN-003).
+   */
+  public String formatSchemaDefault(FieldDescriptorProto.Type protoType, String defaultValue) {
+    return switch (protoType) {
+      case TYPE_STRING ->
+          "@\""
+              + defaultValue
+                  .replace("\\", "\\\\")
+                  .replace("\"", "\\\"")
+                  .replace("\n", "\\n")
+                  .replace("\r", "\\r")
+                  .replace("\t", "\\t")
+                  .replace("\0", "\\0")
+              + "\"";
+      case TYPE_BOOL -> {
+        // Validate bool default to prevent code injection (VULN-003)
+        if (!"true".equals(defaultValue) && !"false".equals(defaultValue)) {
+          throw new IllegalArgumentException(
+              "Bool default value '" + defaultValue + "' is not 'true' or 'false'");
+        }
+        yield "true".equals(defaultValue) ? "YES" : "NO";
+      }
+      case TYPE_DOUBLE -> {
+        if ("inf".equals(defaultValue)) yield "INFINITY";
+        if ("-inf".equals(defaultValue)) yield "-INFINITY";
+        if ("nan".equals(defaultValue)) yield "NAN";
+        // Validate numeric format to prevent code injection (VULN-003)
+        if (!defaultValue.matches("-?[0-9]+(\\.[0-9]+)?([eE][+-]?[0-9]+)?")) {
+          throw new IllegalArgumentException(
+              "Double default value '" + defaultValue + "' is not a valid number");
+        }
+        yield defaultValue.contains(".") ? defaultValue : defaultValue + ".0";
+      }
+      case TYPE_FLOAT -> {
+        if ("inf".equals(defaultValue)) yield "INFINITY";
+        if ("-inf".equals(defaultValue)) yield "-INFINITY";
+        if ("nan".equals(defaultValue)) yield "NAN";
+        // Validate numeric format to prevent code injection (VULN-003)
+        if (!defaultValue.matches("-?[0-9]+(\\.[0-9]+)?([eE][+-]?[0-9]+)?")) {
+          throw new IllegalArgumentException(
+              "Float default value '" + defaultValue + "' is not a valid number");
+        }
+        yield (defaultValue.contains(".") ? defaultValue : defaultValue + ".0") + "f";
+      }
+      case TYPE_INT64, TYPE_SINT64, TYPE_SFIXED64 -> {
+        // Validate numeric format to prevent code injection (VULN-003)
+        if (!defaultValue.matches("-?[0-9]+")) {
+          throw new IllegalArgumentException(
+              "Integer default value '" + defaultValue + "' is not a valid number");
+        }
+        yield defaultValue + "LL";
+      }
+      case TYPE_UINT64, TYPE_FIXED64 -> {
+        // Validate numeric format to prevent code injection (VULN-003)
+        if (!defaultValue.matches("-?[0-9]+")) {
+          throw new IllegalArgumentException(
+              "Integer default value '" + defaultValue + "' is not a valid number");
+        }
+        yield defaultValue + "ULL";
+      }
+      case TYPE_INT32, TYPE_SINT32, TYPE_SFIXED32 -> {
+        // Validate numeric format to prevent code injection (VULN-003)
+        if (!defaultValue.matches("-?[0-9]+")) {
+          throw new IllegalArgumentException(
+              "Integer default value '" + defaultValue + "' is not a valid number");
+        }
+        yield defaultValue;
+      }
+      case TYPE_UINT32, TYPE_FIXED32 -> {
+        // Validate numeric format to prevent code injection (VULN-003)
+        if (!defaultValue.matches("-?[0-9]+")) {
+          throw new IllegalArgumentException(
+              "Integer default value '" + defaultValue + "' is not a valid number");
+        }
+        yield defaultValue + "U";
+      }
+      case TYPE_BYTES -> {
+        if (defaultValue.isEmpty()) {
+          yield "[NSData data]";
+        }
+        yield "[[NSData alloc] initWithBase64EncodedString:@\""
+            + java.util.Base64.getEncoder()
+                .encodeToString(defaultValue.getBytes(StandardCharsets.ISO_8859_1))
+            + "\" options:0]";
+      }
+      default -> {
+        // Validate numeric format for remaining types to prevent code injection (VULN-003)
+        if (!defaultValue.matches("-?[0-9]+")) {
+          throw new IllegalArgumentException(
+              "Numeric default value '" + defaultValue + "' is not a valid integer");
+        }
+        yield defaultValue;
+      }
+    };
   }
 
   private String scalarDefault(FieldDescriptorProto.Type protoType) {

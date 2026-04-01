@@ -869,10 +869,9 @@ public class PbtkCGenerator implements LanguageGenerator {
             w.line("pbtk_buf_append(buf, \"!2s\");");
             w.line("if (venc) { pbtk_buf_append(buf, venc); free(venc); }");
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
-            // Use length from the entry struct if available -- maps with bytes values
-            // are rare, encode as base64
+            w.line("char* b64_val = pbtk_base64_encode(%s, %s_len);", valAccessor, valAccessor);
             w.line("pbtk_buf_append(buf, \"!2z\");");
-            w.line("/* bytes map values not fully supported */");
+            w.line("if (b64_val) { pbtk_buf_append(buf, b64_val); free(b64_val); }");
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BOOL) {
             w.line("pbtk_buf_append(buf, \"!2b\");");
             w.line("pbtk_buf_append(buf, %s ? \"1\" : \"0\");", valAccessor);
@@ -1156,6 +1155,8 @@ public class PbtkCGenerator implements LanguageGenerator {
                   w.line("entry.value = pbtk_url_decode(mval);");
                 } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BOOL) {
                   w.line("entry.value = (mval[0] == '1');");
+                } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+                  w.line("entry.value = pbtk_base64_decode(mval, &entry.value_len);");
                 } else {
                   w.line("entry.value = strtoll(mval, NULL, 10);");
                 }
@@ -1274,6 +1275,8 @@ public class PbtkCGenerator implements LanguageGenerator {
                     w.line("free(%s[i].key);", accessor);
                   }
                   if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_STRING) {
+                    w.line("free(%s[i].value);", accessor);
+                  } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
                     w.line("free(%s[i].value);", accessor);
                   } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE) {
                     String refPrefix =

@@ -113,6 +113,28 @@ public class ObjCDeserializerGenerator {
                 }
               });
         });
+
+    // Apply schema-specified default for proto2 fields when absent/null
+    if (field.getDefaultValue() != null && !field.isRepeated() && !field.isMap()) {
+      w.block(
+          "else",
+          () -> {
+            String defaultExpr = schemaDefaultExpression(field, field.getDefaultValue());
+            String propName2 = nameResolver.fieldName(field.getName());
+            w.line("msg.%s = %s;", propName2, defaultExpr);
+          });
+    }
+  }
+
+  private String schemaDefaultExpression(ProtoField field, String defaultValue) {
+    if (defaultValue == null || defaultValue.isEmpty()) {
+      return typeMapper.defaultValue(field);
+    }
+    if (field.getKind() == ProtoField.FieldKind.ENUM) {
+      // ObjC deserializes enums as NSInteger ordinals; cannot resolve enum name at codegen time
+      return typeMapper.defaultValue(field);
+    }
+    return typeMapper.formatSchemaDefault(field.getProtoType(), defaultValue);
   }
 
   private void emitOneofDeserialize(

@@ -119,6 +119,8 @@ LIMITATIONS:
 | PbtkJavaCodeGenTest | `plugin/src/test/java/.../pbtkurl/PbtkJavaCodeGenTest.java` | 29 | FR-011 (pbtk) |
 | PbtkMultiLanguageCodeGenTest | `plugin/src/test/java/.../pbtkurl/PbtkMultiLanguageCodeGenTest.java` | 144 | FR-011, FR-013 (pbtk) |
 | PbtkSafetySecurityTest | `plugin/src/test/java/.../pbtkurl/PbtkSafetySecurityTest.java` | 86 | SR-001-SR-004, SEC-001-SEC-004 (pbtk) |
+| PbtkSchemaEvolutionTest | `plugin/src/test/java/.../pbtkurl/PbtkSchemaEvolutionTest.java` | — | FR-001, FR-002, SR-001 (pbtk) |
+| PbtkJavaSchemaEvolutionTest | `plugin/src/test/java/.../pbtkurl/PbtkJavaSchemaEvolutionTest.java` | — | FR-001, FR-002, SR-001 (pbtk) |
 | SchemaEvolutionTest | `plugin/src/test/java/.../jsonarray/SchemaEvolutionTest.java` | 119 | FR-001, FR-002, SR-001 |
 | JavaSchemaEvolutionTest | `plugin/src/test/java/.../jsonarray/JavaSchemaEvolutionTest.java` | 15 | FR-001, FR-002, SR-001 |
 | | | **Total: 1,090** | |
@@ -163,6 +165,7 @@ Note: 15 `@ParameterizedTest` methods x 16 languages = 240 expanded invocations 
 |------|------|------------------|
 | Cross-language round-trip | `integration-tests/cross-language-test.sh` | Java ↔ Python serialize/deserialize |
 | Schema evolution | `integration-tests/schema-evolution-test.sh` | Forward/backward compatibility |
+| Proto2-proto3 migration | `integration-tests/proto2-proto3-migration-test.sh` | Proto2 to proto3 migration compatibility |
 | Java round-trip | `integration-tests/java/UserRoundTripTest.java` | Java end-to-end |
 | Python round-trip | `integration-tests/python/user_round_trip_test.py` | Python end-to-end |
 

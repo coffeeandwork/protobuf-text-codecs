@@ -381,6 +381,9 @@ public class CCodeEmitter {
         w.indent();
         w.line("%s key;", keyType);
         w.line("%s value;", valType);
+        if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+          w.line("size_t value_len;");
+        }
         w.dedent();
         w.line("} %s;", entryType);
         w.blankLine();

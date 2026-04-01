@@ -96,12 +96,12 @@ Each language has 6 classes: Generator, CodeEmitter, SerializerGenerator, Deseri
 ./gradlew spotlessCheck                   # Code formatting
 ```
 
-- 19 test classes total (16 in jsonarray package including 2 schema evolution, 3 in pbtkurl package)
+- 21 test classes total (16 in jsonarray package including 2 schema evolution, 5 in pbtkurl package)
 - Parameterized tests across 16 non-Java languages
 - Golden-file snapshot tests for all 17 languages
 - Schema evolution tests: 134 tests across all 17 languages (forward/backward compat, field removal, gap handling)
 - Safety/security tests (SR-001–004, SEC-001–004) for both JSON array and pbtk formats
-- Integration tests (Java ↔ Python cross-language round-trip)
+- Integration tests: 3 shell scripts (Java ↔ Python cross-language round-trip, proto2→proto3 migration)
 
 ## Documentation
 

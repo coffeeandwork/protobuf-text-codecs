@@ -129,6 +129,8 @@ LIMITATIONS:
 | PbtkJavaCodeGenTest.java | E2E: pbtk URL format Java code generation | 29 | Implemented |
 | PbtkMultiLanguageCodeGenTest.java | E2E: pbtk URL format across 16 non-Java languages | 144 | Implemented |
 | PbtkSafetySecurityTest.java | Safety/security tests for pbtk format | 86 | Implemented |
+| PbtkSchemaEvolutionTest.java | Schema evolution: forward/backward compatibility across languages, pbtk format | — | Implemented |
+| PbtkJavaSchemaEvolutionTest.java | Schema evolution: Java-specific pbtk round-trip verification | — | Implemented |
 | SafetySecurityTest.java | Safety/security/fault injection (39 @Test + 9 @ParameterizedTest = 180 invocations) | 180 | Implemented |
 | GoldenFileTest.java | Snapshot: exact output comparison | 17 | Implemented |
 | SchemaEvolutionTest.java | Schema evolution: forward/backward compatibility across languages | 119 | Implemented |
@@ -152,6 +154,7 @@ LIMITATIONS:
 | Specific class | `./gradlew :plugin:test --tests "*.SafetySecurityTest"` | Java 17 |
 | Integration | `bash integration-tests/cross-language-test.sh` | Java 17, protoc, python3 |
 | Schema evolution | `bash integration-tests/schema-evolution-test.sh` | Java 17, protoc, python3 |
+| Proto2/proto3 migration | `bash integration-tests/proto2-proto3-migration-test.sh` | Java 17, protoc, python3 |
 | Golden file update | `./gradlew :plugin:test -Dupdate.golden=true` | Java 17 |
 | Formatting check | `./gradlew spotlessCheck` | Java 17 |
 
