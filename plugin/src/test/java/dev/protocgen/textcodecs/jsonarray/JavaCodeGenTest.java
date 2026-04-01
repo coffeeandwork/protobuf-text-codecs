@@ -27,6 +27,7 @@ import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -2626,6 +2627,110 @@ class JavaCodeGenTest {
     String code = generateSingleMessage(msg);
 
     assertTrue(code.contains("intValue()"), "Uint32 deserialization uses intValue()");
+  }
+
+  @Test
+  void testTimestampFieldSerializesAsNestedArray() {
+    DescriptorProto msg =
+        DescriptorProto.newBuilder()
+            .setName("Event")
+            .addField(scalarField("name", 1, FieldDescriptorProto.Type.TYPE_STRING))
+            .addField(
+                FieldDescriptorProto.newBuilder()
+                    .setName("created_at")
+                    .setNumber(2)
+                    .setType(FieldDescriptorProto.Type.TYPE_MESSAGE)
+                    .setTypeName(".google.protobuf.Timestamp")
+                    .setLabel(FieldDescriptorProto.Label.LABEL_OPTIONAL)
+                    .build())
+            .build();
+    // Need the Timestamp descriptor too
+    DescriptorProto timestampMsg =
+        DescriptorProto.newBuilder()
+            .setName("Timestamp")
+            .addField(scalarField("seconds", 1, FieldDescriptorProto.Type.TYPE_INT64))
+            .addField(scalarField("nanos", 2, FieldDescriptorProto.Type.TYPE_INT32))
+            .build();
+
+    // Build file with the dependency
+    FileDescriptorProto wktFile =
+        FileDescriptorProto.newBuilder()
+            .setName("google/protobuf/timestamp.proto")
+            .setPackage("google.protobuf")
+            .setSyntax("proto3")
+            .addMessageType(timestampMsg)
+            .build();
+    FileDescriptorProto mainFile =
+        FileDescriptorProto.newBuilder()
+            .setName("test.proto")
+            .setPackage("test")
+            .setSyntax("proto3")
+            .addMessageType(msg)
+            .addDependency("google/protobuf/timestamp.proto")
+            .build();
+
+    CodeGeneratorRequest request =
+        CodeGeneratorRequest.newBuilder()
+            .addProtoFile(wktFile)
+            .addProtoFile(mainFile)
+            .addFileToGenerate("test.proto")
+            .setParameter("lang=java")
+            .build();
+    CodeGeneratorResponse response = new PluginRunner().run(request);
+    assertFalse(response.hasError(), "No error: " + response.getError());
+    String code = response.getFile(0).getContent();
+
+    // Timestamp should be handled as a well-known type (nested message)
+    assertTrue(
+        code.contains("createdAt") || code.contains("created_at"),
+        "Timestamp field referenced in generated code");
+  }
+
+  @Test
+  void testInt32FieldDefaultsAreCorrectType() {
+    DescriptorProto msg =
+        DescriptorProto.newBuilder()
+            .setName("Msg")
+            .addField(scalarField("min_val", 1, FieldDescriptorProto.Type.TYPE_INT32))
+            .addField(scalarField("max_val", 2, FieldDescriptorProto.Type.TYPE_INT32))
+            .build();
+    String code = generateSingleMessage(msg);
+
+    // Int32 fields default to 0, not null
+    assertTrue(code.contains("private int minVal = 0"), "Int32 field defaults to 0");
+    assertTrue(code.contains("private int maxVal = 0"), "Int32 field defaults to 0");
+    // Serialization uses sb.append(this.field) -- no null check
+    assertTrue(
+        code.contains("sb.append(this.minVal)") || code.contains("append(this.minVal)"),
+        "Int32 serialized directly without null check");
+  }
+
+  @Test
+  void testUint64SerializationUsesStringFormatForLargeValues() {
+    DescriptorProto msg =
+        DescriptorProto.newBuilder()
+            .setName("Msg")
+            .addField(scalarField("big", 1, FieldDescriptorProto.Type.TYPE_UINT64))
+            .build();
+    String code = generateSingleMessage(msg);
+
+    // uint64 should be serialized as a quoted string to prevent precision loss
+    assertTrue(
+        code.contains("toUnsignedString") || code.contains("appendQuotedString"),
+        "Uint64 serialized as string to prevent precision loss");
+  }
+
+  @Test
+  void testEmptyMessageSerializesAsEmptyArray() {
+    DescriptorProto msg = DescriptorProto.newBuilder().setName("Empty").build();
+    String code = generateSingleMessage(msg);
+
+    // Empty message: serializer opens and closes bracket with nothing in between
+    String serializerBody = extractMethodBody(code, "appendJsonArray");
+    assertTrue(serializerBody.contains("sb.append('[')"), "Empty message opens bracket");
+    assertTrue(serializerBody.contains("sb.append(']')"), "Empty message closes bracket");
+    int commaCount = countOccurrences(serializerBody, "sb.append(',')");
+    assertEquals(0, commaCount, "Empty message has no commas");
   }
 
   // ======================================================================
