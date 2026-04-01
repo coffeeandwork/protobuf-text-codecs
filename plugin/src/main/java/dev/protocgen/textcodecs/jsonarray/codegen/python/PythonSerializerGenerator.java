@@ -186,6 +186,11 @@ public class PythonSerializerGenerator {
           itemVar, itemVar, pyField);
     } else if (INT64_TYPES.contains(field.getProtoType())) {
       w.line("result.append([str(%s) for %s in %s])", itemVar, itemVar, pyField);
+    } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_FLOAT
+        || field.getProtoType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+      w.line(
+          "result.append([None if math.isnan(%s) or math.isinf(%s) else %s for %s in %s])",
+          itemVar, itemVar, itemVar, itemVar, pyField);
     } else {
       w.line("result.append(list(%s))", pyField);
     }
@@ -203,6 +208,15 @@ public class PythonSerializerGenerator {
         w.line("result.append(dict(%s))", pyField);
       } else if (INT64_TYPES.contains(field.getMapValueType())) {
         w.line("result.append({k: str(v) for k, v in %s.items()})", pyField);
+      } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+        w.line(
+            "result.append({k: base64.b64encode(v).decode(\"ascii\") for k, v in %s.items()})",
+            pyField);
+      } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT
+          || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+        w.line(
+            "result.append({k: (None if math.isnan(v) or math.isinf(v) else v) for k, v in %s.items()})",
+            pyField);
       } else {
         w.line("result.append(dict(%s))", pyField);
       }
@@ -216,6 +230,15 @@ public class PythonSerializerGenerator {
         w.line("result.append([[k, v] for k, v in %s.items()])", pyField);
       } else if (INT64_TYPES.contains(field.getMapValueType())) {
         w.line("result.append([[k, str(v)] for k, v in %s.items()])", pyField);
+      } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+        w.line(
+            "result.append([[k, base64.b64encode(v).decode(\"ascii\")] for k, v in %s.items()])",
+            pyField);
+      } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT
+          || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+        w.line(
+            "result.append([[k, None if math.isnan(v) or math.isinf(v) else v] for k, v in %s.items()])",
+            pyField);
       } else {
         w.line("result.append([[k, v] for k, v in %s.items()])", pyField);
       }

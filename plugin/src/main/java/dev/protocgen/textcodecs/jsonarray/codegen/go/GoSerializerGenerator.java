@@ -238,6 +238,22 @@ public class GoSerializerGenerator {
                   w.line("listArr[i] = base64.StdEncoding.EncodeToString(%s)", itemVar);
                 } else if (isInt64Type(field.getProtoType())) {
                   w.line("listArr[i] = %s", int64ToStringExpr(itemVar, field.getProtoType()));
+                } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_FLOAT
+                    || field.getProtoType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+                  w.block(
+                      "if math.IsNaN(float64("
+                          + itemVar
+                          + ")) || math.IsInf(float64("
+                          + itemVar
+                          + "), 0)",
+                      () -> {
+                        w.line("listArr[i] = nil");
+                      });
+                  w.block(
+                      "else",
+                      () -> {
+                        w.line("listArr[i] = %s", itemVar);
+                      });
                 } else {
                   w.line("listArr[i] = %s", itemVar);
                 }
@@ -270,7 +286,27 @@ public class GoSerializerGenerator {
             w.block(
                 "for " + entryVar + ", " + valVar + " := range " + goField,
                 () -> {
-                  w.line("pair := []any{%s, %s}", entryVar, mapValueExpr(field, valVar));
+                  if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT
+                      || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+                    w.line("var mapVal any");
+                    w.block(
+                        "if math.IsNaN(float64("
+                            + valVar
+                            + ")) || math.IsInf(float64("
+                            + valVar
+                            + "), 0)",
+                        () -> {
+                          w.line("mapVal = nil");
+                        });
+                    w.block(
+                        "else",
+                        () -> {
+                          w.line("mapVal = %s", valVar);
+                        });
+                    w.line("pair := []any{%s, mapVal}", entryVar);
+                  } else {
+                    w.line("pair := []any{%s, %s}", entryVar, mapValueExpr(field, valVar));
+                  }
                   w.line("pairs = append(pairs, pair)");
                 });
             w.line("arr[%d] = pairs", pos);
@@ -294,8 +330,22 @@ public class GoSerializerGenerator {
           });
     } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
       w.line("%s[%s] = int32(%s)", mapVar, keyExpr, valueExpr);
+    } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+      w.line("%s[%s] = base64.StdEncoding.EncodeToString(%s)", mapVar, keyExpr, valueExpr);
     } else if (isInt64Type(field.getMapValueType())) {
       w.line("%s[%s] = %s", mapVar, keyExpr, int64ToStringExpr(valueExpr, field.getMapValueType()));
+    } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT
+        || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+      w.block(
+          "if math.IsNaN(float64(" + valueExpr + ")) || math.IsInf(float64(" + valueExpr + "), 0)",
+          () -> {
+            w.line("%s[%s] = nil", mapVar, keyExpr);
+          });
+      w.block(
+          "else",
+          () -> {
+            w.line("%s[%s] = %s", mapVar, keyExpr, valueExpr);
+          });
     } else {
       w.line("%s[%s] = %s", mapVar, keyExpr, valueExpr);
     }
@@ -307,6 +357,9 @@ public class GoSerializerGenerator {
     }
     if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
       return "int32(" + valueExpr + ")";
+    }
+    if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+      return "base64.StdEncoding.EncodeToString(" + valueExpr + ")";
     }
     if (isInt64Type(field.getMapValueType())) {
       return int64ToStringExpr(valueExpr, field.getMapValueType());

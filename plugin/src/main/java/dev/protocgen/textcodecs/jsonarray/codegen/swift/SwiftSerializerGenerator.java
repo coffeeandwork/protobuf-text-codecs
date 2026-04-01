@@ -251,7 +251,20 @@ public class SwiftSerializerGenerator {
       w.block(
           "for (key, val) in " + swiftField,
           () -> {
-            w.line("pairs.append([key, %s] as [Any])", mapValueExpr(field, "val"));
+            if (isFloatType(field.getMapValueType())) {
+              w.block(
+                  "if val.isNaN || val.isInfinite",
+                  () -> {
+                    w.line("pairs.append([key, NSNull()] as [Any])");
+                  });
+              w.block(
+                  "else",
+                  () -> {
+                    w.line("pairs.append([key, val] as [Any])");
+                  });
+            } else {
+              w.line("pairs.append([key, %s] as [Any])", mapValueExpr(field, "val"));
+            }
           });
       w.line("arr[%d] = pairs", pos);
     }
@@ -263,8 +276,21 @@ public class SwiftSerializerGenerator {
       w.line("%s[%s] = %s.serialize()", mapVar, keyExpr, valueExpr);
     } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
       w.line("%s[%s] = %s.rawValue", mapVar, keyExpr, valueExpr);
+    } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+      w.line("%s[%s] = %s.base64EncodedString()", mapVar, keyExpr, valueExpr);
     } else if (isInt64Type(field.getMapValueType())) {
       w.line("%s[%s] = String(%s)", mapVar, keyExpr, valueExpr);
+    } else if (isFloatType(field.getMapValueType())) {
+      w.block(
+          "if " + valueExpr + ".isNaN || " + valueExpr + ".isInfinite",
+          () -> {
+            w.line("%s[%s] = NSNull()", mapVar, keyExpr);
+          });
+      w.block(
+          "else",
+          () -> {
+            w.line("%s[%s] = %s", mapVar, keyExpr, valueExpr);
+          });
     } else {
       w.line("%s[%s] = %s", mapVar, keyExpr, valueExpr);
     }
@@ -276,6 +302,9 @@ public class SwiftSerializerGenerator {
     }
     if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
       return valueExpr + ".rawValue";
+    }
+    if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+      return valueExpr + ".base64EncodedString()";
     }
     if (isInt64Type(field.getMapValueType())) {
       return "String(" + valueExpr + ")";

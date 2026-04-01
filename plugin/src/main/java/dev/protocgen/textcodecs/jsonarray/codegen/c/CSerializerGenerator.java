@@ -301,6 +301,11 @@ public class CSerializerGenerator {
                   w.line(
                       "{ char pb_buf[32]; snprintf(pb_buf, sizeof(pb_buf), \"%%llu\", (unsigned long long)%s); cJSON_AddItemToArray(list_node, cJSON_CreateString(pb_buf)); }",
                       elemExpr);
+                } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_DOUBLE
+                    || field.getProtoType() == FieldDescriptorProto.Type.TYPE_FLOAT) {
+                  w.line(
+                      "cJSON_AddItemToArray(list_node, isnan((double)%s) || isinf((double)%s) ? cJSON_CreateNull() : cJSON_CreateNumber((double)%s));",
+                      elemExpr, elemExpr, elemExpr);
                 } else {
                   w.line(
                       "cJSON_AddItemToArray(list_node, cJSON_CreateNumber((double)%s));", elemExpr);
@@ -370,6 +375,15 @@ public class CSerializerGenerator {
       w.line(
           "{ char pb_buf[32]; snprintf(pb_buf, sizeof(pb_buf), \"%%llu\", (unsigned long long)%s); cJSON_AddItemToObject(map_node, %s, cJSON_CreateString(pb_buf)); }",
           valExpr, keyExpr);
+    } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+      w.line("{ char* pb_b64 = jsonarray_base64_encode(%s, %s_len);", valExpr, valExpr);
+      w.line("cJSON_AddItemToObject(map_node, %s, cJSON_CreateString(pb_b64));", keyExpr);
+      w.line("free(pb_b64); }");
+    } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE
+        || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT) {
+      w.line(
+          "cJSON_AddItemToObject(map_node, %s, isnan((double)%s) || isinf((double)%s) ? cJSON_CreateNull() : cJSON_CreateNumber((double)%s));",
+          keyExpr, valExpr, valExpr, valExpr);
     } else {
       w.line(
           "cJSON_AddItemToObject(map_node, %s, cJSON_CreateNumber((double)%s));", keyExpr, valExpr);
@@ -416,6 +430,15 @@ public class CSerializerGenerator {
       w.line(
           "{ char pb_buf[32]; snprintf(pb_buf, sizeof(pb_buf), \"%%llu\", (unsigned long long)%s); cJSON_AddItemToArray(pair, cJSON_CreateString(pb_buf)); }",
           valExpr);
+    } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+      w.line("{ char* pb_b64 = jsonarray_base64_encode(%s, %s_len);", valExpr, valExpr);
+      w.line("cJSON_AddItemToArray(pair, cJSON_CreateString(pb_b64));");
+      w.line("free(pb_b64); }");
+    } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE
+        || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT) {
+      w.line(
+          "cJSON_AddItemToArray(pair, isnan((double)%s) || isinf((double)%s) ? cJSON_CreateNull() : cJSON_CreateNumber((double)%s));",
+          valExpr, valExpr, valExpr);
     } else {
       w.line("cJSON_AddItemToArray(pair, cJSON_CreateNumber((double)%s));", valExpr);
     }

@@ -192,6 +192,11 @@ public class CppSerializerGenerator {
                   w.line("list_node.push_back(jsonarray::base64_encode(%s));", elemVar);
                 } else if (is64BitType(field.getProtoType())) {
                   w.line("list_node.push_back(std::to_string(%s));", elemVar);
+                } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_FLOAT
+                    || field.getProtoType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+                  w.line(
+                      "list_node.push_back(std::isnan(%s) || std::isinf(%s) ? nlohmann::json(nullptr) : nlohmann::json(%s));",
+                      elemVar, elemVar, elemVar);
                 } else {
                   w.line("list_node.push_back(%s);", elemVar);
                 }
@@ -241,6 +246,11 @@ public class CppSerializerGenerator {
       w.line("map_node[%s] = jsonarray::base64_encode(%s);", keyExpr, valueExpr);
     } else if (is64BitType(field.getMapValueType())) {
       w.line("map_node[%s] = std::to_string(%s);", keyExpr, valueExpr);
+    } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT
+        || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+      w.line(
+          "map_node[%s] = std::isnan(%s) || std::isinf(%s) ? nlohmann::json(nullptr) : nlohmann::json(%s);",
+          keyExpr, valueExpr, valueExpr, valueExpr);
     } else {
       w.line("map_node[%s] = %s;", keyExpr, valueExpr);
     }
@@ -255,6 +265,11 @@ public class CppSerializerGenerator {
       w.line("pair.push_back(jsonarray::base64_encode(%s));", valueExpr);
     } else if (is64BitType(field.getMapValueType())) {
       w.line("pair.push_back(std::to_string(%s));", valueExpr);
+    } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT
+        || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+      w.line(
+          "pair.push_back(std::isnan(%s) || std::isinf(%s) ? nlohmann::json(nullptr) : nlohmann::json(%s));",
+          valueExpr, valueExpr, valueExpr);
     } else {
       w.line("pair.push_back(%s);", valueExpr);
     }

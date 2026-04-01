@@ -195,6 +195,11 @@ public class JavaScriptSerializerGenerator {
                   emitBytesEncode(w, elemVar, "listArr.push(%s);");
                 } else if (isInt64Type(field.getProtoType())) {
                   w.line("listArr.push(String(%s));", elemVar);
+                } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_FLOAT
+                    || field.getProtoType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+                  w.line(
+                      "listArr.push(Number.isNaN(%s) || !Number.isFinite(%s) ? null : %s);",
+                      elemVar, elemVar, elemVar);
                 } else {
                   w.line("listArr.push(%s);", elemVar);
                 }
@@ -237,8 +242,15 @@ public class JavaScriptSerializerGenerator {
       w.line("mapObj[%s] = %s != null ? %s.serialize() : null;", keyExpr, valueExpr, valueExpr);
     } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
       w.line("mapObj[%s] = %s != null ? %s : 0;", keyExpr, valueExpr, valueExpr);
+    } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+      w.line("mapObj[%s] = _base64Encode(%s);", keyExpr, valueExpr);
     } else if (isInt64Type(field.getMapValueType())) {
       w.line("mapObj[%s] = String(%s);", keyExpr, valueExpr);
+    } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT
+        || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+      w.line(
+          "mapObj[%s] = Number.isNaN(%s) || !Number.isFinite(%s) ? null : %s;",
+          keyExpr, valueExpr, valueExpr, valueExpr);
     } else {
       w.line("mapObj[%s] = %s;", keyExpr, valueExpr);
     }
@@ -249,8 +261,15 @@ public class JavaScriptSerializerGenerator {
       w.line("%s.push(%s != null ? %s.serialize() : null);", arrExpr, valueExpr, valueExpr);
     } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
       w.line("%s.push(%s != null ? %s : 0);", arrExpr, valueExpr, valueExpr);
+    } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+      w.line("%s.push(_base64Encode(%s));", arrExpr, valueExpr);
     } else if (isInt64Type(field.getMapValueType())) {
       w.line("%s.push(String(%s));", arrExpr, valueExpr);
+    } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT
+        || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+      w.line(
+          "%s.push(Number.isNaN(%s) || !Number.isFinite(%s) ? null : %s);",
+          arrExpr, valueExpr, valueExpr, valueExpr);
     } else {
       w.line("%s.push(%s);", arrExpr, valueExpr);
     }

@@ -177,6 +177,11 @@ public class RubySerializerGenerator {
       w.line("result << %s.map { |%s| Base64.strict_encode64(%s) }", rbField, itemVar, itemVar);
     } else if (isInt64Type(field.getProtoType())) {
       w.line("result << %s.map { |%s| %s.to_s }", rbField, itemVar, itemVar);
+    } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_FLOAT
+        || field.getProtoType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+      w.line(
+          "result << %s.map { |%s| %s.nan? || %s.infinite? ? nil : %s }",
+          rbField, itemVar, itemVar, itemVar, itemVar);
     } else {
       w.line("result << %s.dup", rbField);
     }
@@ -190,8 +195,13 @@ public class RubySerializerGenerator {
         w.line("result << %s.transform_values { |v| v.nil? ? nil : v.serialize }", rbField);
       } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
         w.line("result << %s.dup", rbField);
+      } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+        w.line("result << %s.transform_values { |v| Base64.strict_encode64(v) }", rbField);
       } else if (isInt64Type(field.getMapValueType())) {
         w.line("result << %s.transform_values { |v| v.to_s }", rbField);
+      } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT
+          || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+        w.line("result << %s.transform_values { |v| v.nan? || v.infinite? ? nil : v }", rbField);
       } else {
         w.line("result << %s.dup", rbField);
       }
@@ -201,8 +211,13 @@ public class RubySerializerGenerator {
         w.line("result << %s.map { |k, v| [k, v.nil? ? nil : v.serialize] }", rbField);
       } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
         w.line("result << %s.map { |k, v| [k, v] }", rbField);
+      } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+        w.line("result << %s.map { |k, v| [k, Base64.strict_encode64(v)] }", rbField);
       } else if (isInt64Type(field.getMapValueType())) {
         w.line("result << %s.map { |k, v| [k, v.to_s] }", rbField);
+      } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT
+          || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+        w.line("result << %s.map { |k, v| [k, v.nan? || v.infinite? ? nil : v] }", rbField);
       } else {
         w.line("result << %s.map { |k, v| [k, v] }", rbField);
       }

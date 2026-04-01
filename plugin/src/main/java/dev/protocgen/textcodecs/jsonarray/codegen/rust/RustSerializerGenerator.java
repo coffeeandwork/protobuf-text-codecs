@@ -211,6 +211,11 @@ public class RustSerializerGenerator {
                   w.line("list_arr.push(json!(general_purpose::STANDARD.encode(%s)));", elemVar);
                 } else if (isInt64Type(field.getProtoType())) {
                   w.line("list_arr.push(json!(%s.to_string()));", elemVar);
+                } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_FLOAT
+                    || field.getProtoType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+                  w.line(
+                      "list_arr.push(if %s.is_nan() || %s.is_infinite() { json!(null) } else { json!(%s) });",
+                      elemVar, elemVar, elemVar);
                 } else {
                   w.line("list_arr.push(json!(%s));", elemVar);
                 }
@@ -254,8 +259,16 @@ public class RustSerializerGenerator {
       w.line("map_obj.insert(%s, %s.serialize());", keyExpr, valueExpr);
     } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
       w.line("map_obj.insert(%s, json!(*%s as i32));", keyExpr, valueExpr);
+    } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+      w.line(
+          "map_obj.insert(%s, json!(general_purpose::STANDARD.encode(%s)));", keyExpr, valueExpr);
     } else if (isInt64Type(field.getMapValueType())) {
       w.line("map_obj.insert(%s, json!(%s.to_string()));", keyExpr, valueExpr);
+    } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT
+        || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+      w.line(
+          "map_obj.insert(%s, if %s.is_nan() || %s.is_infinite() { json!(null) } else { json!(%s) });",
+          keyExpr, valueExpr, valueExpr, valueExpr);
     } else {
       w.line("map_obj.insert(%s, json!(%s));", keyExpr, valueExpr);
     }
@@ -270,8 +283,15 @@ public class RustSerializerGenerator {
       w.line("pair.push(%s.serialize());", valueExpr);
     } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
       w.line("pair.push(json!(*%s as i32));", valueExpr);
+    } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+      w.line("pair.push(json!(general_purpose::STANDARD.encode(%s)));", valueExpr);
     } else if (isInt64Type(field.getMapValueType())) {
       w.line("pair.push(json!(%s.to_string()));", valueExpr);
+    } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT
+        || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+      w.line(
+          "pair.push(if %s.is_nan() || %s.is_infinite() { json!(null) } else { json!(%s) });",
+          valueExpr, valueExpr, valueExpr);
     } else {
       w.line("pair.push(json!(%s));", valueExpr);
     }

@@ -183,6 +183,11 @@ public class PerlSerializerGenerator {
       w.line("push @result, [map { \"\" . $_ } @{%s}];", plField);
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BOOL) {
       w.line("push @result, [map { $_ ? JSON::true : JSON::false } @{%s}];", plField);
+    } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_FLOAT
+        || field.getProtoType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+      w.line(
+          "push @result, [map { ($_ != $_ || $_ == 9**9**9 || $_ == -(9**9**9)) ? undef : $_ } @{%s}];",
+          plField);
     } else {
       w.line("push @result, [@{%s}];", plField);
     }
@@ -196,8 +201,17 @@ public class PerlSerializerGenerator {
         w.line(
             "push @result, {map { $_ => (defined(%s->{$_}) ? %s->{$_}->serialize() : undef) } keys %%{%s}};",
             plField, plField, plField);
+      } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+        w.line(
+            "push @result, {map { $_ => encode_base64(%s->{$_}, \"\") } keys %%{%s}};",
+            plField, plField);
       } else if (isInt64Type(field.getMapValueType())) {
         w.line("push @result, {map { $_ => (\"\" . %s->{$_}) } keys %%{%s}};", plField, plField);
+      } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT
+          || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+        w.line(
+            "push @result, {map { my $v = %s->{$_}; $_ => (($v != $v || $v == 9**9**9 || $v == -(9**9**9)) ? undef : $v) } keys %%{%s}};",
+            plField, plField);
       } else {
         w.line("push @result, {%%{%s}};", plField);
       }
@@ -207,8 +221,17 @@ public class PerlSerializerGenerator {
         w.line(
             "push @result, [map { [$_, defined(%s->{$_}) ? %s->{$_}->serialize() : undef] } keys %%{%s}];",
             plField, plField, plField);
+      } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+        w.line(
+            "push @result, [map { [$_, encode_base64(%s->{$_}, \"\")] } keys %%{%s}];",
+            plField, plField);
       } else if (isInt64Type(field.getMapValueType())) {
         w.line("push @result, [map { [$_, \"\" . %s->{$_}] } keys %%{%s}];", plField, plField);
+      } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT
+          || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+        w.line(
+            "push @result, [map { my $v = %s->{$_}; [$_, ($v != $v || $v == 9**9**9 || $v == -(9**9**9)) ? undef : $v] } keys %%{%s}];",
+            plField, plField);
       } else {
         w.line("push @result, [map { [$_, %s->{$_}] } keys %%{%s}];", plField, plField);
       }
