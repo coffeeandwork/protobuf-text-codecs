@@ -90,7 +90,7 @@ Each language has 6 classes: Generator, CodeEmitter, SerializerGenerator, Deseri
 ## Testing
 
 ```bash
-./gradlew :plugin:test                    # All tests (1,090 tests)
+./gradlew :plugin:test                    # All tests (1,107 tests)
 ./gradlew :plugin:test --tests "*.PbtkJavaCodeGenTest"  # pbtk tests only
 ./gradlew :plugin:jacocoTestReport        # Coverage report
 ./gradlew spotlessCheck                   # Code formatting

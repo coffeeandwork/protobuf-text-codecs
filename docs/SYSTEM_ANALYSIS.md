@@ -72,7 +72,7 @@ protobuf-text-codecs/
 
 Key directories:
 - `plugin/src/main/`: Plugin source code — the core product
-- `plugin/src/test/`: Unit and code generation tests (1,090 tests)
+- `plugin/src/test/`: Unit and code generation tests (1,107 tests)
 - `runtime/`: Thin runtime libraries for languages that need them (Java, C, C++, Rust)
 - `test-protos/`: Proto definitions for testing (user.proto, address.proto, kitchen_sink.proto, edge_cases.proto, proto2_test.proto)
 - `integration-tests/`: Cross-language round-trip and schema evolution tests
@@ -84,7 +84,7 @@ Key directories:
 | `Main.main()` | CLI (protoc plugin) | `Main.java` | Reads CodeGeneratorRequest from stdin, writes CodeGeneratorResponse to stdout |
 | `Main.main()` --version | CLI | `Main.java` | Prints `protoc-gen-jsonarray 0.2.0` to stdout and exits |
 | `protoc-gen-jsonarray` | Shell wrapper | `protoc-gen-jsonarray` | Validates java/JAR existence, delegates to Main |
-| `PluginRunner.run()` | Internal API | `PluginRunner.java` | Core orchestration — can be called programmatically (used by 1,090 unit tests) |
+| `PluginRunner.run()` | Internal API | `PluginRunner.java` | Core orchestration — can be called programmatically (used by 1,107 unit tests) |
 | `LanguageGenerator.generate()` | Internal API | `LanguageGenerator.java` | Per-language code generation interface (17 implementations) |
 
 ## 4. Components
@@ -418,7 +418,7 @@ The core encoding format that all generated code must implement:
 | SchemaEvolutionTest | 119 | Schema evolution across all 17 languages, JSON array format (parameterized) |
 | JavaSchemaEvolutionTest | 15 | Java-specific schema evolution patterns (array sizing, bounds, gaps, oneofs) |
 
-**Total: 1,090 tests (21 test classes). Overall coverage: 73.9% instructions, 76.6% lines.**
+**Total: 1,107 tests (21 test classes). Overall coverage: 73.9% instructions, 76.6% lines.**
 
 Integration tests (not in JUnit):
 - Cross-language round-trip (Java ↔ Python): 5 assertions
@@ -430,7 +430,7 @@ Integration tests (not in JUnit):
 
 ### Strengths
 1. **Clean architecture:** Language-neutral model layer cleanly separates proto analysis from code generation. Adding a new language requires implementing 6 classes with no changes to the core.
-2. **Thorough testing:** 1,090 tests (73.9% instruction coverage, 76.6% line coverage) + integration tests + 80 end-to-end code generation tests verifying actual generated source code + 134 schema evolution tests across all 17 languages.
+2. **Thorough testing:** 1,107 tests (73.9% instruction coverage, 76.6% line coverage) + integration tests + 80 end-to-end code generation tests verifying actual generated source code + 134 schema evolution tests across all 17 languages.
 3. **Immutable model:** All model objects use `List.copyOf()` — no accidental mutation.
 4. **Defense-in-depth:** Field name validation, path traversal, keyword escaping, collision detection — even though protoc validates most inputs upstream.
 5. **Zero runtime dependencies:** The plugin itself only needs `protobuf-java`. No network, no disk, no state.
