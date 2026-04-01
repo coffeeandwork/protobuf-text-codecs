@@ -39,7 +39,7 @@ def test_deserialize(json_str):
     print("--- Test: Deserialize User from JSON ---")
     print(f"  Input: {json_str}")
 
-    user = User.from_json_string(json_str)
+    user = User.ParseFromString(json_str.encode("utf-8"))
 
     check("firstname", "Alice", user.firstname)
     check("lastname", "Smith", user.lastname)
@@ -72,7 +72,7 @@ def test_serialize():
     user.age = 30
     user.address = addr
 
-    json_str = user.to_json_string()
+    json_str = user.SerializeToString().decode("utf-8")
     print(f"  Serialized: {json_str}")
 
     # Normalize for comparison: parse and re-dump with no spaces
@@ -106,9 +106,9 @@ def test_round_trip():
     user.age = 30
     user.address = addr
 
-    json1 = user.to_json_string()
-    user2 = User.from_json_string(json1)
-    json2 = user2.to_json_string()
+    json1 = user.SerializeToString().decode("utf-8")
+    user2 = User.ParseFromString(json1.encode("utf-8"))
+    json2 = user2.SerializeToString().decode("utf-8")
 
     json1_normalized = json.dumps(json.loads(json1), separators=(",", ":"))
     json2_normalized = json.dumps(json.loads(json2), separators=(",", ":"))

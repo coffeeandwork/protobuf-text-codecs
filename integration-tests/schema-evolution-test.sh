@@ -124,7 +124,7 @@ p = Person()
 p.name = 'Alice'
 p.age = 30
 p.email = 'alice@example.com'
-print(p.to_json_string())
+print(p.SerializeToString().decode('utf-8'))
 ")
 echo "  v1 serialized: $V1_JSON"
 
@@ -133,7 +133,7 @@ import sys
 from evolution.person import Person
 
 json_str = '''$V1_JSON'''
-p = Person.from_json_string(json_str)
+p = Person.ParseFromString(json_str.encode('utf-8'))
 
 errors = []
 if p.name != "Alice":
@@ -176,7 +176,7 @@ p.name = 'Bob'
 p.age = 25
 p.email = 'bob@example.com'
 p.phone = '555-0123'
-print(p.to_json_string())
+print(p.SerializeToString().decode('utf-8'))
 ")
 echo "  v2 serialized: $V2_JSON"
 
@@ -185,7 +185,7 @@ import sys
 from evolution.person import Person
 
 json_str = '''$V2_JSON'''
-p = Person.from_json_string(json_str)
+p = Person.ParseFromString(json_str.encode('utf-8'))
 
 errors = []
 if p.name != "Bob":
@@ -231,9 +231,9 @@ p.age = 35
 p.email = "charlie@example.com"
 p.phone = "555-9999"
 
-json1 = p.to_json_string()
-p2 = Person.from_json_string(json1)
-json2 = p2.to_json_string()
+json1 = p.SerializeToString().decode('utf-8')
+p2 = Person.ParseFromString(json1.encode('utf-8'))
+json2 = p2.SerializeToString().decode('utf-8')
 
 n1 = json.dumps(json.loads(json1), separators=(",", ":"))
 n2 = json.dumps(json.loads(json2), separators=(",", ":"))
@@ -288,7 +288,7 @@ s = Sparse()
 s.name = "test"
 s.value = 42
 
-json_str = s.to_json_string()
+json_str = s.SerializeToString().decode('utf-8')
 data = json.loads(json_str)
 
 # Field 1 is at position 0, fields 2-4 should be null (gaps), field 5 at position 4
@@ -312,7 +312,7 @@ if errors:
     sys.exit(1)
 else:
     # Round-trip
-    s2 = Sparse.from_json_string(json_str)
+    s2 = Sparse.ParseFromString(json_str.encode('utf-8'))
     if s2.name != "test" or s2.value != 42:
         print(f"ERROR: round-trip failed: name={s2.name!r}, value={s2.value!r}")
         sys.exit(1)
