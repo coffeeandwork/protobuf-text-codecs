@@ -57,7 +57,7 @@ protobuf-text-codecs/
 │   ├── cpp/   (nlohmann/json header-only, 1 file)
 │   └── rust/  (serde_json-based, 1 crate)
 ├── test-protos/                      # 5 test .proto files
-├── integration-tests/                # Shell-based integration tests (4 files)
+├── integration-tests/                # Shell-based integration tests (5 files)
 ├── protoc-gen-jsonarray              # Bash wrapper script
 ├── protoc-gen-pbtkurl               # Bash wrapper script (pbtk URL format)
 ├── docs/                             # Documentation
@@ -368,6 +368,7 @@ The generated code runs in the user's application with fundamentally different c
 | Segfault (C) | NULL dereference on malformed input | Process crash | Runtime crash |
 | Silent data loss | int64 parsed as float64 by intermediate JSON library | Precision loss above 2^53 | [MITIGATED] int64 encoded as string |
 | Memory leak (C) | [FIXED] Base64 string not freed in oneof path | Growing memory usage | Valgrind/ASan |
+| Incorrect bytes length in C map entries | [FIXED] Map entry struct now includes `size_t value_len` for bytes-valued maps; serializer uses correct length for base64, deserializer stores decoded length | Wrong base64 output or truncated bytes on round-trip | Unit tests (CCodeEmitter, CSerializerGenerator, CDeserializerGenerator, PbtkCGenerator) |
 
 ## 15. Encoding Specification Summary
 
@@ -414,7 +415,7 @@ The core encoding format that all generated code must implement:
 | PbtkJavaCodeGenTest | 29 | pbtk URL format Java code generation |
 | PbtkMultiLanguageCodeGenTest | 144 | pbtk URL format across 16 non-Java languages |
 | PbtkSafetySecurityTest | 86 | Safety/security tests for pbtk format |
-| SchemaEvolutionTest | 119 | Schema evolution across all 17 languages, both formats (parameterized) |
+| SchemaEvolutionTest | 119 | Schema evolution across all 17 languages, JSON array format (parameterized) |
 | JavaSchemaEvolutionTest | 15 | Java-specific schema evolution patterns (array sizing, bounds, gaps, oneofs) |
 
 **Total: 1,090 tests (21 test classes). Overall coverage: 73.9% instructions, 76.6% lines.**
@@ -422,6 +423,7 @@ The core encoding format that all generated code must implement:
 Integration tests (not in JUnit):
 - Cross-language round-trip (Java ↔ Python): 5 assertions
 - Schema evolution (forward/backward compat): 4 assertions
+- Proto2-proto3 migration (`proto2-proto3-migration-test.sh`): 5 scenarios (proto2→proto3, short array defaults, proto3→proto2, zero-value preservation, cross-syntax round-trip)
 - 17-language generation smoke test (CI workflow)
 
 ## 17. Initial Observations

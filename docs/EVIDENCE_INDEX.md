@@ -71,7 +71,7 @@ LIMITATIONS:
 | Python | `codegen/python/` | PythonGenerator, PythonCodeEmitter, PythonSerializerGenerator, PythonDeserializerGenerator, PythonTypeMapper, PythonNameResolver | FR-011, FR-013 |
 | JavaScript | `codegen/javascript/` | JavaScriptGenerator, JavaScriptCodeEmitter, JavaScriptSerializerGenerator, JavaScriptDeserializerGenerator, JavaScriptTypeMapper, JavaScriptNameResolver | FR-011, FR-013 |
 | TypeScript | `codegen/typescript/` | TypeScriptGenerator, TypeScriptCodeEmitter, TypeScriptSerializerGenerator, TypeScriptDeserializerGenerator, TypeScriptTypeMapper, TypeScriptNameResolver | FR-011, FR-013 |
-| C | `codegen/c/` | CGenerator, CCodeEmitter, CSerializerGenerator, CDeserializerGenerator, CTypeMapper, CNameResolver | FR-011, FR-013 |
+| C | `codegen/c/` | CGenerator, CCodeEmitter, CSerializerGenerator, CDeserializerGenerator, CTypeMapper, CNameResolver | FR-006, FR-011, FR-013 (includes `size_t value_len` fix for bytes-valued map entries) |
 | C++ | `codegen/cpp/` | CppGenerator, CppCodeEmitter, CppSerializerGenerator, CppDeserializerGenerator, CppTypeMapper, CppNameResolver | FR-011, FR-013 |
 | Rust | `codegen/rust/` | RustGenerator, RustCodeEmitter, RustSerializerGenerator, RustDeserializerGenerator, RustTypeMapper, RustNameResolver | FR-011, FR-013 |
 | Zig | `codegen/zig/` | ZigGenerator, ZigCodeEmitter, ZigSerializerGenerator, ZigDeserializerGenerator, ZigTypeMapper, ZigNameResolver | FR-011, FR-013 |
@@ -119,8 +119,8 @@ LIMITATIONS:
 | PbtkJavaCodeGenTest | `plugin/src/test/java/.../pbtkurl/PbtkJavaCodeGenTest.java` | 29 | FR-011 (pbtk) |
 | PbtkMultiLanguageCodeGenTest | `plugin/src/test/java/.../pbtkurl/PbtkMultiLanguageCodeGenTest.java` | 144 | FR-011, FR-013 (pbtk) |
 | PbtkSafetySecurityTest | `plugin/src/test/java/.../pbtkurl/PbtkSafetySecurityTest.java` | 86 | SR-001-SR-004, SEC-001-SEC-004 (pbtk) |
-| PbtkSchemaEvolutionTest | `plugin/src/test/java/.../pbtkurl/PbtkSchemaEvolutionTest.java` | — | FR-001, FR-002, SR-001 (pbtk) |
-| PbtkJavaSchemaEvolutionTest | `plugin/src/test/java/.../pbtkurl/PbtkJavaSchemaEvolutionTest.java` | — | FR-001, FR-002, SR-001 (pbtk) |
+| PbtkSchemaEvolutionTest | `plugin/src/test/java/.../pbtkurl/PbtkSchemaEvolutionTest.java` | 34 (2 parameterized x 17 langs) | FR-001, FR-002, SR-001 (pbtk) |
+| PbtkJavaSchemaEvolutionTest | `plugin/src/test/java/.../pbtkurl/PbtkJavaSchemaEvolutionTest.java` | 4 | FR-001, FR-002, SR-001 (pbtk) |
 | SchemaEvolutionTest | `plugin/src/test/java/.../jsonarray/SchemaEvolutionTest.java` | 119 | FR-001, FR-002, SR-001 |
 | JavaSchemaEvolutionTest | `plugin/src/test/java/.../jsonarray/JavaSchemaEvolutionTest.java` | 15 | FR-001, FR-002, SR-001 |
 | | | **Total: 1,090** | |
@@ -165,7 +165,7 @@ Note: 15 `@ParameterizedTest` methods x 16 languages = 240 expanded invocations 
 |------|------|------------------|
 | Cross-language round-trip | `integration-tests/cross-language-test.sh` | Java ↔ Python serialize/deserialize |
 | Schema evolution | `integration-tests/schema-evolution-test.sh` | Forward/backward compatibility |
-| Proto2-proto3 migration | `integration-tests/proto2-proto3-migration-test.sh` | Proto2 to proto3 migration compatibility |
+| Proto2-proto3 migration | `integration-tests/proto2-proto3-migration-test.sh` | Proto2/proto3 migration compatibility (5 scenarios: proto2→proto3, short array defaults, proto3→proto2, zero-value preservation, cross-syntax round-trip) |
 | Java round-trip | `integration-tests/java/UserRoundTripTest.java` | Java end-to-end |
 | Python round-trip | `integration-tests/python/user_round_trip_test.py` | Python end-to-end |
 

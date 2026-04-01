@@ -62,7 +62,7 @@ LIMITATIONS:
 | Total tests | 1,090 | Good — comprehensive for core + all 17 languages + schema evolution |
 | Instruction coverage | 73.9% | Good overall; gaps in non-Java generators |
 | Line coverage | 76.6% | Good overall |
-| Integration tests | 3 shell scripts (9 assertions) | Minimal but effective |
+| Integration tests | 4 shell scripts (cross-language, schema-evolution, proto2-proto3-migration, CI smoke) | Adequate |
 | Cross-language tests | Java ↔ Python only | Insufficient for 17-language claim |
 
 ### 2.2 Coverage by Criticality
@@ -161,6 +161,7 @@ LIMITATIONS:
 | Java ↔ Python cross-language | Serialize in Java, deserialize in Python (and vice versa) | High |
 | Schema evolution | v1 serialize → v2 deserialize (forward compat) | High |
 | Schema evolution | v2 serialize → v1 deserialize (backward compat) | High |
+| Proto2-proto3 migration | 5 scenarios: proto2→proto3 deserialize, short array defaults, proto3→proto2 deserialize, zero-value preservation, cross-syntax round-trip (`proto2-proto3-migration-test.sh`) | High |
 
 ### 3.3 System Testing
 
@@ -257,6 +258,7 @@ LIMITATIONS:
 | Generated code execution (15 of 17 languages) | Only Java and Python executed | Pattern tests + cross-language round-trip for Java/Python |
 | C runtime dynamic memory analysis | No Valgrind/ASan | Static review; future CI enhancement |
 | Proto2 defaults in generators | 6 of 17 generators fixed (Java, Kotlin, C#, Dart, PHP, ObjC) | [PARTIAL — 6 of 17 generators audited] 11 remaining: Python, Go, Rust, C, C++, JS, TS, Zig, Swift, Ruby, Perl |
+| ~~C map bytes value_len~~ | ~~Map entry struct missing length field for bytes values~~ | **Resolved.** C map entry struct now includes `size_t value_len` for bytes-valued maps; fixes base64 serialization, deserialization length storage, and pbtk bytes map support. Affected: CCodeEmitter, CSerializerGenerator, CDeserializerGenerator, PbtkCGenerator. |
 
 ## 6. Requirements Traceability
 
@@ -331,7 +333,7 @@ plugin/src/test/java/dev/protocgen/textcodecs/jsonarray/
 ├── GoldenFileTest.java              # Snapshot: exact output comparison
 ├── PerformanceBenchmarkTest.java    # Plugin throughput benchmarks
 ├── MemoryBenchmarkTest.java         # Memory allocation benchmarks
-├── SchemaEvolutionTest.java         # Schema evolution across all 17 langs, both formats (119 parameterized)
+├── SchemaEvolutionTest.java         # Schema evolution across all 17 langs, JSON array format (119 parameterized)
 ├── JavaSchemaEvolutionTest.java     # Java-specific schema evolution patterns (11 tests)
 └── ../pbtkurl/
     ├── PbtkJavaCodeGenTest.java     # E2E: pbtk Java code generation

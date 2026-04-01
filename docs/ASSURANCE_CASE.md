@@ -38,8 +38,8 @@ LIMITATIONS:
 | C3 | int64 precision is preserved across language boundaries | SR-003, E5 |
 | C4 | Generated code is not injectable via crafted input | SEC-001–SEC-004, VULN-001–009, E6, E7 |
 | C5 | Output file paths cannot escape the output directory | SEC-002, VULN-004, E8 |
-| C6 | Proto2 and proto3 semantics are both correctly handled | FR-009, FR-010, E9 |
-| C7 | Edge cases (NaN/Infinity, empty messages, sparse fields) are handled safely | SR-004, FR-002, E10 |
+| C6 | Proto2 and proto3 semantics are both correctly handled | FR-009, FR-010, E9, E13 |
+| C7 | Edge cases (NaN/Infinity, empty messages, sparse fields) are handled safely | SR-004, FR-002, E10, E14 |
 | C8 | The plugin conforms to the protoc plugin protocol | FR-014, FR-015, E11 |
 
 ---
@@ -180,8 +180,31 @@ LIMITATIONS:
 - **Test Files:**
   - `SchemaEvolutionTest.java` (119 tests) — forward/backward compatibility across languages, field addition/removal, renumbering
   - `JavaSchemaEvolutionTest.java` (15 tests) — Java-specific round-trip schema evolution verification
-- **Coverage:** 134 tests total covering schema evolution scenarios
+  - `PbtkSchemaEvolutionTest.java` (2 parameterized tests x 17 languages) — pbtk-format schema evolution (relocated to pbtkurl package)
+  - `PbtkJavaSchemaEvolutionTest.java` (4 tests) — Java-specific pbtk schema evolution (relocated to pbtkurl package)
+- **Coverage:** 134+ tests total covering schema evolution scenarios across both formats
 - **Evidence Strength:** Strong — systematic verification of positional encoding stability under schema changes across all supported languages
+
+### E13: Proto2-Proto3 Migration Compatibility
+
+- **Claim Supported:** C6 (proto2/proto3 semantics), C2 (type encoding consistency)
+- **Requirements:** FR-009, FR-010
+- **Test File:** `integration-tests/proto2-proto3-migration-test.sh`
+- **Scenarios:**
+  1. Proto2 serialize -> Proto3 deserialize (all fields set)
+  2. Short array -> Proto3 deserialize (absent fields get zero defaults)
+  3. Proto3 serialize -> Proto2 deserialize (all fields set)
+  4. Proto3 zero values -> Proto2 deserialize (values preserved, defaults not applied)
+  5. Cross-syntax round-trip (proto2 -> proto3 -> proto2)
+- **Evidence Strength:** Strong — verifies migration compatibility across proto syntax versions
+
+### E14: C Map Bytes Value Length Fix
+
+- **Claim Supported:** C2 (type encoding consistency), C7 (edge case handling)
+- **Requirements:** FR-006, SR-002
+- **Fix:** C code generator map entry struct now includes `size_t value_len` for bytes-valued maps. Corrects base64 serialization (uses actual length), deserialization (stores decoded length), and pbtk bytes map support.
+- **Source Files:** `CCodeEmitter.java`, `CSerializerGenerator.java`, `CDeserializerGenerator.java`, `PbtkCGenerator.java`
+- **Evidence Strength:** Moderate — fix verified via code generation pattern tests; no dynamic C execution test
 
 ---
 
@@ -272,6 +295,16 @@ LIMITATIONS:
 - **Status:** Resolved with 134 tests (SchemaEvolutionTest: 119, JavaSchemaEvolutionTest: 15)
 - **Coverage:** Forward/backward compatibility, field addition/removal, renumbering verified across all supported languages.
 - **Evidence:** E12
+
+### Resolved: C Map Bytes Value Length
+- **Status:** Resolved. C map entry struct now includes `size_t value_len` for bytes-valued maps.
+- **Impact:** Fixes incorrect base64 serialization length, discarded deserialization length, and stub pbtk bytes map support.
+- **Evidence:** E14
+
+### Resolved: Proto2-Proto3 Migration (previously untested)
+- **Status:** Resolved with `proto2-proto3-migration-test.sh` (5 scenarios).
+- **Coverage:** Bidirectional migration between proto2 and proto3, zero-value preservation, cross-syntax round-trip.
+- **Evidence:** E13
 
 ---
 
