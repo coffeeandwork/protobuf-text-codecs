@@ -117,6 +117,8 @@ public class PhpSerializerGenerator {
       w.line("$result[] = %s;", phpField);
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
       w.line("$result[] = base64_encode(%s);", phpField);
+    } else if (isInt64Type(field.getProtoType())) {
+      w.line("$result[] = (string) %s;", phpField);
     } else if (isFloatOrDouble(field.getProtoType())) {
       w.line(
           "$result[] = (is_nan(%s) || is_infinite(%s)) ? null : %s;", phpField, phpField, phpField);
@@ -145,6 +147,8 @@ public class PhpSerializerGenerator {
   private void emitScalarAppend(CodeWriter w, ProtoField field, String phpField) {
     if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
       w.line("$result[] = base64_encode(%s);", phpField);
+    } else if (isInt64Type(field.getProtoType())) {
+      w.line("$result[] = (string) %s;", phpField);
     } else if (isFloatOrDouble(field.getProtoType())) {
       w.line(
           "$result[] = (is_nan(%s) || is_infinite(%s)) ? null : %s;", phpField, phpField, phpField);
@@ -188,6 +192,8 @@ public class PhpSerializerGenerator {
       w.line("$result[] = array_values(%s);", phpField);
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
       w.line("$result[] = array_map('base64_encode', %s);", phpField);
+    } else if (isInt64Type(field.getProtoType())) {
+      w.line("$result[] = array_map('strval', %s);", phpField);
     } else {
       w.line("$result[] = array_values(%s);", phpField);
     }
@@ -205,6 +211,14 @@ public class PhpSerializerGenerator {
         w.dedent();
         w.line("}");
         w.line("$result[] = (object) $mapArr;");
+      } else if (isInt64Type(field.getMapValueType())) {
+        w.line("$mapArr = [];");
+        w.line("foreach (%s as $k => $v) {", phpField);
+        w.indent();
+        w.line("$mapArr[$k] = (string) $v;");
+        w.dedent();
+        w.line("}");
+        w.line("$result[] = (object) $mapArr;");
       } else {
         w.line("$result[] = (object) %s;", phpField);
       }
@@ -215,6 +229,14 @@ public class PhpSerializerGenerator {
         w.line("foreach (%s as $k => $v) {", phpField);
         w.indent();
         w.line("$pairs[] = [$k, $v !== null ? $v->serialize() : null];");
+        w.dedent();
+        w.line("}");
+        w.line("$result[] = $pairs;");
+      } else if (isInt64Type(field.getMapValueType())) {
+        w.line("$pairs = [];");
+        w.line("foreach (%s as $k => $v) {", phpField);
+        w.indent();
+        w.line("$pairs[] = [$k, (string) $v];");
         w.dedent();
         w.line("}");
         w.line("$result[] = $pairs;");
@@ -232,5 +254,9 @@ public class PhpSerializerGenerator {
 
   private boolean isFloatOrDouble(FieldDescriptorProto.Type type) {
     return ProtoTypeUtil.isFloatOrDoubleType(type);
+  }
+
+  private boolean isInt64Type(FieldDescriptorProto.Type type) {
+    return ProtoTypeUtil.isInt64Type(type);
   }
 }

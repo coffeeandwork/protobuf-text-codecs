@@ -104,7 +104,7 @@ public class DartSerializerGenerator {
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
       emitBytesEncode(w, dartField, "array.add(%s);");
     } else if (isInt64Type(field.getProtoType())) {
-      w.line("array.add(%s);", dartField);
+      w.line("array.add(%s.toString());", dartField);
     } else if (isFloatType(field.getProtoType())) {
       emitFloatNanCheck(w, dartField);
     } else {
@@ -130,7 +130,7 @@ public class DartSerializerGenerator {
     if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
       emitBytesEncode(w, dartField, "array.add(%s);");
     } else if (isInt64Type(field.getProtoType())) {
-      w.line("array.add(%s);", dartField);
+      w.line("array.add(%s.toString());", dartField);
     } else if (isFloatType(field.getProtoType())) {
       emitFloatNanCheck(w, dartField);
     } else {
@@ -173,7 +173,7 @@ public class DartSerializerGenerator {
                 } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
                   emitBytesEncode(w, elemVar, "listArr.add(%s);");
                 } else if (isInt64Type(field.getProtoType())) {
-                  w.line("listArr.add(%s);", elemVar);
+                  w.line("listArr.add(%s.toString());", elemVar);
                 } else if (isFloatType(field.getProtoType())) {
                   w.line(
                       "listArr.add(%s.isNaN || %s.isInfinite ? null : %s);",
@@ -221,7 +221,7 @@ public class DartSerializerGenerator {
     } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
       w.line("mapObj[%s] = %s ?? 0;", keyExpr, valueExpr);
     } else if (isInt64Type(field.getMapValueType())) {
-      w.line("mapObj[%s] = %s;", keyExpr, valueExpr);
+      w.line("mapObj[%s] = %s.toString();", keyExpr, valueExpr);
     } else {
       w.line("mapObj[%s] = %s;", keyExpr, valueExpr);
     }
@@ -233,7 +233,7 @@ public class DartSerializerGenerator {
     } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
       w.line("%s.add(%s ?? 0);", arrExpr, valueExpr);
     } else if (isInt64Type(field.getMapValueType())) {
-      w.line("%s.add(%s);", arrExpr, valueExpr);
+      w.line("%s.add(%s.toString());", arrExpr, valueExpr);
     } else {
       w.line("%s.add(%s);", arrExpr, valueExpr);
     }

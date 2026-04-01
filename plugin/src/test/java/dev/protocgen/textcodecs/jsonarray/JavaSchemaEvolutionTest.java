@@ -16,6 +16,8 @@
 package dev.protocgen.textcodecs.jsonarray;
 
 import com.google.protobuf.DescriptorProtos.DescriptorProto;
+import com.google.protobuf.DescriptorProtos.EnumDescriptorProto;
+import com.google.protobuf.DescriptorProtos.EnumValueDescriptorProto;
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
 import com.google.protobuf.DescriptorProtos.OneofDescriptorProto;
@@ -50,6 +52,26 @@ class JavaSchemaEvolutionTest {
         .setName(name)
         .setNumber(number)
         .setType(type)
+        .setLabel(FieldDescriptorProto.Label.LABEL_OPTIONAL)
+        .build();
+  }
+
+  private FieldDescriptorProto enumField(String name, int number, String typeName) {
+    return FieldDescriptorProto.newBuilder()
+        .setName(name)
+        .setNumber(number)
+        .setType(FieldDescriptorProto.Type.TYPE_ENUM)
+        .setTypeName(typeName)
+        .setLabel(FieldDescriptorProto.Label.LABEL_OPTIONAL)
+        .build();
+  }
+
+  private FieldDescriptorProto messageField(String name, int number, String typeName) {
+    return FieldDescriptorProto.newBuilder()
+        .setName(name)
+        .setNumber(number)
+        .setType(FieldDescriptorProto.Type.TYPE_MESSAGE)
+        .setTypeName(typeName)
         .setLabel(FieldDescriptorProto.Label.LABEL_OPTIONAL)
         .build();
   }
@@ -510,6 +532,302 @@ class JavaSchemaEvolutionTest {
     assertTrue(pbtkCode.contains("newBuilder()"), "pbtk uses builder pattern");
     assertTrue(jsonArrayCode.contains("builder.build()"), "JSON array builds message");
     assertTrue(pbtkCode.contains("builder.build()"), "pbtk builds message");
+  }
+
+  // ======================================================================
+  // 9. Oneof evolution — adding new members
+  // ======================================================================
+
+  @Test
+  void testOneofEvolutionAddingNewMember() {
+    // v1: message Contact { oneof info { string email = 1; string phone = 2; } }
+    FieldDescriptorProto v1Email =
+        FieldDescriptorProto.newBuilder()
+            .setName("email")
+            .setNumber(1)
+            .setType(FieldDescriptorProto.Type.TYPE_STRING)
+            .setLabel(FieldDescriptorProto.Label.LABEL_OPTIONAL)
+            .setOneofIndex(0)
+            .build();
+
+    FieldDescriptorProto v1Phone =
+        FieldDescriptorProto.newBuilder()
+            .setName("phone")
+            .setNumber(2)
+            .setType(FieldDescriptorProto.Type.TYPE_STRING)
+            .setLabel(FieldDescriptorProto.Label.LABEL_OPTIONAL)
+            .setOneofIndex(0)
+            .build();
+
+    DescriptorProto v1Contact =
+        DescriptorProto.newBuilder()
+            .setName("Contact")
+            .addField(v1Email)
+            .addField(v1Phone)
+            .addOneofDecl(OneofDescriptorProto.newBuilder().setName("info").build())
+            .build();
+
+    String v1Code = generateJsonArray(v1Contact);
+
+    // v1 serializer produces 2-element array (positions 0 and 1)
+    String v1AppendMethod = extractMethod(v1Code, "void appendJsonArray(StringBuilder sb)");
+    int v1CommaCount = countOccurrences(v1AppendMethod, "sb.append(',')");
+    assertTrue(
+        v1CommaCount == 1,
+        "v1 oneof serializer should emit 1 comma for 2 fields, got " + v1CommaCount);
+
+    // v2: message Contact { oneof info { string email = 1; string phone = 2; string fax = 3; } }
+    FieldDescriptorProto v2Fax =
+        FieldDescriptorProto.newBuilder()
+            .setName("fax")
+            .setNumber(3)
+            .setType(FieldDescriptorProto.Type.TYPE_STRING)
+            .setLabel(FieldDescriptorProto.Label.LABEL_OPTIONAL)
+            .setOneofIndex(0)
+            .build();
+
+    DescriptorProto v2Contact =
+        DescriptorProto.newBuilder()
+            .setName("Contact")
+            .addField(v1Email)
+            .addField(v1Phone)
+            .addField(v2Fax)
+            .addOneofDecl(OneofDescriptorProto.newBuilder().setName("info").build())
+            .build();
+
+    String v2Code = generateJsonArray(v2Contact);
+
+    // v2 serializer produces 3-element array (positions 0, 1, 2)
+    String v2AppendMethod = extractMethod(v2Code, "void appendJsonArray(StringBuilder sb)");
+    int v2CommaCount = countOccurrences(v2AppendMethod, "sb.append(',')");
+    assertTrue(
+        v2CommaCount == 2,
+        "v2 oneof serializer should emit 2 commas for 3 fields, got " + v2CommaCount);
+
+    // v2 deserializer handles 2-element input: fax (position 2) defaults via bounds check
+    assertTrue(
+        v2Code.contains("if (size > 2"), "v2 deserializer checks bounds for fax at position 2");
+
+    // v2 oneof case tracking includes the new fax member
+    assertTrue(v2Code.contains("FAXCase_ = 3"), "v2 has FAX case constant using field number 3");
+
+    // All three members are tracked in the same oneof group
+    assertTrue(v2Code.contains("EMAILCase_ = 1"), "v2 has EMAIL case constant");
+    assertTrue(v2Code.contains("PHONECase_ = 2"), "v2 has PHONE case constant");
+
+    // Serializer checks case for each oneof member
+    assertTrue(v2Code.contains("infoCase_ == EMAILCase_"), "v2 serializer checks EMAIL case");
+    assertTrue(v2Code.contains("infoCase_ == PHONECase_"), "v2 serializer checks PHONE case");
+    assertTrue(v2Code.contains("infoCase_ == FAXCase_"), "v2 serializer checks FAX case");
+
+    // Inactive oneof members emit null
+    assertTrue(
+        v2Code.contains("else { sb.append(\"null\"); }"), "inactive oneof members emit null in v2");
+  }
+
+  // ======================================================================
+  // 10. Enum evolution — adding new values
+  // ======================================================================
+
+  @Test
+  void testEnumEvolutionAddingNewValues() {
+    // v1: enum Status { UNKNOWN = 0; ACTIVE = 1; } in a message
+    EnumDescriptorProto v1StatusEnum =
+        EnumDescriptorProto.newBuilder()
+            .setName("Status")
+            .addValue(EnumValueDescriptorProto.newBuilder().setName("UNKNOWN").setNumber(0).build())
+            .addValue(EnumValueDescriptorProto.newBuilder().setName("ACTIVE").setNumber(1).build())
+            .build();
+
+    DescriptorProto v1Msg =
+        DescriptorProto.newBuilder()
+            .setName("Event")
+            .addEnumType(v1StatusEnum)
+            .addField(enumField("status", 1, ".test.Event.Status"))
+            .build();
+
+    String v1Code = generateJsonArray(v1Msg);
+
+    // v1 enum has exactly 2 values
+    assertTrue(v1Code.contains("UNKNOWN(0)"), "v1 enum has UNKNOWN value");
+    assertTrue(v1Code.contains("ACTIVE(1)"), "v1 enum has ACTIVE value");
+    assertFalse(v1Code.contains("SUSPENDED"), "v1 enum must not have SUSPENDED");
+
+    // v2: enum Status { UNKNOWN = 0; ACTIVE = 1; SUSPENDED = 2; }
+    EnumDescriptorProto v2StatusEnum =
+        EnumDescriptorProto.newBuilder()
+            .setName("Status")
+            .addValue(EnumValueDescriptorProto.newBuilder().setName("UNKNOWN").setNumber(0).build())
+            .addValue(EnumValueDescriptorProto.newBuilder().setName("ACTIVE").setNumber(1).build())
+            .addValue(
+                EnumValueDescriptorProto.newBuilder().setName("SUSPENDED").setNumber(2).build())
+            .build();
+
+    DescriptorProto v2Msg =
+        DescriptorProto.newBuilder()
+            .setName("Event")
+            .addEnumType(v2StatusEnum)
+            .addField(enumField("status", 1, ".test.Event.Status"))
+            .build();
+
+    String v2Code = generateJsonArray(v2Msg);
+
+    // v2 enum has 3 values
+    assertTrue(v2Code.contains("UNKNOWN(0)"), "v2 enum has UNKNOWN value");
+    assertTrue(v2Code.contains("ACTIVE(1)"), "v2 enum has ACTIVE value");
+    assertTrue(v2Code.contains("SUSPENDED(2)"), "v2 enum has SUSPENDED value");
+
+    // Deserialization uses forNumber() which returns null for unknown enum values
+    assertTrue(
+        v2Code.contains("Status.forNumber("),
+        "v2 deserializer uses forNumber() for enum deserialization");
+
+    // forNumber() iterates values and returns null if no match -- standard protobuf behavior
+    assertTrue(
+        v2Code.contains("public static Status forNumber(int number)"),
+        "v2 enum has forNumber method");
+    assertTrue(v2Code.contains("return null;"), "forNumber returns null for unknown enum values");
+
+    // Serialization uses getNumber() with null-safe ternary
+    assertTrue(
+        v2Code.contains("this.status != null ? this.status.getNumber() : 0"),
+        "v2 serializer handles null enum via ternary with default 0");
+  }
+
+  // ======================================================================
+  // 11. Empty message evolution
+  // ======================================================================
+
+  @Test
+  void testEmptyMessageEvolution() {
+    // v1: message Empty {} (no fields)
+    DescriptorProto v1Empty = DescriptorProto.newBuilder().setName("Empty").build();
+
+    String v1Code = generateJsonArray(v1Empty);
+
+    // v1 serializer produces empty array []
+    String v1AppendMethod = extractMethod(v1Code, "void appendJsonArray(StringBuilder sb)");
+    int v1CommaCount = countOccurrences(v1AppendMethod, "sb.append(',')");
+    assertTrue(
+        v1CommaCount == 0, "empty message serializer should emit 0 commas, got " + v1CommaCount);
+
+    // v1 serializer appends '[' and ']' with nothing in between
+    assertTrue(
+        v1AppendMethod.contains("sb.append('[')"), "empty message serializer opens array bracket");
+    assertTrue(
+        v1AppendMethod.contains("sb.append(']')"), "empty message serializer closes array bracket");
+
+    // v2: message Evolved { string name = 1; }
+    DescriptorProto v2Evolved =
+        DescriptorProto.newBuilder()
+            .setName("Evolved")
+            .addField(scalarField("name", 1, FieldDescriptorProto.Type.TYPE_STRING))
+            .build();
+
+    String v2Code = generateJsonArray(v2Evolved);
+
+    // v2 deserializer handles empty array input: name defaults to empty string
+    assertTrue(
+        v2Code.contains("if (size > 0"),
+        "v2 deserializer checks bounds before accessing position 0");
+
+    // The builder initializes name to empty string (proto3 default)
+    assertTrue(
+        v2Code.contains("private String name = \"\""),
+        "v2 builder initializes name to empty string");
+
+    // v2 deserializer returns builder.build() regardless of input size
+    assertTrue(
+        v2Code.contains("return builder.build()"),
+        "v2 deserializer returns built message even for empty input");
+  }
+
+  // ======================================================================
+  // 12. Nested message evolution
+  // ======================================================================
+
+  @Test
+  void testNestedMessageEvolution() {
+    // v1 Child: { string x = 1; }
+    DescriptorProto v1Child =
+        DescriptorProto.newBuilder()
+            .setName("Child")
+            .addField(scalarField("x", 1, FieldDescriptorProto.Type.TYPE_STRING))
+            .build();
+
+    // v1 Parent: { string name = 1; Child child = 2; }
+    DescriptorProto v1Parent =
+        DescriptorProto.newBuilder()
+            .setName("Parent")
+            .addNestedType(v1Child)
+            .addField(scalarField("name", 1, FieldDescriptorProto.Type.TYPE_STRING))
+            .addField(messageField("child", 2, ".test.Parent.Child"))
+            .build();
+
+    String v1Code = generateJsonArray(v1Parent);
+
+    // v1 Child serializer produces 1-element nested array
+    // Verify the nested Child class exists
+    assertTrue(v1Code.contains("public static final class Child"), "v1 has nested Child class");
+
+    // v1 serializes child via recursive appendJsonArray
+    assertTrue(
+        v1Code.contains("this.child.appendJsonArray(sb)"),
+        "v1 serializer recursively serializes child");
+
+    // v2 Child: { string x = 1; string y = 2; }
+    DescriptorProto v2Child =
+        DescriptorProto.newBuilder()
+            .setName("Child")
+            .addField(scalarField("x", 1, FieldDescriptorProto.Type.TYPE_STRING))
+            .addField(scalarField("y", 2, FieldDescriptorProto.Type.TYPE_STRING))
+            .build();
+
+    // v2 Parent: { string name = 1; Child child = 2; } (same structure, but Child is larger)
+    DescriptorProto v2Parent =
+        DescriptorProto.newBuilder()
+            .setName("Parent")
+            .addNestedType(v2Child)
+            .addField(scalarField("name", 1, FieldDescriptorProto.Type.TYPE_STRING))
+            .addField(messageField("child", 2, ".test.Parent.Child"))
+            .build();
+
+    String v2Code = generateJsonArray(v2Parent);
+
+    // v2 Child serializer produces 2-element nested array
+    // Extract the Child's appendJsonArray (it's nested inside the outer class)
+    // We look for the Child class's serializer by checking comma count in the full code
+    // The Child class has its own appendJsonArray with 1 comma for 2 fields
+    assertTrue(v2Code.contains("public static final class Child"), "v2 has nested Child class");
+
+    // v2 Child has both x and y fields
+    assertTrue(v2Code.contains("private String x = \"\""), "v2 Child has x field");
+    assertTrue(v2Code.contains("private String y = \"\""), "v2 Child has y field");
+
+    // v2 Child deserializer uses bounds checking for both fields
+    // Both v2 Parent and v2 Child use bounds checking
+    assertTrue(v2Code.contains("if (size > 0"), "v2 deserializer checks bounds for position 0");
+    assertTrue(v2Code.contains("if (size > 1"), "v2 deserializer checks bounds for position 1");
+
+    // The nested fromJsonArray call uses bounds checking -- the Child.fromJsonArray
+    // method receives a List<Object> and checks its size before accessing elements
+    assertTrue(
+        v2Code.contains("Child.fromJsonArray("),
+        "v2 deserializer calls Child.fromJsonArray for nested message");
+
+    // v1 Parent reading v2 output: v1 Parent accesses positions 0 and 1 (name and child),
+    // and v1 Child's fromJsonArray only accesses position 0 (x), ignoring the extra y element.
+    // This is structurally safe because Child.fromJsonArray bounds-checks with "if (size > 0)".
+    // v1 Parent does not access position 2 since it only has 2 fields:
+    assertFalse(
+        v1Code.contains("if (size > 2"),
+        "v1 Parent does not check size > 2 (only 2 fields: name and child)");
+
+    // Both versions use null check before serializing the child message
+    assertTrue(
+        v1Code.contains("if (this.child != null)"), "v1 null-checks child before serialization");
+    assertTrue(
+        v2Code.contains("if (this.child != null)"), "v2 null-checks child before serialization");
   }
 
   // ======================================================================
