@@ -422,6 +422,22 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
             w.line("sb.Append(\"!2z\").Append(Convert.ToBase64String(%s.Value));", entryVar);
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BOOL) {
             w.line("sb.Append(\"!2b\").Append(%s.Value ? \"1\" : \"0\");", entryVar);
+          } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+            w.block(
+                "if (!double.IsNaN((double)"
+                    + entryVar
+                    + ".Value) && !double.IsInfinity((double)"
+                    + entryVar
+                    + ".Value))",
+                () -> w.line("sb.Append(\"!2d\").Append(%s.Value);", entryVar));
+          } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT) {
+            w.block(
+                "if (!float.IsNaN((float)"
+                    + entryVar
+                    + ".Value) && !float.IsInfinity((float)"
+                    + entryVar
+                    + ".Value))",
+                () -> w.line("sb.Append(\"!2f\").Append(%s.Value);", entryVar));
           } else {
             String valTypeChar = pbtkTypeChar(field.getMapValueType());
             w.line("sb.Append(\"!2%s\").Append(%s.Value);", valTypeChar, entryVar);

@@ -594,6 +594,14 @@ public class PbtkPhpGenerator implements LanguageGenerator {
       w.line("$parts[] = '!2z' . base64_encode($mv);");
     } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BOOL) {
       w.line("$parts[] = '!2b' . ($mv ? '1' : '0');");
+    } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE
+        || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT) {
+      String valTypeChar = pbtkTypeChar(field.getMapValueType());
+      w.line("if (!is_nan($mv) && !is_infinite($mv)) {");
+      w.indent();
+      w.line("$parts[] = '!2%s' . $mv;", valTypeChar);
+      w.dedent();
+      w.line("}");
     } else {
       String valTypeChar = pbtkTypeChar(field.getMapValueType());
       w.line("$parts[] = '!2%s' . $mv;", valTypeChar);

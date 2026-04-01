@@ -183,6 +183,7 @@ public class PbtkCppGenerator implements LanguageGenerator {
     includes.add("#include <iomanip>");
     includes.add("#include <cstdlib>");
     includes.add("#include <cstring>");
+    includes.add("#include <cmath>");
 
     if (needsInclude(message, "vector")) {
       includes.add("#include <vector>");
@@ -658,6 +659,9 @@ public class PbtkCppGenerator implements LanguageGenerator {
       w.line("if (%s.has_value()) count++;", getter);
     } else if (field.isProto3Optional()) {
       w.line("if (%s.has_value()) count++;", getter);
+    } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_DOUBLE
+        || field.getProtoType() == FieldDescriptorProto.Type.TYPE_FLOAT) {
+      w.line("if (!std::isnan(%s) && !std::isinf(%s)) count++;", getter, getter);
     } else {
       w.line("count++;");
     }
@@ -759,16 +763,36 @@ public class PbtkCppGenerator implements LanguageGenerator {
               break;
             case TYPE_DOUBLE:
               if (field.isProto3Optional()) {
-                w.line("oss << \"!%d%s\" << %s.value();", fieldNum, typeChar, getter);
+                w.block(
+                    "if ("
+                        + getter
+                        + ".has_value() && !std::isnan("
+                        + getter
+                        + ".value()) && !std::isinf("
+                        + getter
+                        + ".value()))",
+                    () -> w.line("oss << \"!%d%s\" << %s.value();", fieldNum, typeChar, getter));
               } else {
-                w.line("oss << \"!%d%s\" << %s;", fieldNum, typeChar, getter);
+                w.block(
+                    "if (!std::isnan(" + getter + ") && !std::isinf(" + getter + "))",
+                    () -> w.line("oss << \"!%d%s\" << %s;", fieldNum, typeChar, getter));
               }
               break;
             case TYPE_FLOAT:
               if (field.isProto3Optional()) {
-                w.line("oss << \"!%d%s\" << %s.value();", fieldNum, typeChar, getter);
+                w.block(
+                    "if ("
+                        + getter
+                        + ".has_value() && !std::isnan("
+                        + getter
+                        + ".value()) && !std::isinf("
+                        + getter
+                        + ".value()))",
+                    () -> w.line("oss << \"!%d%s\" << %s.value();", fieldNum, typeChar, getter));
               } else {
-                w.line("oss << \"!%d%s\" << %s;", fieldNum, typeChar, getter);
+                w.block(
+                    "if (!std::isnan(" + getter + ") && !std::isinf(" + getter + "))",
+                    () -> w.line("oss << \"!%d%s\" << %s;", fieldNum, typeChar, getter));
               }
               break;
             default:
@@ -848,6 +872,12 @@ public class PbtkCppGenerator implements LanguageGenerator {
             "oss << \"!%d%s\" << pbtk_detail_%s::base64_encode(%s);",
             fieldNum, typeChar, resolveDetailNs(field), elemVar);
         break;
+      case TYPE_DOUBLE:
+      case TYPE_FLOAT:
+        w.block(
+            "if (!std::isnan(" + elemVar + ") && !std::isinf(" + elemVar + "))",
+            () -> w.line("oss << \"!%d%s\" << %s;", fieldNum, typeChar, elemVar));
+        break;
       default:
         w.line("oss << \"!%d%s\" << %s;", fieldNum, typeChar, elemVar);
         break;
@@ -885,6 +915,12 @@ public class PbtkCppGenerator implements LanguageGenerator {
                 "oss << \"!2z\" << pbtk_detail_%s::base64_encode(pb_v);", resolveDetailNs(field));
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BOOL) {
             w.line("oss << \"!2b\" << (pb_v ? \"1\" : \"0\");");
+          } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE
+              || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT) {
+            String valTypeChar = pbtkTypeChar(field.getMapValueType());
+            w.block(
+                "if (!std::isnan(pb_v) && !std::isinf(pb_v))",
+                () -> w.line("oss << \"!2%s\" << pb_v;", valTypeChar));
           } else {
             String valTypeChar = pbtkTypeChar(field.getMapValueType());
             w.line("oss << \"!2%s\" << pb_v;", valTypeChar);

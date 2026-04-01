@@ -117,6 +117,7 @@ public class PbtkCGenerator implements LanguageGenerator {
     w.line("#include <string.h>");
     w.line("#include <stdio.h>");
     w.line("#include <inttypes.h>");
+    w.line("#include <math.h>");
     w.blankLine();
 
     // Cross-file includes for referenced message/enum types
@@ -555,6 +556,9 @@ public class PbtkCGenerator implements LanguageGenerator {
       w.line("if (%s) count++;", accessor);
     } else if (field.isProto3Optional()) {
       w.line("if (msg->has_%s) count++;", fieldName);
+    } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_DOUBLE
+        || field.getProtoType() == FieldDescriptorProto.Type.TYPE_FLOAT) {
+      w.line("if (!isnan(%s) && !isinf(%s)) count++;", accessor, accessor);
     } else {
       w.line("count++;");
     }
@@ -658,12 +662,20 @@ public class PbtkCGenerator implements LanguageGenerator {
                   });
               break;
             case TYPE_DOUBLE:
-              w.line("pbtk_buf_append(buf, \"!%d%s\");", fieldNum, typeChar);
-              w.line("pbtk_buf_append_double(buf, %s);", accessor);
+              w.block(
+                  "if (!isnan(" + accessor + ") && !isinf(" + accessor + "))",
+                  () -> {
+                    w.line("pbtk_buf_append(buf, \"!%d%s\");", fieldNum, typeChar);
+                    w.line("pbtk_buf_append_double(buf, %s);", accessor);
+                  });
               break;
             case TYPE_FLOAT:
-              w.line("pbtk_buf_append(buf, \"!%d%s\");", fieldNum, typeChar);
-              w.line("pbtk_buf_append_float(buf, %s);", accessor);
+              w.block(
+                  "if (!isnan(" + accessor + ") && !isinf(" + accessor + "))",
+                  () -> {
+                    w.line("pbtk_buf_append(buf, \"!%d%s\");", fieldNum, typeChar);
+                    w.line("pbtk_buf_append_float(buf, %s);", accessor);
+                  });
               break;
             case TYPE_UINT32:
             case TYPE_FIXED32:
@@ -779,12 +791,20 @@ public class PbtkCGenerator implements LanguageGenerator {
             fieldName, fieldName, fieldName);
         break;
       case TYPE_DOUBLE:
-        w.line("pbtk_buf_append(buf, \"!%d%s\");", fieldNum, typeChar);
-        w.line("pbtk_buf_append_double(buf, %s);", elemAccessor);
+        w.block(
+            "if (!isnan(" + elemAccessor + ") && !isinf(" + elemAccessor + "))",
+            () -> {
+              w.line("pbtk_buf_append(buf, \"!%d%s\");", fieldNum, typeChar);
+              w.line("pbtk_buf_append_double(buf, %s);", elemAccessor);
+            });
         break;
       case TYPE_FLOAT:
-        w.line("pbtk_buf_append(buf, \"!%d%s\");", fieldNum, typeChar);
-        w.line("pbtk_buf_append_float(buf, %s);", elemAccessor);
+        w.block(
+            "if (!isnan(" + elemAccessor + ") && !isinf(" + elemAccessor + "))",
+            () -> {
+              w.line("pbtk_buf_append(buf, \"!%d%s\");", fieldNum, typeChar);
+              w.line("pbtk_buf_append_float(buf, %s);", elemAccessor);
+            });
         break;
       case TYPE_UINT32:
       case TYPE_FIXED32:
@@ -850,6 +870,20 @@ public class PbtkCGenerator implements LanguageGenerator {
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BOOL) {
             w.line("pbtk_buf_append(buf, \"!2b\");");
             w.line("pbtk_buf_append(buf, %s ? \"1\" : \"0\");", valAccessor);
+          } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+            w.block(
+                "if (!isnan(" + valAccessor + ") && !isinf(" + valAccessor + "))",
+                () -> {
+                  w.line("pbtk_buf_append(buf, \"!2d\");");
+                  w.line("pbtk_buf_append_double(buf, %s);", valAccessor);
+                });
+          } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT) {
+            w.block(
+                "if (!isnan(" + valAccessor + ") && !isinf(" + valAccessor + "))",
+                () -> {
+                  w.line("pbtk_buf_append(buf, \"!2f\");");
+                  w.line("pbtk_buf_append_float(buf, %s);", valAccessor);
+                });
           } else {
             String valTypeChar = pbtkTypeChar(field.getMapValueType());
             w.line("pbtk_buf_append(buf, \"!2%s\");", valTypeChar);

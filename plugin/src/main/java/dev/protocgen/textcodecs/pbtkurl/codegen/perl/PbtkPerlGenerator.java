@@ -522,7 +522,11 @@ public class PbtkPerlGenerator implements LanguageGenerator {
     } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT
         || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
       String valTypeChar = pbtkTypeChar(field.getMapValueType());
+      w.line("if (%s == %s && %s != 9**9**9 && %s != -9**9**9) {", valVar, valVar, valVar, valVar);
+      w.indent();
       w.line("push @{$parts}, \"!2%s\" . %s;", valTypeChar, valVar);
+      w.dedent();
+      w.line("}");
     } else {
       String valTypeChar = pbtkTypeChar(field.getMapValueType());
       w.line("push @{$parts}, \"!2%s\" . %s;", valTypeChar, valVar);

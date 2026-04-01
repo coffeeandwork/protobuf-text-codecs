@@ -522,6 +522,12 @@ public class PbtkRustGenerator implements LanguageGenerator {
             w.line("s.push_str(\"!2z\"); s.push_str(&general_purpose::STANDARD.encode(v));");
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BOOL) {
             w.line("s.push_str(\"!2b\"); s.push_str(if *v { \"1\" } else { \"0\" });");
+          } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE
+              || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT) {
+            String valTypeChar = pbtkTypeChar(field.getMapValueType());
+            w.line(
+                "if !v.is_nan() && !v.is_infinite() { s.push_str(\"!2%s\"); s.push_str(&v.to_string()); }",
+                valTypeChar);
           } else {
             String valTypeChar = pbtkTypeChar(field.getMapValueType());
             w.line("s.push_str(\"!2%s\"); s.push_str(&v.to_string());", valTypeChar);

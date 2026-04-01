@@ -547,7 +547,12 @@ public class PbtkPythonGenerator implements LanguageGenerator {
     } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT
         || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
       String valTypeChar = pbtkTypeChar(field.getMapValueType());
+      w.line(
+          "if not (%s != %s or %s == float(\"inf\") or %s == float(\"-inf\")):",
+          valVar, valVar, valVar, valVar);
+      w.indent();
       w.line("parts.append(\"!2%s\" + str(%s))", valTypeChar, valVar);
+      w.dedent();
     } else {
       String valTypeChar = pbtkTypeChar(field.getMapValueType());
       w.line("parts.append(\"!2%s\" + str(%s))", valTypeChar, valVar);

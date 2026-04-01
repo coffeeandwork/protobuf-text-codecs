@@ -353,6 +353,18 @@ public class PbtkGoGenerator implements LanguageGenerator {
           () -> {
             w.line("count++");
           });
+    } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+      w.block(
+          "if !math.IsNaN(" + goField + ") && !math.IsInf(" + goField + ", 0)",
+          () -> {
+            w.line("count++");
+          });
+    } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_FLOAT) {
+      w.block(
+          "if !math.IsNaN(float64(" + goField + ")) && !math.IsInf(float64(" + goField + "), 0)",
+          () -> {
+            w.line("count++");
+          });
     } else {
       w.line("count++");
     }
@@ -450,12 +462,20 @@ public class PbtkGoGenerator implements LanguageGenerator {
         w.line("sb.WriteString(url.QueryEscape(%s))", goField);
         break;
       case TYPE_DOUBLE:
-        w.line("sb.WriteString(\"!%d%s\")", fieldNum, typeChar);
-        w.line("sb.WriteString(strconv.FormatFloat(%s, 'g', -1, 64))", goField);
+        w.block(
+            "if !math.IsNaN(" + goField + ") && !math.IsInf(" + goField + ", 0)",
+            () -> {
+              w.line("sb.WriteString(\"!%d%s\")", fieldNum, typeChar);
+              w.line("sb.WriteString(strconv.FormatFloat(%s, 'g', -1, 64))", goField);
+            });
         break;
       case TYPE_FLOAT:
-        w.line("sb.WriteString(\"!%d%s\")", fieldNum, typeChar);
-        w.line("sb.WriteString(strconv.FormatFloat(float64(%s), 'g', -1, 32))", goField);
+        w.block(
+            "if !math.IsNaN(float64(" + goField + ")) && !math.IsInf(float64(" + goField + "), 0)",
+            () -> {
+              w.line("sb.WriteString(\"!%d%s\")", fieldNum, typeChar);
+              w.line("sb.WriteString(strconv.FormatFloat(float64(%s), 'g', -1, 32))", goField);
+            });
         break;
       case TYPE_INT64, TYPE_SINT64, TYPE_SFIXED64:
         w.line("sb.WriteString(\"!%d%s\")", fieldNum, typeChar);
@@ -615,12 +635,20 @@ public class PbtkGoGenerator implements LanguageGenerator {
         w.block("if !" + valExpr, () -> w.line("sb.WriteString(\"!2%s0\")", typeChar));
         break;
       case TYPE_DOUBLE:
-        w.line("sb.WriteString(\"!2%s\")", typeChar);
-        w.line("sb.WriteString(strconv.FormatFloat(%s, 'g', -1, 64))", valExpr);
+        w.block(
+            "if !math.IsNaN(" + valExpr + ") && !math.IsInf(" + valExpr + ", 0)",
+            () -> {
+              w.line("sb.WriteString(\"!2%s\")", typeChar);
+              w.line("sb.WriteString(strconv.FormatFloat(%s, 'g', -1, 64))", valExpr);
+            });
         break;
       case TYPE_FLOAT:
-        w.line("sb.WriteString(\"!2%s\")", typeChar);
-        w.line("sb.WriteString(strconv.FormatFloat(float64(%s), 'g', -1, 32))", valExpr);
+        w.block(
+            "if !math.IsNaN(float64(" + valExpr + ")) && !math.IsInf(float64(" + valExpr + "), 0)",
+            () -> {
+              w.line("sb.WriteString(\"!2%s\")", typeChar);
+              w.line("sb.WriteString(strconv.FormatFloat(float64(%s), 'g', -1, 32))", valExpr);
+            });
         break;
       case TYPE_INT64, TYPE_SINT64, TYPE_SFIXED64:
         w.line("sb.WriteString(\"!2%s\")", typeChar);
@@ -1151,6 +1179,11 @@ public class PbtkGoGenerator implements LanguageGenerator {
       imports.add("fmt");
     }
 
+    // Check if we need math (for NaN/Inf checks on float/double)
+    if (needsMath(message)) {
+      imports.add("math");
+    }
+
     return imports;
   }
 
@@ -1195,6 +1228,27 @@ public class PbtkGoGenerator implements LanguageGenerator {
     // fmt is needed if there are any fields that fall through to the default
     // Sprintf formatting case. In practice this is rare, but we include it
     // conservatively when there are fields of unrecognized types.
+    return false;
+  }
+
+  private boolean needsMath(ProtoMessage message) {
+    for (ProtoField field : message.getFields()) {
+      if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_FLOAT
+          || field.getProtoType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+        return true;
+      }
+      if (field.isMap()) {
+        if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT
+            || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+          return true;
+        }
+      }
+    }
+    for (ProtoMessage nested : message.getNestedMessages()) {
+      if (needsMath(nested)) {
+        return true;
+      }
+    }
     return false;
   }
 }

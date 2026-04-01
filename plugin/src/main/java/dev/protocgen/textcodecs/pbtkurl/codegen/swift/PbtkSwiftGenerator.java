@@ -369,6 +369,13 @@ public class PbtkSwiftGenerator implements LanguageGenerator {
           () -> {
             w.line("count += 1");
           });
+    } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_DOUBLE
+        || field.getProtoType() == FieldDescriptorProto.Type.TYPE_FLOAT) {
+      w.block(
+          "if !" + swiftField + ".isNaN && !" + swiftField + ".isInfinite",
+          () -> {
+            w.line("count += 1");
+          });
     } else {
       w.line("count += 1");
     }
@@ -464,12 +471,20 @@ public class PbtkSwiftGenerator implements LanguageGenerator {
             swiftField, swiftField);
         break;
       case TYPE_DOUBLE:
-        w.line("sb += \"!%d%s\"", fieldNum, typeChar);
-        w.line("sb += String(%s)", swiftField);
+        w.block(
+            "if !" + swiftField + ".isNaN && !" + swiftField + ".isInfinite",
+            () -> {
+              w.line("sb += \"!%d%s\"", fieldNum, typeChar);
+              w.line("sb += String(%s)", swiftField);
+            });
         break;
       case TYPE_FLOAT:
-        w.line("sb += \"!%d%s\"", fieldNum, typeChar);
-        w.line("sb += String(%s)", swiftField);
+        w.block(
+            "if !" + swiftField + ".isNaN && !" + swiftField + ".isInfinite",
+            () -> {
+              w.line("sb += \"!%d%s\"", fieldNum, typeChar);
+              w.line("sb += String(%s)", swiftField);
+            });
         break;
       case TYPE_INT64:
       case TYPE_SINT64:
@@ -614,6 +629,15 @@ public class PbtkSwiftGenerator implements LanguageGenerator {
         break;
       case TYPE_BOOL:
         w.line("sb += \"!2%s\\(%s ? \"1\" : \"0\")\"", typeChar, valExpr);
+        break;
+      case TYPE_DOUBLE:
+      case TYPE_FLOAT:
+        w.block(
+            "if !" + valExpr + ".isNaN && !" + valExpr + ".isInfinite",
+            () -> {
+              w.line("sb += \"!2%s\"", typeChar);
+              w.line("sb += String(%s)", valExpr);
+            });
         break;
       default:
         w.line("sb += \"!2%s\"", typeChar);

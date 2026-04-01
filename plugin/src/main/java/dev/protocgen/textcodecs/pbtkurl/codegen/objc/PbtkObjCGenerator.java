@@ -377,6 +377,9 @@ public class PbtkObjCGenerator implements LanguageGenerator {
       }
     } else if (field.isProto3Optional()) {
       w.line("if (self.has%s) count++;", capitalize(propName));
+    } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_DOUBLE
+        || field.getProtoType() == FieldDescriptorProto.Type.TYPE_FLOAT) {
+      w.line("if (!isnan(%s) && !isinf(%s)) count++;", accessor, accessor);
     } else {
       w.line("count++;");
     }
@@ -465,11 +468,20 @@ public class PbtkObjCGenerator implements LanguageGenerator {
                   });
               break;
             case TYPE_DOUBLE:
-              w.line("[buf appendFormat:@\"!%d%s%%.17g\", %s];", fieldNum, typeChar, accessor);
+              w.block(
+                  "if (!isnan(" + accessor + ") && !isinf(" + accessor + "))",
+                  () ->
+                      w.line(
+                          "[buf appendFormat:@\"!%d%s%%.17g\", %s];",
+                          fieldNum, typeChar, accessor));
               break;
             case TYPE_FLOAT:
-              w.line(
-                  "[buf appendFormat:@\"!%d%s%%.9g\", (double)%s];", fieldNum, typeChar, accessor);
+              w.block(
+                  "if (!isnan(" + accessor + ") && !isinf(" + accessor + "))",
+                  () ->
+                      w.line(
+                          "[buf appendFormat:@\"!%d%s%%.9g\", (double)%s];",
+                          fieldNum, typeChar, accessor));
               break;
             case TYPE_UINT64:
             case TYPE_FIXED64:
@@ -578,14 +590,28 @@ public class PbtkObjCGenerator implements LanguageGenerator {
             fieldNum, typeChar, elemAccessor);
         break;
       case TYPE_DOUBLE:
-        w.line(
-            "[buf appendFormat:@\"!%d%s%%.17g\", [(NSNumber *)%s doubleValue]];",
-            fieldNum, typeChar, elemAccessor);
+        w.block(
+            "if (!isnan([(NSNumber *)"
+                + elemAccessor
+                + " doubleValue]) && !isinf([(NSNumber *)"
+                + elemAccessor
+                + " doubleValue]))",
+            () ->
+                w.line(
+                    "[buf appendFormat:@\"!%d%s%%.17g\", [(NSNumber *)%s doubleValue]];",
+                    fieldNum, typeChar, elemAccessor));
         break;
       case TYPE_FLOAT:
-        w.line(
-            "[buf appendFormat:@\"!%d%s%%.9g\", [(NSNumber *)%s doubleValue]];",
-            fieldNum, typeChar, elemAccessor);
+        w.block(
+            "if (!isnan([(NSNumber *)"
+                + elemAccessor
+                + " doubleValue]) && !isinf([(NSNumber *)"
+                + elemAccessor
+                + " doubleValue]))",
+            () ->
+                w.line(
+                    "[buf appendFormat:@\"!%d%s%%.9g\", [(NSNumber *)%s doubleValue]];",
+                    fieldNum, typeChar, elemAccessor));
         break;
       case TYPE_UINT32:
       case TYPE_FIXED32:
@@ -643,6 +669,15 @@ public class PbtkObjCGenerator implements LanguageGenerator {
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BOOL) {
             w.line(
                 "[buf appendFormat:@\"!2b%%@\", [(NSNumber *)__val boolValue] ? @\"1\" : @\"0\"];");
+          } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE
+              || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT) {
+            String valTypeChar = pbtkTypeChar(field.getMapValueType());
+            w.block(
+                "if (!isnan([(NSNumber *)__val doubleValue]) && !isinf([(NSNumber *)__val doubleValue]))",
+                () ->
+                    w.line(
+                        "[buf appendFormat:@\"!2%s%%.17g\", [(NSNumber *)__val doubleValue]];",
+                        valTypeChar));
           } else {
             String valTypeChar = pbtkTypeChar(field.getMapValueType());
             w.line(

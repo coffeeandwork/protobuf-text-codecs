@@ -556,6 +556,12 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
                 "sb.append(\"!2z\").append(java.util.Base64.getEncoder().encodeToString(__value as ByteArray))");
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BOOL) {
             w.line("sb.append(\"!2b\").append(if (__value as Boolean) \"1\" else \"0\")");
+          } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+            w.line(
+                "{ val __dv = (__value as Number).toDouble(); if (!__dv.isNaN() && !__dv.isInfinite()) sb.append(\"!2d\").append(__dv) }");
+          } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT) {
+            w.line(
+                "{ val __fv = (__value as Number).toFloat(); if (!__fv.isNaN() && !__fv.isInfinite()) sb.append(\"!2f\").append(__fv) }");
           } else {
             String valTypeChar = pbtkTypeChar(field.getMapValueType());
             w.line("sb.append(\"!2%s\").append(__value)", valTypeChar);

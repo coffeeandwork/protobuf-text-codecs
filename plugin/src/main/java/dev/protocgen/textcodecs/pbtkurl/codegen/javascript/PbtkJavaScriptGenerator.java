@@ -298,6 +298,9 @@ public class PbtkJavaScriptGenerator implements LanguageGenerator {
       w.line("if (%s != null) count++;", jsField);
     } else if (field.isProto3Optional()) {
       w.line("if (this._presentFields[%d]) count++;", field.getArrayPosition());
+    } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_DOUBLE
+        || field.getProtoType() == FieldDescriptorProto.Type.TYPE_FLOAT) {
+      w.line("if (!Number.isNaN(%s) && Number.isFinite(%s)) count++;", jsField, jsField);
     } else {
       w.line("count++;");
     }
@@ -362,6 +365,12 @@ public class PbtkJavaScriptGenerator implements LanguageGenerator {
         break;
       case TYPE_STRING:
         w.line("parts.push('!%d%s' + encodeURIComponent(%s));", fieldNum, typeChar, jsField);
+        break;
+      case TYPE_DOUBLE:
+      case TYPE_FLOAT:
+        w.block(
+            "if (!Number.isNaN(" + jsField + ") && Number.isFinite(" + jsField + "))",
+            () -> w.line("parts.push('!%d%s' + %s);", fieldNum, typeChar, jsField));
         break;
       default:
         w.line("parts.push('!%d%s' + %s);", fieldNum, typeChar, jsField);
@@ -440,6 +449,12 @@ public class PbtkJavaScriptGenerator implements LanguageGenerator {
             w.line("parts.push('!2z' + _base64Encode(__val));");
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BOOL) {
             w.line("parts.push('!2b' + (__val ? '1' : '0'));");
+          } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE
+              || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT) {
+            String valTypeChar = pbtkTypeChar(field.getMapValueType());
+            w.block(
+                "if (!Number.isNaN(__val) && Number.isFinite(__val))",
+                () -> w.line("parts.push('!2%s' + __val);", valTypeChar));
           } else {
             String valTypeChar = pbtkTypeChar(field.getMapValueType());
             w.line("parts.push('!2%s' + __val);", valTypeChar);

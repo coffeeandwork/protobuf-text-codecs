@@ -543,7 +543,11 @@ public class PbtkRubyGenerator implements LanguageGenerator {
     } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT
         || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
       String valTypeChar = pbtkTypeChar(field.getMapValueType());
+      w.line("unless %s.nan? || %s.infinite?", valVar, valVar);
+      w.indent();
       w.line("parts << \"!2%s\" + %s.to_s", valTypeChar, valVar);
+      w.dedent();
+      w.line("end");
     } else {
       String valTypeChar = pbtkTypeChar(field.getMapValueType());
       w.line("parts << \"!2%s\" + %s.to_s", valTypeChar, valVar);

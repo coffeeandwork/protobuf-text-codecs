@@ -273,6 +273,12 @@ public class PbtkJavaSerializerGenerator {
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BOOL) {
             w.line(
                 "sb.append(\"!2b\").append(((Boolean) %s.getValue()) ? \"1\" : \"0\");", entryVar);
+          } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
+            w.line("{ Double __dv = ((Number) %s.getValue()).doubleValue();", entryVar);
+            w.line("if (!__dv.isNaN() && !__dv.isInfinite()) sb.append(\"!2d\").append(__dv); }");
+          } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT) {
+            w.line("{ Float __fv = ((Number) %s.getValue()).floatValue();", entryVar);
+            w.line("if (!__fv.isNaN() && !__fv.isInfinite()) sb.append(\"!2f\").append(__fv); }");
           } else {
             String valTypeChar = pbtkTypeChar(field.getMapValueType());
             w.line("sb.append(\"!2%s\").append(%s.getValue());", valTypeChar, entryVar);

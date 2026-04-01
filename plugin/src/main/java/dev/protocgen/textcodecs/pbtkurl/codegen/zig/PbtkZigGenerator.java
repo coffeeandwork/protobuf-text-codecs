@@ -446,6 +446,14 @@ public class PbtkZigGenerator implements LanguageGenerator {
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BOOL) {
             w.line(
                 "buf.writer().print(\"!2b{s}\", .{if (entry.value_ptr.*) \"1\" else \"0\"}) catch {};");
+          } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE
+              || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT) {
+            String valTypeChar = pbtkTypeChar(field.getMapValueType());
+            w.line(
+                "if (!std.math.isNan(entry.value_ptr.*) and !std.math.isInf(entry.value_ptr.*))");
+            w.indent();
+            w.line("buf.writer().print(\"!2%s{d}\", .{entry.value_ptr.*}) catch {};", valTypeChar);
+            w.dedent();
           } else {
             String valTypeChar = pbtkTypeChar(field.getMapValueType());
             w.line("buf.writer().print(\"!2%s{d}\", .{entry.value_ptr.*}) catch {};", valTypeChar);
