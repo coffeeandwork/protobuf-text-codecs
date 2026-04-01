@@ -256,7 +256,7 @@ LIMITATIONS:
 | Generated non-Java/Python compilation | Cannot compile in standard Java CI | Code pattern assertions verify syntactic correctness |
 | Generated code execution (15 of 17 languages) | Only Java and Python executed | Pattern tests + cross-language round-trip for Java/Python |
 | C runtime dynamic memory analysis | No Valgrind/ASan | Static review; future CI enhancement |
-| Proto2 defaults in non-Java generators | Only Java audited | [INCOMPLETE_ANALYSIS] — needs audit |
+| Proto2 defaults in generators | 6 of 17 generators fixed (Java, Kotlin, C#, Dart, PHP, ObjC) | [PARTIAL — 6 of 17 generators audited] 11 remaining: Python, Go, Rust, C, C++, JS, TS, Zig, Swift, Ruby, Perl |
 
 ## 6. Requirements Traceability
 
@@ -439,7 +439,7 @@ bash integration-tests/schema-evolution-test.sh
 | 2 | Automated `--version` test | Low | Low — completes FR-016 coverage | FR-016 |
 | 3 | Round-trip execution tests for Go (using `go run`) | Medium | High — Go is the 3rd most popular target | FR-012, HAZ-003 |
 | 4 | Property-based testing for round-trip invariant | Medium | High — discovers edge cases automatically | SR-001, SR-002 |
-| 5 | Proto2 default escaping audit for all 16 non-Java generators | Medium | Medium — closes HAZ-008 | HAZ-008 |
+| 5 | Proto2 default escaping for remaining 11 generators (Python, Go, Rust, C, C++, JS, TS, Zig, Swift, Ruby, Perl) — 6 already fixed (Java, Kotlin, C#, Dart, PHP, ObjC) | Medium | Medium — fully closes HAZ-008 | HAZ-008 |
 | 6 | Performance regression benchmarks in CI | Low | Low — prevents accidental slowdowns | PERF-001 |
 | 7 | Mutation testing on MessageAnalyzer + TypeMappers | High | High — verifies test quality | HAZ-001, HAZ-002 |
 | 8 | C compilation + Valgrind in CI (optional job) | High | Medium — addresses HAZ-006 | HAZ-006 |

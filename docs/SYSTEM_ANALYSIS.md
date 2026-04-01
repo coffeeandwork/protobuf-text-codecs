@@ -247,7 +247,7 @@ None. The plugin is completely stateless across invocations. Within a single inv
 | Type references | `MessageAnalyzer.analyze()` | Fully-qualified proto type names | `Any` rejected; `simpleTypeName()` extracts last segment | A crafted type_name like `.evil.Foo; malicious_code()` could inject if not stripped to simple name [ASSUMED_BEHAVIOR — protoc validates type names upstream] |
 | Output file paths | `PluginRunner.run()` | Package names → file paths | Rejects paths containing `..` | Does not check for absolute paths or null bytes |
 | Language parameter | `PluginRunner.parseLanguage()` | `lang=` from protoc parameter | Validated against GENERATORS map (allowlist) | None |
-| Proto2 default values | `JavaDeserializerGenerator.schemaDefaultExpression()` | Schema-specified string/numeric defaults | Escapes `\n`, `\r`, `\t`, `\0`, `\`, `"` ; special-cases `inf`/`nan` | [INCOMPLETE_ANALYSIS] Only Java generator validated; other languages may not escape defaults |
+| Proto2 default values | `schemaDefaultExpression()` in DeserializerGenerator + `formatSchemaDefault()` in TypeMapper | Schema-specified string/numeric defaults | Escapes `\n`, `\r`, `\t`, `\0`, `\`, `"` ; special-cases `inf`/`nan` | [PARTIAL — 6 of 17 generators audited] Java, Kotlin, C#, Dart, PHP, and Objective-C generators validated; remaining 11 generators (Python, Go, Rust, C, C++, JavaScript, TypeScript, Zig, Swift, Ruby, Perl) do not yet handle proto2 defaults |
 
 **Key trust assumption:** The plugin trusts that `protoc` provides valid, spec-compliant `CodeGeneratorRequest` messages. All validation is defense-in-depth against a hypothetical attacker who can inject a crafted CodeGeneratorRequest (which requires local code execution to run the plugin directly, at which point the attacker already has arbitrary code execution).
 
@@ -307,7 +307,7 @@ No environment variables, no config files, no system properties. The plugin's be
 | [ASSUMED_BEHAVIOR] | Zig generator | Generated Zig uses `std.json`/`std.base64` APIs that change across Zig versions | Target Zig version(s) |
 | [INCOMPLETE_ANALYSIS] | C runtime (`codec.c`) | Memory safety of base64 encode/decode not verified with dynamic analysis | Valgrind/ASan testing |
 | [ASSUMED_BEHAVIOR] | Generated C code | `malloc`/`free` patterns assumed correct from static review | Dynamic analysis would confirm |
-| [INCOMPLETE_ANALYSIS] | Proto2 defaults (non-Java) | Only Java generator validates/escapes proto2 default values; Python/JS/C/etc. may not | Review each generator's default value handling |
+| [PARTIAL — 6 of 17 generators audited] | Proto2 defaults | Java, Kotlin, C#, Dart, PHP, and Objective-C generators validate/escape proto2 default values via `formatSchemaDefault()` and `schemaDefaultExpression()`. Remaining 11 generators (Python, Go, Rust, C, C++, JavaScript, TypeScript, Zig, Swift, Ruby, Perl) do not yet handle proto2 defaults in their deserializers. | Implement proto2 default handling in the remaining 11 generators |
 | [INCOMPLETE_ANALYSIS] | Message name validation | Field names validated via regex; message/enum names are NOT validated | Confirm protoc rejects invalid message names |
 | [ASSUMED_BEHAVIOR] | Transitive deps | `protobuf-java:4.29.3` transitive dependency tree not fully enumerated | Run `./gradlew dependencies` and review |
 
@@ -440,5 +440,5 @@ Integration tests (not in JUnit):
 3. **C runtime memory safety not dynamically validated.** Valgrind/ASan testing would increase confidence.
 4. **Zig standard library instability.** Generated Zig code may break with future Zig releases.
 5. **int64 string encoding may surprise users.** Correct per protobuf JSON spec but breaks expectations of tools expecting numeric JSON values.
-6. **Proto2 default value escaping only validated for Java.** Other generators may not properly escape special characters in schema-specified defaults.
+6. **Proto2 default value escaping partially implemented (6 of 17 generators).** Java, Kotlin, C#, Dart, PHP, and Objective-C generators validate/escape proto2 defaults. The remaining 11 generators (Python, Go, Rust, C, C++, JavaScript, TypeScript, Zig, Swift, Ruby, Perl) do not yet handle proto2 default values in their deserializers.
 7. ~~No golden-file/snapshot tests.~~ **Resolved.** GoldenFileTest.java provides exact output comparison for all 17 languages against checked-in golden files.

@@ -68,7 +68,7 @@ LIMITATIONS:
 | HAZ-005 | Path traversal writing files outside output directory | Moderate | Rare | **Low** | `..` path rejection in PluginRunner |
 | HAZ-006 | Memory corruption in generated C code | Major | Unlikely | **Medium** | Static review only; no dynamic analysis (Valgrind/ASan) |
 | HAZ-007 | int64/uint64 precision loss across JSON intermediaries | Moderate | Possible | **Medium** | Mitigated: int64 encoded as JSON string; backward-compat parsing |
-| HAZ-008 | Proto2 schema defaults not properly escaped in non-Java generators | Moderate | Possible | **Medium** | Only Java generator validated; 16 others [INCOMPLETE_ANALYSIS] |
+| HAZ-008 | Proto2 schema defaults not properly escaped in 11 of 17 generators | Moderate | Possible | **Medium** | [PARTIAL — 6 of 17 generators fixed] Java, Kotlin, C#, Dart, PHP, ObjC now validate/escape defaults; 11 remaining (Python, Go, Rust, C, C++, JS, TS, Zig, Swift, Ruby, Perl) |
 | HAZ-009 | Generated code breaks with future language/library versions | Minor | Likely | **Medium** | Zig stdlib unstable; Go generics evolution; new language dependencies: System.Text.Json (C#), Foundation (ObjC/Swift), kotlinx.serialization (Kotlin), dart:convert (Dart), JSON CPAN (Perl), json stdlib (Ruby), json built-in (PHP) |
 | HAZ-010 | Schema evolution breaks positional encoding | Major | Unlikely | **Medium** | Field-number-based positioning; forward/backward compat tests |
 | HAZ-011 | Denial of service via extremely sparse field numbers | Minor | Rare | **Low** | Warning emitted for sparse numbering; no hard limit |
@@ -111,12 +111,13 @@ LIMITATIONS:
 - **Current Safeguards:** Static code review; strdup null-safety check (BUG fix); oneof bytes memory leak fixed; free() function generated for every message
 - **Additional Mitigation:** Compile generated C code and run under Valgrind/AddressSanitizer with test data.
 
-#### HAZ-008: Proto2 defaults not escaped in non-Java generators
+#### HAZ-008: Proto2 defaults not escaped in 11 of 17 generators
 - **Description:** A proto2 file with `string name = 1 [default = "hello\nworld"]` generates code in Python/JS/C/etc. where the newline is not properly escaped, causing syntax errors or wrong default values.
 - **Causal Chain:** Proto2 default value with special chars → generator emits raw string into target language source → generated code has syntax error or interprets escape differently
-- **Affected Components:** Python, JS, TS, C, C++, Rust, Zig, Go, C#, Kotlin, Swift, Dart, PHP, Ruby, Objective-C, Perl SerializerGenerators/DeserializerGenerators
-- **Current Safeguards:** Java generator escapes `\n`, `\r`, `\t`, `\0`, `\`, `"` and handles `inf`/`nan`. Other generators: [INCOMPLETE_ANALYSIS]
-- **Additional Mitigation:** Audit and fix proto2 default escaping in all 16 non-Java generators.
+- **Affected Components (fixed):** Java, Kotlin, C#, Dart, PHP, Objective-C — these 6 generators now have `formatSchemaDefault()` in TypeMapper and `schemaDefaultExpression()` in DeserializerGenerator with proper escaping and an else-block that applies schema defaults when a field position is absent.
+- **Affected Components (remaining gap):** Python, JavaScript, TypeScript, C, C++, Rust, Zig, Go, Swift, Ruby, Perl — these 11 generators do not yet handle proto2 default values in their deserializers.
+- **Current Safeguards:** 6 generators (Java, Kotlin, C#, Dart, PHP, ObjC) escape `\n`, `\r`, `\t`, `\0`, `\`, `"` and handle `inf`/`nan`. The remaining 11 generators: [PARTIAL — 6 of 17 generators fixed, 11 remaining]
+- **Additional Mitigation:** Implement proto2 default handling in the remaining 11 generators.
 
 #### HAZ-010: Schema evolution breaks positional encoding
 - **Description:** A user removes a field and later reuses the same field number for a different type, causing old serialized data to be misinterpreted at that position.
@@ -151,7 +152,7 @@ LIMITATIONS:
 | [UNKNOWN_CRITICALITY] | All 17 language generators | Which languages will be used in production vs. experimental? This affects testing rigor allocation. |
 | [UNKNOWN_CRITICALITY] | Generated code deployment context | Will generated code handle sensitive data (PII, financial, medical)? This affects severity of data corruption hazards. |
 | [INCOMPLETE_ANALYSIS] | C/C++ memory safety | No dynamic analysis performed. Severity of HAZ-006 may be higher if generated C code is used in security-sensitive contexts. |
-| [INCOMPLETE_ANALYSIS] | Proto2 default escaping (16 languages) | HAZ-008 scope unknown — only Java generator audited. |
+| [PARTIAL — 6 of 17 generators fixed] | Proto2 default escaping | HAZ-008 partially resolved — Java, Kotlin, C#, Dart, PHP, and ObjC generators now handle proto2 defaults. 11 generators remain unfixed: Python, Go, Rust, C, C++, JS, TS, Zig, Swift, Ruby, Perl. |
 | [ASSUMED_BEHAVIOR] | protoc input validation | Severity of HAZ-004 depends on whether protoc can be bypassed. Assumed it cannot in normal usage. |
 
 ## 7. Approval

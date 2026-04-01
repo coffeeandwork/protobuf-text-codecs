@@ -41,7 +41,7 @@ Vulnerability classes NOT covered:
 | Field names → generated code | `MessageAnalyzer.validateFieldName()` | Regex `[a-zA-Z_][a-zA-Z0-9_]*` | **Adequate** |
 | Message/enum names → generated code | `MessageAnalyzer.analyze()` | Regex `[a-zA-Z_][a-zA-Z0-9_]*` + keyword escaping | **Fixed** (VULN-001) |
 | Type references → generated code | `TypeRegistry.registerFile()` | Validated at registration time | **Fixed** (VULN-002) |
-| Default values → generated code | `schemaDefaultExpression()` | String escaping + bool/numeric/enum regex validation | **Fixed** (VULN-003) |
+| Default values → generated code | `schemaDefaultExpression()` | String escaping + bool/numeric/enum regex validation | **Fixed in 6 of 17 generators** (VULN-003) — Java, Kotlin, C#, Dart, PHP, ObjC; 11 generators remaining |
 | Source comments → generated code | `JavaCodeEmitter.emitDocComment()` | `*/` escaped to `* /` | **Fixed** (VULN-005) |
 | Package names → file paths | `PluginRunner.run()` | Rejects `..`, `/`, `\0` | **Fixed** (VULN-004) |
 | Language parameter | `PluginRunner.parseLanguage()` | Allowlist | Adequate |
@@ -402,7 +402,7 @@ Tests already implemented in `SafetySecurityTest.java` (180 tests):
 | [INCOMPLETE_ANALYSIS] | C runtime memory safety | Requires Valgrind/ASan dynamic analysis |
 | [INCOMPLETE_ANALYSIS] | Dependency CVEs | Requires SCA tool scan |
 | [ASSUMED_BEHAVIOR] | protoc input validation | Assumed protoc rejects invalid identifiers; not verified against all protoc versions |
-| [INCOMPLETE_ANALYSIS] | Non-Java generators default escaping | Only Java generator's default value handling was deeply reviewed; 16 others need equivalent audit |
+| [PARTIAL — 6 of 17 generators audited] | Proto2 default escaping | Java, Kotlin, C#, Dart, PHP, and Objective-C generators now have `formatSchemaDefault()` and `schemaDefaultExpression()` with proper validation. 11 generators remain unaudited: Python, Go, Rust, C, C++, JavaScript, TypeScript, Zig, Swift, Ruby, Perl. |
 | [ASSUMED_BEHAVIOR] | protoc path handling | Assumed protoc prepends output dir to file paths, mitigating VULN-004 |
 
 ## 11. Approval
