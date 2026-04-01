@@ -118,6 +118,14 @@ public class TypeScriptTypeMapper implements TypeMapper {
     return elementType + "[]";
   }
 
+  /**
+   * Format a proto2 schema-specified default value string as a TypeScript expression (VULN-003).
+   */
+  public String formatSchemaDefault(FieldDescriptorProto.Type protoType, String defaultValue) {
+    // TypeScript uses the same literal syntax as JavaScript
+    return jsTypeMapper.formatSchemaDefault(protoType, defaultValue);
+  }
+
   /** Extract the simple type name from a fully-qualified proto type reference. */
   public String simpleTypeName(String protoFullName) {
     return jsTypeMapper.simpleTypeName(protoFullName);

@@ -116,6 +116,26 @@ public class ZigDeserializerGenerator {
             emitScalarDeserialize(w, field, zigField, elemExpr);
           }
         });
+    // Apply schema-specified default for proto2 fields when absent/null
+    if (field.getDefaultValue() != null && !field.isRepeated() && !field.isMap()) {
+      w.block(
+          "else",
+          () -> {
+            String defaultExpr = schemaDefaultExpression(field, field.getDefaultValue());
+            w.line("%s = %s;", zigField, defaultExpr);
+          });
+    }
+  }
+
+  private String schemaDefaultExpression(ProtoField field, String defaultValue) {
+    if (defaultValue == null || defaultValue.isEmpty()) {
+      return typeMapper.defaultValue(field);
+    }
+    if (field.getKind() == ProtoField.FieldKind.ENUM) {
+      // Zig deserializes enums as int ordinals; cannot resolve enum name to number at codegen time
+      return typeMapper.defaultValue(field);
+    }
+    return typeMapper.formatSchemaDefault(field.getProtoType(), defaultValue);
   }
 
   private void emitScalarDeserialize(

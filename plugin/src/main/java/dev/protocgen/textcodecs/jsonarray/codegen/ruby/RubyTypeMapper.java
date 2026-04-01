@@ -19,6 +19,7 @@ import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.codegen.TypeMapper;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
+import java.nio.charset.StandardCharsets;
 
 /** Maps proto types to Ruby types, default values, and type descriptions. */
 public class RubyTypeMapper implements TypeMapper {
@@ -102,6 +103,67 @@ public class RubyTypeMapper implements TypeMapper {
       case TYPE_STRING -> "\"\"";
       case TYPE_BYTES -> "\"\"";
       default -> "nil";
+    };
+  }
+
+  /** Format a proto2 schema-specified default value string as a Ruby expression (VULN-003). */
+  public String formatSchemaDefault(FieldDescriptorProto.Type protoType, String defaultValue) {
+    return switch (protoType) {
+      case TYPE_STRING ->
+          "\""
+              + defaultValue
+                  .replace("\\", "\\\\")
+                  .replace("\"", "\\\"")
+                  .replace("\n", "\\n")
+                  .replace("\r", "\\r")
+                  .replace("\t", "\\t")
+                  .replace("\0", "\\0")
+                  .replace("#", "\\#")
+              + "\"";
+      case TYPE_BOOL -> {
+        // Validate bool default to prevent code injection (VULN-003)
+        if (!"true".equals(defaultValue) && !"false".equals(defaultValue)) {
+          throw new IllegalArgumentException(
+              "Bool default value '" + defaultValue + "' is not 'true' or 'false'");
+        }
+        yield defaultValue;
+      }
+      case TYPE_DOUBLE, TYPE_FLOAT -> {
+        if ("inf".equals(defaultValue)) yield "Float::INFINITY";
+        if ("-inf".equals(defaultValue)) yield "-Float::INFINITY";
+        if ("nan".equals(defaultValue)) yield "Float::NAN";
+        // Validate numeric format to prevent code injection (VULN-003)
+        if (!defaultValue.matches("-?[0-9]+(\\.[0-9]+)?([eE][+-]?[0-9]+)?")) {
+          throw new IllegalArgumentException(
+              "Float default value '" + defaultValue + "' is not a valid number");
+        }
+        yield defaultValue.contains(".") ? defaultValue : defaultValue + ".0";
+      }
+      case TYPE_INT64, TYPE_SINT64, TYPE_SFIXED64, TYPE_UINT64, TYPE_FIXED64 -> {
+        // Validate numeric format to prevent code injection (VULN-003)
+        if (!defaultValue.matches("-?[0-9]+")) {
+          throw new IllegalArgumentException(
+              "Integer default value '" + defaultValue + "' is not a valid number");
+        }
+        yield defaultValue;
+      }
+      case TYPE_BYTES -> {
+        if (defaultValue.isEmpty()) {
+          yield "\"\"";
+        }
+        yield "Base64.strict_decode64(\""
+            + java.util.Base64.getEncoder()
+                .encodeToString(defaultValue.getBytes(StandardCharsets.ISO_8859_1))
+            + "\")";
+      }
+      default -> {
+        // Validate numeric format for int32 types to prevent code injection (VULN-003)
+        if (!defaultValue.matches("-?[0-9]+")) {
+          throw new IllegalArgumentException(
+              "Numeric default value '" + defaultValue + "' is not a valid integer");
+        }
+        yield defaultValue;
+      }
     };
   }
 

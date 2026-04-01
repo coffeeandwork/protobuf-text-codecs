@@ -19,6 +19,7 @@ import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.codegen.TypeMapper;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
+import java.nio.charset.StandardCharsets;
 
 /** Maps proto types to Rust types, default values, and boxed types. */
 public class RustTypeMapper implements TypeMapper {
@@ -148,6 +149,98 @@ public class RustTypeMapper implements TypeMapper {
       case TYPE_STRING -> "String::new()";
       case TYPE_BYTES -> "Vec::new()";
       default -> "Default::default()";
+    };
+  }
+
+  /** Format a proto2 schema-specified default value string as a Rust expression (VULN-003). */
+  public String formatSchemaDefault(FieldDescriptorProto.Type protoType, String defaultValue) {
+    return switch (protoType) {
+      case TYPE_STRING ->
+          "\""
+              + defaultValue
+                  .replace("\\", "\\\\")
+                  .replace("\"", "\\\"")
+                  .replace("\n", "\\n")
+                  .replace("\r", "\\r")
+                  .replace("\t", "\\t")
+                  .replace("\0", "\\0")
+              + "\".to_string()";
+      case TYPE_BOOL -> {
+        // Validate bool default to prevent code injection (VULN-003)
+        if (!"true".equals(defaultValue) && !"false".equals(defaultValue)) {
+          throw new IllegalArgumentException(
+              "Bool default value '" + defaultValue + "' is not 'true' or 'false'");
+        }
+        yield defaultValue;
+      }
+      case TYPE_DOUBLE -> {
+        if ("inf".equals(defaultValue)) yield "f64::INFINITY";
+        if ("-inf".equals(defaultValue)) yield "f64::NEG_INFINITY";
+        if ("nan".equals(defaultValue)) yield "f64::NAN";
+        // Validate numeric format to prevent code injection (VULN-003)
+        if (!defaultValue.matches("-?[0-9]+(\\.[0-9]+)?([eE][+-]?[0-9]+)?")) {
+          throw new IllegalArgumentException(
+              "Double default value '" + defaultValue + "' is not a valid number");
+        }
+        yield defaultValue.contains(".") ? defaultValue + "_f64" : defaultValue + ".0_f64";
+      }
+      case TYPE_FLOAT -> {
+        if ("inf".equals(defaultValue)) yield "f32::INFINITY";
+        if ("-inf".equals(defaultValue)) yield "f32::NEG_INFINITY";
+        if ("nan".equals(defaultValue)) yield "f32::NAN";
+        // Validate numeric format to prevent code injection (VULN-003)
+        if (!defaultValue.matches("-?[0-9]+(\\.[0-9]+)?([eE][+-]?[0-9]+)?")) {
+          throw new IllegalArgumentException(
+              "Float default value '" + defaultValue + "' is not a valid number");
+        }
+        yield defaultValue.contains(".") ? defaultValue + "_f32" : defaultValue + ".0_f32";
+      }
+      case TYPE_INT64, TYPE_SINT64, TYPE_SFIXED64 -> {
+        // Validate numeric format to prevent code injection (VULN-003)
+        if (!defaultValue.matches("-?[0-9]+")) {
+          throw new IllegalArgumentException(
+              "Integer default value '" + defaultValue + "' is not a valid number");
+        }
+        yield defaultValue + "_i64";
+      }
+      case TYPE_UINT64, TYPE_FIXED64 -> {
+        // Validate numeric format to prevent code injection (VULN-003)
+        if (!defaultValue.matches("-?[0-9]+")) {
+          throw new IllegalArgumentException(
+              "Integer default value '" + defaultValue + "' is not a valid number");
+        }
+        yield defaultValue + "_u64";
+      }
+      case TYPE_BYTES -> {
+        if (defaultValue.isEmpty()) {
+          yield "vec![]";
+        }
+        yield "general_purpose::STANDARD.decode(\""
+            + java.util.Base64.getEncoder()
+                .encodeToString(defaultValue.getBytes(StandardCharsets.ISO_8859_1))
+            + "\").unwrap_or_default()";
+      }
+      case TYPE_INT32, TYPE_SINT32, TYPE_SFIXED32 -> {
+        if (!defaultValue.matches("-?[0-9]+")) {
+          throw new IllegalArgumentException(
+              "Numeric default value '" + defaultValue + "' is not a valid integer");
+        }
+        yield defaultValue + "_i32";
+      }
+      case TYPE_UINT32, TYPE_FIXED32 -> {
+        if (!defaultValue.matches("-?[0-9]+")) {
+          throw new IllegalArgumentException(
+              "Numeric default value '" + defaultValue + "' is not a valid integer");
+        }
+        yield defaultValue + "_u32";
+      }
+      default -> {
+        if (!defaultValue.matches("-?[0-9]+")) {
+          throw new IllegalArgumentException(
+              "Numeric default value '" + defaultValue + "' is not a valid integer");
+        }
+        yield defaultValue;
+      }
     };
   }
 

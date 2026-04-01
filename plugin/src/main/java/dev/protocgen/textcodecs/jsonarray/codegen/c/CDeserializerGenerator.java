@@ -108,9 +108,47 @@ public class CDeserializerGenerator {
                     w.line("msg->has_%s = true;", fieldName);
                   }
                 });
+            // Apply schema-specified default for proto2 fields when absent/null
+            if (field.getDefaultValue() != null && !field.isRepeated() && !field.isMap()) {
+              w.block(
+                  "else",
+                  () -> {
+                    String defaultExpr =
+                        schemaDefaultExpression(field, field.getDefaultValue(), fieldName);
+                    if (field.getProtoType()
+                        == com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type
+                            .TYPE_STRING) {
+                      w.line("msg->%s = jsonarray_strdup(%s);", fieldName, defaultExpr);
+                    } else if (field.getProtoType()
+                        == com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type
+                            .TYPE_BYTES) {
+                      // Bytes defaults use the base64_decode helper with length tracking
+                      w.line("msg->%s = %s;", fieldName, defaultExpr);
+                    } else {
+                      w.line("msg->%s = %s;", fieldName, defaultExpr);
+                    }
+                  });
+            }
           }
           w.line("item = item->next;");
         });
+  }
+
+  private String schemaDefaultExpression(ProtoField field, String defaultValue, String fieldName) {
+    if (defaultValue == null || defaultValue.isEmpty()) {
+      return typeMapper.defaultValue(field);
+    }
+    if (field.getKind() == ProtoField.FieldKind.ENUM) {
+      // C deserializes enums as int ordinals; cannot resolve enum name to number at codegen time
+      return typeMapper.defaultValue(field);
+    }
+    String expr = typeMapper.formatSchemaDefault(field.getProtoType(), defaultValue);
+    // Replace the bytes length placeholder with the actual field name
+    if (field.getProtoType()
+        == com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type.TYPE_BYTES) {
+      expr = expr.replace("__BYTES_LEN_PLACEHOLDER__", fieldName + "_len");
+    }
+    return expr;
   }
 
   private void emitOneofDeserialize(

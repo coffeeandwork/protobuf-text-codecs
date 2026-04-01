@@ -19,6 +19,7 @@ import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.codegen.TypeMapper;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Maps proto types to Swift types, optional types, and default value expressions. Swift uses
@@ -150,6 +151,77 @@ public class SwiftTypeMapper implements TypeMapper {
       case TYPE_STRING -> "\"\"";
       case TYPE_BYTES -> "Data()";
       default -> "nil";
+    };
+  }
+
+  /** Format a proto2 schema-specified default value string as a Swift expression (VULN-003). */
+  public String formatSchemaDefault(FieldDescriptorProto.Type protoType, String defaultValue) {
+    return switch (protoType) {
+      case TYPE_STRING ->
+          "\""
+              + defaultValue
+                  .replace("\\", "\\\\")
+                  .replace("\"", "\\\"")
+                  .replace("\n", "\\n")
+                  .replace("\r", "\\r")
+                  .replace("\t", "\\t")
+                  .replace("\0", "\\0")
+              + "\"";
+      case TYPE_BOOL -> {
+        // Validate bool default to prevent code injection (VULN-003)
+        if (!"true".equals(defaultValue) && !"false".equals(defaultValue)) {
+          throw new IllegalArgumentException(
+              "Bool default value '" + defaultValue + "' is not 'true' or 'false'");
+        }
+        yield defaultValue;
+      }
+      case TYPE_DOUBLE -> {
+        if ("inf".equals(defaultValue)) yield "Double.infinity";
+        if ("-inf".equals(defaultValue)) yield "-Double.infinity";
+        if ("nan".equals(defaultValue)) yield "Double.nan";
+        // Validate numeric format to prevent code injection (VULN-003)
+        if (!defaultValue.matches("-?[0-9]+(\\.[0-9]+)?([eE][+-]?[0-9]+)?")) {
+          throw new IllegalArgumentException(
+              "Double default value '" + defaultValue + "' is not a valid number");
+        }
+        yield defaultValue.contains(".") ? defaultValue : defaultValue + ".0";
+      }
+      case TYPE_FLOAT -> {
+        if ("inf".equals(defaultValue)) yield "Float.infinity";
+        if ("-inf".equals(defaultValue)) yield "-Float.infinity";
+        if ("nan".equals(defaultValue)) yield "Float.nan";
+        // Validate numeric format to prevent code injection (VULN-003)
+        if (!defaultValue.matches("-?[0-9]+(\\.[0-9]+)?([eE][+-]?[0-9]+)?")) {
+          throw new IllegalArgumentException(
+              "Float default value '" + defaultValue + "' is not a valid number");
+        }
+        yield defaultValue.contains(".") ? defaultValue : defaultValue + ".0";
+      }
+      case TYPE_INT64, TYPE_SINT64, TYPE_SFIXED64, TYPE_UINT64, TYPE_FIXED64 -> {
+        // Validate numeric format to prevent code injection (VULN-003)
+        if (!defaultValue.matches("-?[0-9]+")) {
+          throw new IllegalArgumentException(
+              "Integer default value '" + defaultValue + "' is not a valid number");
+        }
+        yield defaultValue;
+      }
+      case TYPE_BYTES -> {
+        if (defaultValue.isEmpty()) {
+          yield "Data()";
+        }
+        yield "Data(base64Encoded: \""
+            + java.util.Base64.getEncoder()
+                .encodeToString(defaultValue.getBytes(StandardCharsets.ISO_8859_1))
+            + "\")!";
+      }
+      default -> {
+        // Validate numeric format for int32 types to prevent code injection (VULN-003)
+        if (!defaultValue.matches("-?[0-9]+")) {
+          throw new IllegalArgumentException(
+              "Numeric default value '" + defaultValue + "' is not a valid integer");
+        }
+        yield defaultValue;
+      }
     };
   }
 

@@ -108,7 +108,26 @@ public class PerlDeserializerGenerator {
     }
 
     w.dedent();
+    // Apply schema-specified default for proto2 fields when absent/null
+    if (field.getDefaultValue() != null && !field.isRepeated() && !field.isMap()) {
+      w.line("} else {");
+      w.indent();
+      String defaultExpr = schemaDefaultExpression(field, field.getDefaultValue());
+      w.line("%s = %s;", plField, defaultExpr);
+      w.dedent();
+    }
     w.line("}");
+  }
+
+  private String schemaDefaultExpression(ProtoField field, String defaultValue) {
+    if (defaultValue == null || defaultValue.isEmpty()) {
+      return typeMapper.defaultValue(field);
+    }
+    if (field.getKind() == ProtoField.FieldKind.ENUM) {
+      // Perl deserializes enums as int ordinals; cannot resolve enum name to number at codegen time
+      return typeMapper.defaultValue(field);
+    }
+    return typeMapper.formatSchemaDefault(field.getProtoType(), defaultValue);
   }
 
   private void emitScalarDeserialize(
