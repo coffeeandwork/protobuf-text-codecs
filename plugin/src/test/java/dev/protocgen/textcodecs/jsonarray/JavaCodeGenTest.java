@@ -2332,6 +2332,108 @@ class JavaCodeGenTest {
   }
 
   // ======================================================================
+  // 50. Scalar deserialization: double, float, string, bool, int32, uint32, enum
+  // ======================================================================
+
+  @Test
+  void testDoubleDeserializationUsesDoubleValue() {
+    DescriptorProto msg =
+        DescriptorProto.newBuilder()
+            .setName("Msg")
+            .addField(scalarField("score", 1, FieldDescriptorProto.Type.TYPE_DOUBLE))
+            .build();
+    String code = generateSingleMessage(msg);
+
+    assertTrue(code.contains("doubleValue()"), "Double deserialization uses doubleValue()");
+    assertTrue(code.contains("(Number)"), "Double deserialization casts to Number");
+    assertTrue(code.contains("if (size > 0"), "Double deserializer bounds-checks position 0");
+  }
+
+  @Test
+  void testFloatDeserializationUsesFloatValue() {
+    DescriptorProto msg =
+        DescriptorProto.newBuilder()
+            .setName("Msg")
+            .addField(scalarField("ratio", 1, FieldDescriptorProto.Type.TYPE_FLOAT))
+            .build();
+    String code = generateSingleMessage(msg);
+
+    assertTrue(code.contains("floatValue()"), "Float deserialization uses floatValue()");
+    assertTrue(code.contains("(Number)"), "Float deserialization casts to Number");
+  }
+
+  @Test
+  void testStringDeserializationCastsToString() {
+    DescriptorProto msg =
+        DescriptorProto.newBuilder()
+            .setName("Msg")
+            .addField(scalarField("label", 1, FieldDescriptorProto.Type.TYPE_STRING))
+            .build();
+    String code = generateSingleMessage(msg);
+
+    assertTrue(code.contains("(String)"), "String deserialization casts to String");
+    assertTrue(code.contains("if (size > 0"), "String deserializer bounds-checks position 0");
+  }
+
+  @Test
+  void testBoolDeserializationCastsToBoolean() {
+    DescriptorProto msg =
+        DescriptorProto.newBuilder()
+            .setName("Msg")
+            .addField(scalarField("active", 1, FieldDescriptorProto.Type.TYPE_BOOL))
+            .build();
+    String code = generateSingleMessage(msg);
+
+    assertTrue(code.contains("(Boolean)"), "Bool deserialization casts to Boolean");
+  }
+
+  @Test
+  void testEnumDeserializationUsesForNumber() {
+    EnumDescriptorProto statusEnum =
+        EnumDescriptorProto.newBuilder()
+            .setName("Status")
+            .addValue(EnumValueDescriptorProto.newBuilder().setName("UNKNOWN").setNumber(0).build())
+            .addValue(EnumValueDescriptorProto.newBuilder().setName("ACTIVE").setNumber(1).build())
+            .build();
+
+    DescriptorProto msg =
+        DescriptorProto.newBuilder()
+            .setName("Msg")
+            .addEnumType(statusEnum)
+            .addField(enumField("status", 1, ".test.Msg.Status"))
+            .build();
+    String code = generateSingleMessage(msg);
+
+    assertTrue(code.contains("Status.forNumber("), "Enum deserialization uses forNumber()");
+    assertTrue(code.contains("intValue()"), "Enum deserialization reads as intValue()");
+  }
+
+  @Test
+  void testInt32DeserializationUsesIntValue() {
+    DescriptorProto msg =
+        DescriptorProto.newBuilder()
+            .setName("Msg")
+            .addField(scalarField("count", 1, FieldDescriptorProto.Type.TYPE_INT32))
+            .build();
+    String code = generateSingleMessage(msg);
+
+    assertTrue(code.contains("intValue()"), "Int32 deserialization uses intValue()");
+    assertTrue(code.contains("(Number)"), "Int32 deserialization casts to Number");
+  }
+
+  @Test
+  void testUint32DeserializationUsesIntValue() {
+    DescriptorProto msg =
+        DescriptorProto.newBuilder()
+            .setName("Msg")
+            .addField(scalarField("count", 1, FieldDescriptorProto.Type.TYPE_UINT32))
+            .build();
+    String code = generateSingleMessage(msg);
+
+    assertTrue(code.contains("intValue()"), "Uint32 deserialization uses intValue()");
+  }
+
+  // ======================================================================
   // Helpers
   // ======================================================================
 
