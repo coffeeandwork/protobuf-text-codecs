@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Proto2 schema default value handling in Dart, PHP, and Objective-C deserializers (formatSchemaDefault + else-block for absent fields)
+- C map entry struct `value_len` field for bytes values, fixing base64 serialization/deserialization and pbtk format support
+- Proto2-to-proto3 migration integration test (5 scenarios: forward/backward compat, zero-value preservation, cross-syntax round-trip)
+
+### Changed
+- Pbtk schema evolution tests relocated from jsonarray to pbtkurl test package (PbtkSchemaEvolutionTest, PbtkJavaSchemaEvolutionTest)
+- Updated all assurance documentation (6 phases) to reflect current test counts (21 classes, 3 integration scripts) and partial proto2 default escaping status (6 of 17 generators)
+
 ## [0.2.0] - 2026-03-26
 
 ### Added
@@ -58,5 +69,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Google Java Style compliance enforced by Spotless with Google Java Format
 - Wrapper shell script for easy protoc invocation
 
+[Unreleased]: https://github.com/coffeeandwork/protobuf-text-codecs/compare/v0.2.0...HEAD
 [0.2.0]: https://github.com/coffeeandwork/protobuf-text-codecs/releases/tag/v0.2.0
 [0.1.0]: https://github.com/coffeeandwork/protobuf-text-codecs/releases/tag/v0.1.0
