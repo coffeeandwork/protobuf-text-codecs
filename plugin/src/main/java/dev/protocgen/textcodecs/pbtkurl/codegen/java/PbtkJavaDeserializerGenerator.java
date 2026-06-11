@@ -94,7 +94,7 @@ public class PbtkJavaDeserializerGenerator {
   private void emitParseFromTokens(CodeWriter w, ProtoMessage message, String className) {
     w.blankLine();
     w.block(
-        "static "
+        "public static "
             + className
             + " parsePbtkTokens(java.util.List<String> tokens, int fieldCount, int[] offset)",
         () -> {

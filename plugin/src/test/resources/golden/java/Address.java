@@ -59,7 +59,7 @@ public final class Address {
         return new Builder(this);
     }
 
-    void appendJsonArray(StringBuilder sb) {
+    public void appendJsonArray(StringBuilder sb) {
         sb.append('[');
         dev.protocgen.textcodecs.jsonarray.runtime.JsonArrayWriter.appendQuotedString(sb, this.street);
         sb.append(',');
@@ -82,7 +82,7 @@ public final class Address {
     }
 
     @SuppressWarnings("unchecked")
-    static Address fromJsonArray(java.util.List<Object> array) {
+    public static Address fromJsonArray(java.util.List<Object> array) {
         Address.Builder builder = Address.newBuilder();
         int size = array.size();
         if (size > 0 && array.get(0) != null) {

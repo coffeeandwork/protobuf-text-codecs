@@ -42,7 +42,7 @@ public class PbtkJavaGenerator implements LanguageGenerator {
 
     for (ProtoMessage message : file.getMessages()) {
       nameResolver.validateFieldNames(message.getFields());
-      String sourceCode = codeEmitter.emitMessage(message, file);
+      String sourceCode = codeEmitter.emitMessage(message, file, registry);
       String outputPath = nameResolver.outputFilePath(file, message.getName());
 
       result.add(
