@@ -96,12 +96,9 @@ public class TypeScriptTypeMapper implements TypeMapper {
     } else {
       valueType = scalarType(field.getMapValueType());
     }
-    boolean stringKey = field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_STRING;
-    if (stringKey) {
-      return "Record<" + keyType + ", " + valueType + ">";
-    }
-    // Non-string keys are stored as Array of [key, value] tuples
-    return "[" + keyType + ", " + valueType + "][]";
+    // Maps are stored in memory as plain objects regardless of key type (JS object keys
+    // are strings); non-string keys only become [key, value] pair arrays on the wire.
+    return "Record<string, " + valueType + ">";
   }
 
   /** The TS type annotation for a repeated field. */
