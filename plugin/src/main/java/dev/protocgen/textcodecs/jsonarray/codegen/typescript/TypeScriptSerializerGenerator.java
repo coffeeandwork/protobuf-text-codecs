@@ -125,7 +125,9 @@ public class TypeScriptSerializerGenerator {
       w.block(
           "if (" + hasCheck + ")",
           () -> {
-            emitScalarPush(w, field, jsField);
+            // Presence is tracked in _presentFields, which the compiler cannot narrow
+            // from, so assert non-null explicitly.
+            emitScalarPush(w, field, jsField + "!");
           });
       w.line("else { array.push(null); }");
       return;

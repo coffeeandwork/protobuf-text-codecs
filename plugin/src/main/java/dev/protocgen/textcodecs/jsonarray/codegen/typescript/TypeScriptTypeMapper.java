@@ -75,8 +75,15 @@ public class TypeScriptTypeMapper implements TypeMapper {
     };
   }
 
-  /** Return the nullable type annotation (type | null) for optional/message fields. */
+  /**
+   * Return the nullable type annotation (type | null) for optional/message fields. Repeated and map
+   * fields are initialized to empty containers and never null (a map field's kind is the synthetic
+   * entry MESSAGE, so they must be excluded explicitly).
+   */
   public String nullableType(ProtoField field) {
+    if (field.isMap() || field.isRepeated()) {
+      return languageType(field);
+    }
     if (field.getKind() == ProtoField.FieldKind.MESSAGE
         || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE
         || field.isProto3Optional()) {

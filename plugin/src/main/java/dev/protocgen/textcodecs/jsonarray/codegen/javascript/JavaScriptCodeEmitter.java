@@ -17,7 +17,6 @@ package dev.protocgen.textcodecs.jsonarray.codegen.javascript;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
-import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoEnum;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoFile;
@@ -77,11 +76,8 @@ public class JavaScriptCodeEmitter {
       w.blankLine();
     }
 
-    // Emit nested message classes before the main class
-    for (ProtoMessage nested : message.getNestedMessages()) {
-      emitMessageClass(w, nested, file);
-      w.blankLine();
-    }
+    // Emit nested message classes (any depth, deepest first) before the main class
+    emitNestedTypes(w, message, file);
 
     // Main class — no lazy imports needed, imports are at top level
     emitMessageClass(w, message, file, List.of());
@@ -91,6 +87,19 @@ public class JavaScriptCodeEmitter {
     emitExports(w, message, className);
 
     return w.toString();
+  }
+
+  /** Emit all nested enums and message classes of a container, deepest first. */
+  protected void emitNestedTypes(CodeWriter w, ProtoMessage container, ProtoFile file) {
+    for (ProtoMessage nested : container.getNestedMessages()) {
+      emitNestedTypes(w, nested, file);
+      for (ProtoEnum protoEnum : nested.getEnums()) {
+        emitEnum(w, protoEnum);
+        w.blankLine();
+      }
+      emitMessageClass(w, nested, file);
+      w.blankLine();
+    }
   }
 
   /** Generate a complete JavaScript source file for a top-level enum. */
@@ -116,52 +125,12 @@ public class JavaScriptCodeEmitter {
   }
 
   /**
-   * Collect the simple names of types referenced from other files. These will be emitted as lazy
-   * imports inside the deserialize() method body to avoid circular require issues.
+   * Collect import specs ("Symbol|relative/module/path", extensionless) for types referenced from
+   * other files, including other proto packages. See {@link JsImportUtil}.
    */
   protected void collectReferencedTypeNames(
       ProtoMessage message, ProtoFile file, Set<String> names) {
-    String currentPrefix =
-        file.getProtoPackage().isEmpty() ? "." : "." + file.getProtoPackage() + ".";
-
-    for (ProtoField field : message.getFields()) {
-      // A map field's own type reference is the synthetic *MapEntry message, which is
-      // never generated as a file; only the value type may need an import.
-      if (field.isMap()) {
-        String valRef = field.getMapValueTypeReference();
-        if (valRef != null && valRef.startsWith(currentPrefix)) {
-          names.add(ProtoTypeUtil.simpleTypeName(valRef));
-        }
-        continue;
-      }
-
-      String typeRef = field.getTypeReference();
-      if (typeRef == null) continue;
-      if (field.isWellKnownType()) continue;
-
-      // A message that references itself (recursive type) needs no import
-      if (typeRef.equals(message.getFullName())) continue;
-
-      // Check if the type is defined in the current message (nested type)
-      boolean isNested = false;
-      for (ProtoMessage nested : message.getNestedMessages()) {
-        if (typeRef.equals(message.getFullName() + "." + nested.getName())) {
-          isNested = true;
-          break;
-        }
-      }
-      if (isNested) continue;
-
-      // Check if this is a type in the same package but different file
-      if (typeRef.startsWith(currentPrefix)) {
-        names.add(ProtoTypeUtil.simpleTypeName(typeRef));
-      }
-    }
-
-    // Also check nested messages for their references
-    for (ProtoMessage nested : message.getNestedMessages()) {
-      collectReferencedTypeNames(nested, file, names);
-    }
+    names.addAll(JsImportUtil.collectImportSpecs(message, file));
   }
 
   /**
@@ -174,11 +143,11 @@ public class JavaScriptCodeEmitter {
   }
 
   /**
-   * Format a single import statement for a referenced type. Override in subclasses for different
-   * import syntax (e.g. TypeScript).
+   * Format a single import statement for an import spec ("Symbol|relative/module/path"). Override
+   * in subclasses for different import syntax (e.g. TypeScript).
    */
-  protected String formatImport(String simpleName) {
-    return String.format("import { %s } from './%s.js';", simpleName, simpleName);
+  protected String formatImport(String importSpec) {
+    return JsImportUtil.formatImport(importSpec);
   }
 
   /** Emit a complete ES6 class for a message (without lazy imports). */
@@ -353,15 +322,18 @@ public class JavaScriptCodeEmitter {
   protected void emitExports(CodeWriter w, ProtoMessage message, String className) {
     StringBuilder exports = new StringBuilder();
     exports.append(className);
+    appendNestedExports(exports, message);
+    w.line("export { %s };", exports.toString());
+  }
 
-    for (ProtoEnum protoEnum : message.getEnums()) {
+  private void appendNestedExports(StringBuilder exports, ProtoMessage container) {
+    for (ProtoEnum protoEnum : container.getEnums()) {
       exports.append(", ").append(protoEnum.getName());
     }
-    for (ProtoMessage nested : message.getNestedMessages()) {
+    for (ProtoMessage nested : container.getNestedMessages()) {
       exports.append(", ").append(nameResolver.messageClassName(nested.getName()));
+      appendNestedExports(exports, nested);
     }
-
-    w.line("export { %s };", exports.toString());
   }
 
   protected boolean hasOptionalFields(ProtoMessage message) {

@@ -185,7 +185,12 @@ public class TypeScriptDeserializerGenerator {
       w.block(
           "for (const __pairs of (" + nodeExpr + " as any[][]))",
           () -> {
-            String keyRead = scalarReadExpr(field.getMapKeyType(), "__pairs[0]");
+            // Maps are stored as plain objects, so the key must be a valid index type;
+            // booleans are stringified ('true'/'false')
+            String keyRead =
+                field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_BOOL
+                    ? "String(__pairs[0])"
+                    : scalarReadExpr(field.getMapKeyType(), "__pairs[0]");
             String valueRead = mapValueReadExpr(field, "__pairs[1]");
             w.line("__map[%s] = %s;", keyRead, valueRead);
           });
