@@ -51,10 +51,9 @@ jobs:
           - { lang: objc, os: macos-latest, broken: true }
           - { lang: zig, os: ubuntu-latest, broken: true }
           - { lang: dart, os: ubuntu-latest, broken: true }
-          - { lang: php, os: ubuntu-latest, broken: true }
+          - { lang: php, os: ubuntu-latest }
           - { lang: kotlin, os: ubuntu-latest, broken: true }
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.broken == true }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -99,4 +98,15 @@ jobs:
       - name: Build plugin jars
         run: ./gradlew :plugin:shadowJar :plugin:pbtkShadowJar
       - name: Compile smoke
-        run: ./integration-tests/compile-smoke.sh ${{ matrix.lang }}
+        # Languages marked broken have documented open findings; their failures are
+        # reported as warnings so the check stays green. A broken language that starts
+        # passing shows PASS in the log: flip its matrix flag off.
+        run: |
+          if ./integration-tests/compile-smoke.sh ${{ matrix.lang }}; then
+            exit 0
+          elif [ "${{ matrix.broken }}" = "true" ]; then
+            echo "::warning title=Known-broken language::${{ matrix.lang }} failed as documented in docs/COMPILE_SMOKE_FINDINGS.md"
+            exit 0
+          else
+            exit 1
+          fi

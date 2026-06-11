@@ -30,14 +30,14 @@ Status as of 2026-06-11.
 | TypeScript | Cross-package references missing imports (`Cannot find name 'Address'`); references to nested types from other files import non-existent modules (`./Status.js`); non-string-keyed maps initialized as `{}` where pair-array `[K, V][]` is expected; deserializer passes `Record<string, any>` to pair-array parameters |
 | Go | Cross-package references unsupported: Go imports need a module path, which requires honoring the `go_package` option (feature work). Same-package code (incl. nested types, optional enums/bytes, NaN handling) now compiles — see Fixed below |
 | Rust (pbtk format only) | `PbtkRustGenerator` output has never compiled: 244 errors across 8 classes (unresolved modules, private methods called cross-module, missing imports, bad derefs). Best addressed by the planned pbtk generator restructuring (Phase F); jsonarray Rust passes |
-| TypeScript | Cross-package references missing imports (`Cannot find name 'Address'`); references to nested types from other files import non-existent modules (`./Status.js`); non-string-keyed maps initialized as `{}` where pair-array `[K, V][]` is expected; deserializer passes `Record<string, any>` to pair-array parameters |
 | Objective-C | Cross-file references to types with a different file prefix don't import/forward-declare (`PWInnerData` unknown in `PRWrapper.h`); proto2 enum properties boxed with `@()` on `id` type |
 | C | Nested-type free-function name mismatch (`proto2test_Wrapper_inner_data_free` called, `proto2test_wrapper__inner_data_free` declared); same-named structs from different packages produce conflicting typedefs across headers |
 | C++ | Cross-package references not declared (`Address`); recursive messages use incomplete types by value (`TreeNode` needs pointer indirection); `std::nullopt` assigned to non-optional members |
 | Dart | Map fields import the synthetic `*MapEntry` file (same class as the fixed JS/TS bug) |
 | Kotlin | Generated code references a `dev.protocgen...` runtime package that isn't a published Kotlin dependency |
 | Zig | Cross-package references undeclared; `zig ast-check` treats unused parameters and never-mutated `var` as errors |
-| PHP | **Passes** (first CI verdict, both formats) |
+
+PHP passed its first CI verdict (both formats) and is no longer marked broken.
 
 ## Notes
 
