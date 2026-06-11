@@ -170,7 +170,7 @@ public class GoTypeMapper implements TypeMapper {
         if ("-inf".equals(defaultValue)) yield "math.Inf(-1)";
         if ("nan".equals(defaultValue)) yield "math.NaN()";
         // Validate numeric format to prevent code injection (VULN-003)
-        if (!defaultValue.matches("-?[0-9]+(\\.[0-9]+)?([eE][+-]?[0-9]+)?")) {
+        if (!defaultValue.matches("-?[0-9]++(\\.[0-9]++)?([eE][+-]?[0-9]++)?")) {
           throw new IllegalArgumentException(
               "Double default value '" + defaultValue + "' is not a valid number");
         }
@@ -181,7 +181,7 @@ public class GoTypeMapper implements TypeMapper {
         if ("-inf".equals(defaultValue)) yield "float32(math.Inf(-1))";
         if ("nan".equals(defaultValue)) yield "float32(math.NaN())";
         // Validate numeric format to prevent code injection (VULN-003)
-        if (!defaultValue.matches("-?[0-9]+(\\.[0-9]+)?([eE][+-]?[0-9]+)?")) {
+        if (!defaultValue.matches("-?[0-9]++(\\.[0-9]++)?([eE][+-]?[0-9]++)?")) {
           throw new IllegalArgumentException(
               "Float default value '" + defaultValue + "' is not a valid number");
         }

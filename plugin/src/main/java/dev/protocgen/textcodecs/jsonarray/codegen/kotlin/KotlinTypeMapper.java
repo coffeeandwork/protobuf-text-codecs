@@ -157,7 +157,7 @@ public class KotlinTypeMapper implements TypeMapper {
         if ("inf".equals(defaultValue)) yield "Double.POSITIVE_INFINITY";
         if ("-inf".equals(defaultValue)) yield "Double.NEGATIVE_INFINITY";
         if ("nan".equals(defaultValue)) yield "Double.NaN";
-        if (!defaultValue.matches("-?[0-9]+(\\.[0-9]+)?([eE][+-]?[0-9]+)?")) {
+        if (!defaultValue.matches("-?[0-9]++(\\.[0-9]++)?([eE][+-]?[0-9]++)?")) {
           throw new IllegalArgumentException(
               "Double default value '" + defaultValue + "' is not a valid number");
         }
@@ -167,7 +167,7 @@ public class KotlinTypeMapper implements TypeMapper {
         if ("inf".equals(defaultValue)) yield "Float.POSITIVE_INFINITY";
         if ("-inf".equals(defaultValue)) yield "Float.NEGATIVE_INFINITY";
         if ("nan".equals(defaultValue)) yield "Float.NaN";
-        if (!defaultValue.matches("-?[0-9]+(\\.[0-9]+)?([eE][+-]?[0-9]+)?")) {
+        if (!defaultValue.matches("-?[0-9]++(\\.[0-9]++)?([eE][+-]?[0-9]++)?")) {
           throw new IllegalArgumentException(
               "Float default value '" + defaultValue + "' is not a valid number");
         }

@@ -130,7 +130,6 @@ public class GoDeserializerGenerator {
       CodeWriter w, ProtoField field, String goField, String elemExpr) {
     if (field.isProto3Optional()) {
       // Pointer assignment for optional scalars
-      String goType = typeMapper.scalarType(field.getProtoType());
       if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
         w.block(
             "if s, ok := " + elemExpr + ".(string); ok",

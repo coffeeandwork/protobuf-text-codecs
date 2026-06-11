@@ -78,7 +78,6 @@ public class PbtkDartGenerator implements LanguageGenerator {
 
   private String emitMessage(ProtoMessage message, ProtoFile file) {
     CodeWriter w = new CodeWriter("  ");
-    String className = nameResolver.messageClassName(message.getName());
 
     emitFileHeader(w, file);
 
@@ -163,8 +162,6 @@ public class PbtkDartGenerator implements LanguageGenerator {
           || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE
           || field.isProto3Optional()) {
         w.line("%s %s;", dartType, dartName);
-      } else if (field.isMap() || field.isRepeated()) {
-        w.line("%s %s = %s;", dartType, dartName, defaultVal);
       } else {
         w.line("%s %s = %s;", dartType, dartName, defaultVal);
       }

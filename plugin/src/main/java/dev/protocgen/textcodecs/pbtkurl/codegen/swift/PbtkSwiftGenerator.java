@@ -933,7 +933,6 @@ public class PbtkSwiftGenerator implements LanguageGenerator {
   }
 
   private void emitMapDeserialize(CodeWriter w, ProtoField field, String swiftField) {
-    String mapType = typeMapper.languageType(field);
     // Initialize map if empty
     w.block("if " + swiftField + ".isEmpty", () -> w.line("// map already initialized as empty"));
 

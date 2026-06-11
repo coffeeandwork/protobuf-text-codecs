@@ -20,6 +20,8 @@ jobs:
         run: ./gradlew spotlessCheck
       - name: Run tests
         run: ./gradlew :plugin:test
+      - name: Static analysis (SpotBugs + findsecbugs)
+        run: ./gradlew :plugin:spotbugsMain
       - name: Upload test reports
         if: failure()
         uses: actions/upload-artifact@v4

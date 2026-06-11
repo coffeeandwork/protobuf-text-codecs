@@ -147,7 +147,7 @@ public class DartTypeMapper implements TypeMapper {
         if ("-inf".equals(defaultValue)) yield "double.negativeInfinity";
         if ("nan".equals(defaultValue)) yield "double.nan";
         // Validate numeric format to prevent code injection (VULN-003)
-        if (!defaultValue.matches("-?[0-9]+(\\.[0-9]+)?([eE][+-]?[0-9]+)?")) {
+        if (!defaultValue.matches("-?[0-9]++(\\.[0-9]++)?([eE][+-]?[0-9]++)?")) {
           throw new IllegalArgumentException(
               "Double default value '" + defaultValue + "' is not a valid number");
         }
@@ -158,7 +158,7 @@ public class DartTypeMapper implements TypeMapper {
         if ("-inf".equals(defaultValue)) yield "double.negativeInfinity";
         if ("nan".equals(defaultValue)) yield "double.nan";
         // Validate numeric format to prevent code injection (VULN-003)
-        if (!defaultValue.matches("-?[0-9]+(\\.[0-9]+)?([eE][+-]?[0-9]+)?")) {
+        if (!defaultValue.matches("-?[0-9]++(\\.[0-9]++)?([eE][+-]?[0-9]++)?")) {
           throw new IllegalArgumentException(
               "Float default value '" + defaultValue + "' is not a valid number");
         }

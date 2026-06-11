@@ -119,12 +119,8 @@ public class CDeserializerGenerator {
                         == com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type
                             .TYPE_STRING) {
                       w.line("msg->%s = jsonarray_strdup(%s);", fieldName, defaultExpr);
-                    } else if (field.getProtoType()
-                        == com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type
-                            .TYPE_BYTES) {
-                      // Bytes defaults use the base64_decode helper with length tracking
-                      w.line("msg->%s = %s;", fieldName, defaultExpr);
                     } else {
+                      // Bytes defaults already carry length tracking via base64_decode
                       w.line("msg->%s = %s;", fieldName, defaultExpr);
                     }
                   });

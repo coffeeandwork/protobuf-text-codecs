@@ -72,7 +72,6 @@ public class JavaNameResolver implements NameResolver {
     // the defining file's java_package. For now, strip the leading dot and
     // use the proto package structure.
     if (protoFullName == null) return "Object";
-    String pkg = resolvePackage(currentFile);
     String currentPrefix =
         currentFile.getProtoPackage().isEmpty() ? "." : "." + currentFile.getProtoPackage() + ".";
 

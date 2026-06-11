@@ -362,8 +362,8 @@ This is a **build-time CLI tool**, not a web application. OWASP Top 10 categorie
 10. **Set up automated dependency scanning** (Dependabot, OWASP Dependency-Check)
 
 ### Requires External Tool Validation
-1. Run SAST tool (Semgrep, CodeQL, or Snyk Code) for patterns missed by manual review
-2. Run SCA tool for dependency CVEs
+1. ~~Run SAST tool (Semgrep, CodeQL, or Snyk Code) for patterns missed by manual review~~ — **Done (2026-06):** SpotBugs+findsecbugs and ErrorProne run in the build and CI; CodeQL runs in GitHub Actions. See Section 10.
+2. ~~Run SCA tool for dependency CVEs~~ — **Done (2026-06):** Dependabot configured for Gradle and GitHub Actions ecosystems.
 3. Run Valgrind/ASan on generated C code with malicious JSON input
 4. Consider fuzzing the plugin with malformed CodeGeneratorRequest inputs
 
@@ -395,7 +395,33 @@ Tests already implemented in `SafetySecurityTest.java` (180 tests):
 | SEC-T-015 | Test absolute path in java_package → rejected | VULN-004 | Medium |
 | SEC-T-016 | Test comment with `*/` → escaped in Javadoc | VULN-005 | Low |
 
-## 10. Uncertainties
+## 10. Automated Static Analysis (SAST)
+
+**Status (2026-06-11):** Automated static analysis is wired into the build and CI. Zero open findings.
+
+### Tooling
+
+| Tool | Where it runs | Scope |
+|------|---------------|-------|
+| ErrorProne 2.36.0 | Every `compileJava`/`compileTestJava` (build-breaking on ERROR-level checks) | All Java sources |
+| SpotBugs 4.x + findsecbugs 1.13.0 | `./gradlew :plugin:spotbugsMain` (CI step; effort MAX, confidence MEDIUM) | Main sources |
+| CodeQL (java-kotlin) | GitHub Actions (`codeql.yml`): push/PR to main + weekly schedule | Whole repo |
+| Dependabot | GitHub (weekly) | Gradle deps, GitHub Actions |
+
+### Initial Scan Findings and Resolutions
+
+| Finding | Count | Resolution |
+|---------|-------|------------|
+| ErrorProne `DuplicateBranches` | 9 | Identical if/else branches in generators collapsed; golden-file tests confirm generated output unchanged |
+| ErrorProne `ImpossibleNullComparison` | 2 | Removed null checks on protobuf getters (never null by contract) |
+| SpotBugs `DLS_DEAD_LOCAL_STORE` | 21 | Dead local variables removed (pure initializers; no behavior change) |
+| SpotBugs `UC_USELESS_VOID_METHOD` | 1 | No-op `collectReferencedTypes` in PbtkPhpGenerator removed; intent preserved in comment |
+| findsecbugs `REDOS` | 27 | VULN-003 numeric validator regex hardened with possessive quantifiers (`-?[0-9]++(\.[0-9]++)?([eE][+-]?[0-9]++)?`) — backtracking now impossible; residual detector hits suppressed in `spotbugs-exclude.xml` with rationale (detector does not model possessive quantifiers) |
+| SpotBugs `EI_EXPOSE_REP`/`EI_EXPOSE_REP2` | 55 | Suppressed with rationale: internal single-threaded codegen classes intentionally share collaborator instances; defensive copies add no security benefit |
+
+ErrorProne WARNING-level checks (~100, e.g. `AnnotateFormatMethod`) remain non-blocking; burn-down is tracked as future hardening work.
+
+## 11. Uncertainties
 
 | Flag | Area | Required Analysis |
 |------|------|-------------------|
@@ -405,11 +431,11 @@ Tests already implemented in `SafetySecurityTest.java` (180 tests):
 | [PARTIAL — 6 of 17 generators audited] | Proto2 default escaping | Java, Kotlin, C#, Dart, PHP, and Objective-C generators now have `formatSchemaDefault()` and `schemaDefaultExpression()` with proper validation. 11 generators remain unaudited: Python, Go, Rust, C, C++, JavaScript, TypeScript, Zig, Swift, Ruby, Perl. |
 | [ASSUMED_BEHAVIOR] | protoc path handling | Assumed protoc prepends output dir to file paths, mitigating VULN-004 |
 
-## 11. Approval
+## 12. Approval
 
 Security assessment requires expert review:
-- [ ] Findings validated with SAST tool
-- [ ] Dependencies scanned for CVEs
+- [x] Findings validated with SAST tool (ErrorProne, SpotBugs+findsecbugs, CodeQL — see Section 10)
+- [x] Dependencies scanned for CVEs (Dependabot continuous monitoring)
 - [ ] High findings have remediation plan
 - [ ] Critical findings addressed (none found — all High require crafted input)
 - [ ] Assessment acknowledged as incomplete

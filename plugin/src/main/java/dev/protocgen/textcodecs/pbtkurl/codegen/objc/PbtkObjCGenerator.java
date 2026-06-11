@@ -773,7 +773,6 @@ public class PbtkObjCGenerator implements LanguageGenerator {
 
   private void emitFieldCase(CodeWriter w, ProtoField field, String className) {
     int fieldNum = field.getFieldNumber();
-    String propName = nameResolver.fieldName(field.getName());
 
     w.block(
         "case " + fieldNum + ":",

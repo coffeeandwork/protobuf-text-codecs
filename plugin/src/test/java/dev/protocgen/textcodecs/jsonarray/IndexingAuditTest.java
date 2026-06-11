@@ -546,8 +546,7 @@ class IndexingAuditTest {
       boolean hasContent = false;
       boolean hasGapMarker = false;
       for (int i = 0; i < response.getFileCount(); i++) {
-        if (response.getFile(i).getContent() != null
-            && !response.getFile(i).getContent().isEmpty()) {
+        if (!response.getFile(i).getContent().isEmpty()) {
           hasContent = true;
           String content = response.getFile(i).getContent();
           if (content.contains("gap") || content.contains("no field")) {

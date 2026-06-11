@@ -379,9 +379,6 @@ public class PbtkRustGenerator implements LanguageGenerator {
   }
 
   private void emitScalarSerialize(CodeWriter w, ProtoField field, String rustField, int fieldNum) {
-    FieldDescriptorProto.Type type = field.getProtoType();
-    String typeChar = pbtkTypeChar(type);
-
     if (field.isProto3Optional()) {
       w.block(
           "if let Some(ref v) = " + rustField,

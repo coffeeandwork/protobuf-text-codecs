@@ -129,7 +129,7 @@ public class CSharpTypeMapper implements TypeMapper {
         if ("-inf".equals(defaultValue)) yield "double.NegativeInfinity";
         if ("nan".equals(defaultValue)) yield "double.NaN";
         // Validate numeric format to prevent code injection (VULN-003)
-        if (!defaultValue.matches("-?[0-9]+(\\.[0-9]+)?([eE][+-]?[0-9]+)?")) {
+        if (!defaultValue.matches("-?[0-9]++(\\.[0-9]++)?([eE][+-]?[0-9]++)?")) {
           throw new IllegalArgumentException(
               "Double default value '" + defaultValue + "' is not a valid number");
         }
@@ -140,7 +140,7 @@ public class CSharpTypeMapper implements TypeMapper {
         if ("-inf".equals(defaultValue)) yield "float.NegativeInfinity";
         if ("nan".equals(defaultValue)) yield "float.NaN";
         // Validate numeric format to prevent code injection (VULN-003)
-        if (!defaultValue.matches("-?[0-9]+(\\.[0-9]+)?([eE][+-]?[0-9]+)?")) {
+        if (!defaultValue.matches("-?[0-9]++(\\.[0-9]++)?([eE][+-]?[0-9]++)?")) {
           throw new IllegalArgumentException(
               "Float default value '" + defaultValue + "' is not a valid number");
         }

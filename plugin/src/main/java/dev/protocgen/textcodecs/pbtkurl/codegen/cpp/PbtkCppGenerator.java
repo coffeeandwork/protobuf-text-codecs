@@ -837,7 +837,6 @@ public class PbtkCppGenerator implements LanguageGenerator {
 
   private void emitRepeatedSerialize(
       CodeWriter w, ProtoField field, String getter, int fieldNum, String className) {
-    String elemType = typeMapper.elementType(field);
     w.block(
         "for (const auto& pb_elem : " + getter + ")",
         () -> {
@@ -1009,8 +1008,6 @@ public class PbtkCppGenerator implements LanguageGenerator {
 
   private void emitDeserializeFieldCase(CodeWriter w, ProtoField field, String className) {
     int fieldNum = field.getFieldNumber();
-    String setter = "obj." + nameResolver.setterName(field.getName());
-    String getter = "obj." + nameResolver.getterName(field.getName()) + "()";
 
     w.block(
         "case " + fieldNum + ":",
@@ -1058,7 +1055,6 @@ public class PbtkCppGenerator implements LanguageGenerator {
   }
 
   private void emitRepeatedDeserialize(CodeWriter w, ProtoField field, String className) {
-    String fieldName = nameResolver.fieldName(field.getName()) + "_";
     // Access the private field directly via a temporary vector approach
     // -- use a mutable getter pattern by building a local vector and then setting
     String getter = "obj." + nameResolver.getterName(field.getName()) + "()";
@@ -1067,7 +1063,6 @@ public class PbtkCppGenerator implements LanguageGenerator {
         || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
       String msgType = simpleTypeName(field.getTypeReference());
       String elemType = typeMapper.elementType(field);
-      String vecType = "std::vector<" + elemType + ">";
       w.line(
           "int sub_count = [&]() -> int { try { return std::stoi(value); } catch (...) { return 0; } }();");
       w.line("offset++;");

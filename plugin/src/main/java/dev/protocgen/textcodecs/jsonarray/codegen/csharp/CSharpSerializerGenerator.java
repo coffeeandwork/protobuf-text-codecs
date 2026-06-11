@@ -329,7 +329,6 @@ public class CSharpSerializerGenerator {
   private void emitMapValueAppend(CodeWriter w, ProtoField field, String valueExpr) {
     FieldDescriptorProto.Type valueType = field.getMapValueType();
     if (valueType == FieldDescriptorProto.Type.TYPE_MESSAGE) {
-      String msgType = simpleTypeName(field.getMapValueTypeReference());
       w.block(
           "if (" + valueExpr + " != null)",
           () -> {
