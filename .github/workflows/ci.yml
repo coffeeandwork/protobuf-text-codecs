@@ -22,6 +22,13 @@ jobs:
         run: ./gradlew :plugin:test
       - name: Static analysis (SpotBugs + findsecbugs)
         run: ./gradlew :plugin:spotbugsMain
+      - name: Coverage gate
+        run: ./gradlew :plugin:jacocoTestCoverageVerification
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: plugin/build/reports/jacoco/test/
       - name: Upload test reports
         if: failure()
         uses: actions/upload-artifact@v4

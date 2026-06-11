@@ -49,6 +49,30 @@ jacocoTestReport {
     }
 }
 
+// Coverage gate: ratchet values set just below current coverage (71% instr / 58% branch).
+// Raise as coverage improves; never lower.
+jacocoTestCoverageVerification {
+    dependsOn test
+    violationRules {
+        rule {
+            limit {
+                counter = 'INSTRUCTION'
+                value = 'COVEREDRATIO'
+                minimum = 0.70
+            }
+        }
+        rule {
+            limit {
+                counter = 'BRANCH'
+                value = 'COVEREDRATIO'
+                minimum = 0.55
+            }
+        }
+    }
+}
+
+check.dependsOn jacocoTestCoverageVerification
+
 shadowJar {
     archiveBaseName = 'protoc-gen-jsonarray'
     archiveClassifier = ''
