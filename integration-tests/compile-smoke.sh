@@ -135,14 +135,14 @@ serde_json = "1"
 base64 = "0.22"
 EOF
     {
-        echo "#![allow(dead_code, unused_imports)]"
+        echo "#![allow(dead_code, unused_imports, unused_mut)]"
         for d in "$1"/*/; do
-            [ -d "$d" ] || continue
+            [ -d "$d" ] && [ "$(basename "$d")" != "__crate" ] || continue
             echo "pub mod $(basename "$d");"
         done
     } > "$crate/src/lib.rs"
     for d in "$1"/*/; do
-        [ -d "$d" ] || continue
+        [ -d "$d" ] && [ "$(basename "$d")" != "__crate" ] || continue
         cp -R "$d" "$crate/src/$(basename "$d")"
     done
     (cd "$crate" && cargo check -q) || die "cargo check failed in $1"

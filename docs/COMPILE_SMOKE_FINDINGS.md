@@ -19,15 +19,18 @@ Status as of 2026-06-11.
 | Perl (pbtk) | Constructors emitted literal `%%args` | `%args` |
 | JS/TS | Map fields imported the synthetic `*MapEntry` message (no such file); recursive messages imported themselves | Skip both |
 | TypeScript | `allow_alias` enums emitted duplicate reverse-mapping keys (TS1117) | First name wins; union deduplicated |
+| Go (jsonarray) | `} / else {` on separate lines (NaN/Inf branches, int64 parse fallbacks); nested types only flattened one level deep and referenced by bare name; proto3 optional enums/bytes mistyped; `math`/`strconv` imports missed for map keys/values | blockContinue pairing; `GoTypeMapper.simpleTypeName` flattens full path; pointer enums / plain `[]byte`; map-aware import checks |
+| C# (both formats) | Nested enum collided with same-named property (CS0102); cross-namespace refs missing `using`; `AsReadOnly()` assigned to `List<T>`; top-level enums missing `using System;` | protobuf-standard `Types` wrapper + `Outer.Types.Inner` references; namespace-derived using directives; defensive copy without AsReadOnly |
+| Rust (jsonarray) | `has_*` with `is_some()` on Vec/HashMap fields; cross-package refs unresolved; synthetic `*MapEntry` imports; base64 import missed for bytes map values; `&`-prefixed scalar reads in map pairs; recursive types had infinite size; aliased enums duplicated discriminants | has_* only for Option fields; `use crate::<pkg>::...` imports; map-entry skip; map-aware bytes check; deref-corrected reads; `Option<Box<T>>` for self-references; first-name-wins enums |
 
 ## Open (CI marked broken)
 
 | Language | Finding |
 |----------|---------|
 | TypeScript | Cross-package references missing imports (`Cannot find name 'Address'`); references to nested types from other files import non-existent modules (`./Status.js`); non-string-keyed maps initialized as `{}` where pair-array `[K, V][]` is expected; deserializer passes `Record<string, any>` to pair-array parameters |
-| Go | Structural syntax errors in `kitchen_sink.go` and others: `unexpected keyword else`, statements outside function bodies, methods without receivers |
-| Rust | Map presence checked with `.is_some()` on a `HashMap`; cross-module references missing `use` paths; `base64::engine::general_purpose` not imported; type-annotation gaps |
-| C# | Nested enum named like a sibling member collides (`KitchenSink` already contains a definition for `Status`); cross-namespace references missing `using` |
+| Go | Cross-package references unsupported: Go imports need a module path, which requires honoring the `go_package` option (feature work). Same-package code (incl. nested types, optional enums/bytes, NaN handling) now compiles — see Fixed below |
+| Rust (pbtk format only) | `PbtkRustGenerator` output has never compiled: 244 errors across 8 classes (unresolved modules, private methods called cross-module, missing imports, bad derefs). Best addressed by the planned pbtk generator restructuring (Phase F); jsonarray Rust passes |
+| TypeScript | Cross-package references missing imports (`Cannot find name 'Address'`); references to nested types from other files import non-existent modules (`./Status.js`); non-string-keyed maps initialized as `{}` where pair-array `[K, V][]` is expected; deserializer passes `Record<string, any>` to pair-array parameters |
 | Objective-C | Cross-file references to types with a different file prefix don't import/forward-declare (`PWInnerData` unknown in `PRWrapper.h`); proto2 enum properties boxed with `@()` on `id` type |
 | Zig / Dart / PHP / Kotlin | Not yet verified locally (no toolchain); CI will produce first results |
 
