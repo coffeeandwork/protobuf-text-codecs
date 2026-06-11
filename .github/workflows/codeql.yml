@@ -26,7 +26,7 @@ jobs:
         with:
           languages: java-kotlin
           build-mode: manual
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       - name: Build
         run: ./gradlew :plugin:compileJava
       - uses: github/codeql-action/analyze@v3
