@@ -44,10 +44,10 @@ jobs:
           - { lang: c, os: ubuntu-latest }
           - { lang: cpp, os: ubuntu-latest }
           - { lang: swift, os: macos-latest }
+          - { lang: csharp, os: ubuntu-latest }
           - { lang: typescript, os: ubuntu-latest, broken: true }
           - { lang: go, os: ubuntu-latest, broken: true }
           - { lang: rust, os: ubuntu-latest, broken: true }
-          - { lang: csharp, os: ubuntu-latest, broken: true }
           - { lang: objc, os: macos-latest, broken: true }
           - { lang: zig, os: ubuntu-latest, broken: true }
           - { lang: dart, os: ubuntu-latest, broken: true }
