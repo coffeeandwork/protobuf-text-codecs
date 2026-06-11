@@ -171,6 +171,9 @@ public class RustCodeEmitter {
     if (typeRef == null) return;
     if (isWellKnown) return;
 
+    // A message that references itself (recursive type) needs no import
+    if (typeRef.equals(message.getFullName())) return;
+
     // Check if the type is defined in the current message (nested type)
     for (ProtoMessage nested : message.getNestedMessages()) {
       if (typeRef.equals(message.getFullName() + "." + nested.getName())) {

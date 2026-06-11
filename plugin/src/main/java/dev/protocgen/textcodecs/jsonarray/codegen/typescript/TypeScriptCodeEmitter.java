@@ -261,18 +261,23 @@ public class TypeScriptCodeEmitter extends JavaScriptCodeEmitter {
     for (ProtoEnum.EnumValue val : protoEnum.getValues()) {
       w.line("%s: %d as const,", nameResolver.enumConstantName(val.name()), val.number());
     }
-    // Reverse mapping: number -> NAME
+    // Reverse mapping: number -> NAME. With allow_alias, the first name wins
+    // (duplicate object keys are a TypeScript error).
+    java.util.Set<Integer> seenNumbers = new java.util.LinkedHashSet<>();
     for (ProtoEnum.EnumValue val : protoEnum.getValues()) {
-      w.line("%d: '%s' as const,", val.number(), nameResolver.enumConstantName(val.name()));
+      if (seenNumbers.add(val.number())) {
+        w.line("%d: '%s' as const,", val.number(), nameResolver.enumConstantName(val.name()));
+      }
     }
     w.dedent();
     w.line("});");
 
-    // Type alias as a numeric literal union (e.g. type Status = 0 | 1 | 2)
+    // Type alias as a numeric literal union (e.g. type Status = 0 | 1 | 2),
+    // deduplicated for aliased values
     StringBuilder unionType = new StringBuilder();
-    for (int i = 0; i < protoEnum.getValues().size(); i++) {
-      if (i > 0) unionType.append(" | ");
-      unionType.append(protoEnum.getValues().get(i).number());
+    for (Integer number : seenNumbers) {
+      if (unionType.length() > 0) unionType.append(" | ");
+      unionType.append(number);
     }
     w.line("type %s = %s;", enumName, unionType.toString());
   }

@@ -82,8 +82,13 @@ check_typescript() {
     command -v tsc >/dev/null || command -v npx >/dev/null || skip "tsc/npx not on PATH"
     local tsc_cmd=tsc
     command -v tsc >/dev/null || tsc_cmd="npx --yes tsc"
+    # Generated code runs in Node or browser: browser globals come from lib dom;
+    # Buffer (guarded by typeof at runtime) gets an ambient declaration instead of
+    # pulling in @types/node.
+    echo 'declare var Buffer: any;' > "$1/__ambient.d.ts"
     # shellcheck disable=SC2046
-    $tsc_cmd --noEmit --strict $(find "$1" -name '*.ts') || die "tsc failed in $1"
+    $tsc_cmd --noEmit --strict --target es2020 --lib es2020,dom --skipLibCheck \
+        $(find "$1" -name '*.ts') || die "tsc failed in $1"
 }
 
 check_c() {
@@ -187,7 +192,9 @@ check_kotlin() {
 
 check_swift() {
     need swiftc
-    find "$1" -name '*.swift' -print0 | xargs -0 swiftc -parse \
+    # Parse files one at a time: different proto packages produce same-named
+    # files (e.g. Address.swift), which swiftc rejects within one invocation.
+    find "$1" -name '*.swift' -print0 | xargs -0 -n1 swiftc -parse \
         || die "swiftc -parse failed in $1"
 }
 

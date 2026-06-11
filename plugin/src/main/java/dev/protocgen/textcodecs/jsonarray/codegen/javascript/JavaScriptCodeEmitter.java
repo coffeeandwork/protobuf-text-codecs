@@ -125,9 +125,22 @@ public class JavaScriptCodeEmitter {
         file.getProtoPackage().isEmpty() ? "." : "." + file.getProtoPackage() + ".";
 
     for (ProtoField field : message.getFields()) {
+      // A map field's own type reference is the synthetic *MapEntry message, which is
+      // never generated as a file; only the value type may need an import.
+      if (field.isMap()) {
+        String valRef = field.getMapValueTypeReference();
+        if (valRef != null && valRef.startsWith(currentPrefix)) {
+          names.add(ProtoTypeUtil.simpleTypeName(valRef));
+        }
+        continue;
+      }
+
       String typeRef = field.getTypeReference();
       if (typeRef == null) continue;
       if (field.isWellKnownType()) continue;
+
+      // A message that references itself (recursive type) needs no import
+      if (typeRef.equals(message.getFullName())) continue;
 
       // Check if the type is defined in the current message (nested type)
       boolean isNested = false;
@@ -139,21 +152,9 @@ public class JavaScriptCodeEmitter {
       }
       if (isNested) continue;
 
-      // Extract the simple name
-      String simpleName = ProtoTypeUtil.simpleTypeName(typeRef);
-
       // Check if this is a type in the same package but different file
       if (typeRef.startsWith(currentPrefix)) {
-        names.add(simpleName);
-      }
-
-      // For map value types
-      if (field.isMap() && field.getMapValueTypeReference() != null) {
-        String valRef = field.getMapValueTypeReference();
-        String valName = ProtoTypeUtil.simpleTypeName(valRef);
-        if (valRef.startsWith(currentPrefix)) {
-          names.add(valName);
-        }
+        names.add(ProtoTypeUtil.simpleTypeName(typeRef));
       }
     }
 

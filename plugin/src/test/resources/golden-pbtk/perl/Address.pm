@@ -6,7 +6,7 @@ use MIME::Base64 qw(encode_base64 decode_base64);
 use URI::Escape qw(uri_escape_utf8 uri_unescape);
 
 sub new {
-    my ($class, %%args) = @_;
+    my ($class, %args) = @_;
     my $self = bless {}, $class;
     $self->{street} = "";
     $self->{city} = "";
