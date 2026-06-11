@@ -75,8 +75,15 @@ public class TypeScriptTypeMapper implements TypeMapper {
     };
   }
 
-  /** Return the nullable type annotation (type | null) for optional/message fields. */
+  /**
+   * Return the nullable type annotation (type | null) for optional/message fields. Repeated and map
+   * fields are initialized to empty containers and never null (a map field's kind is the synthetic
+   * entry MESSAGE, so they must be excluded explicitly).
+   */
   public String nullableType(ProtoField field) {
+    if (field.isMap() || field.isRepeated()) {
+      return languageType(field);
+    }
     if (field.getKind() == ProtoField.FieldKind.MESSAGE
         || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE
         || field.isProto3Optional()) {
@@ -87,7 +94,6 @@ public class TypeScriptTypeMapper implements TypeMapper {
 
   /** The TS type annotation for a map field. */
   private String mapTypeAnnotation(ProtoField field) {
-    String keyType = scalarType(field.getMapKeyType());
     String valueType;
     if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE) {
       valueType = jsTypeMapper.simpleTypeName(field.getMapValueTypeReference());
@@ -96,12 +102,9 @@ public class TypeScriptTypeMapper implements TypeMapper {
     } else {
       valueType = scalarType(field.getMapValueType());
     }
-    boolean stringKey = field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_STRING;
-    if (stringKey) {
-      return "Record<" + keyType + ", " + valueType + ">";
-    }
-    // Non-string keys are stored as Array of [key, value] tuples
-    return "[" + keyType + ", " + valueType + "][]";
+    // Maps are stored in memory as plain objects regardless of key type (JS object keys
+    // are strings); non-string keys only become [key, value] pair arrays on the wire.
+    return "Record<string, " + valueType + ">";
   }
 
   /** The TS type annotation for a repeated field. */

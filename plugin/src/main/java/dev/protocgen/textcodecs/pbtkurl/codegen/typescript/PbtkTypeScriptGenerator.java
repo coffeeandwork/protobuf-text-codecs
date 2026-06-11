@@ -29,7 +29,6 @@ import dev.protocgen.textcodecs.jsonarray.model.ProtoFile;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoMessage;
 import dev.protocgen.textcodecs.jsonarray.model.TypeRegistry;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -83,13 +82,14 @@ public class PbtkTypeScriptGenerator implements LanguageGenerator {
     emitFileHeader(w, file);
 
     // Collect referenced types — emitted as top-level ES module imports
-    Set<String> importNames = new LinkedHashSet<>();
-    collectReferencedTypeNames(message, file, importNames);
+    Set<String> importNames =
+        dev.protocgen.textcodecs.jsonarray.codegen.javascript.JsImportUtil.collectImportSpecs(
+            message, file);
     List<String> importNameList = List.copyOf(importNames);
 
     // Emit top-level imports
     for (String name : importNameList) {
-      w.line("import { %s } from './%s.js';", name, name);
+      w.line(dev.protocgen.textcodecs.jsonarray.codegen.javascript.JsImportUtil.formatImport(name));
     }
     if (!importNameList.isEmpty()) {
       w.blankLine();
@@ -107,11 +107,8 @@ public class PbtkTypeScriptGenerator implements LanguageGenerator {
       w.blankLine();
     }
 
-    // Nested messages
-    for (ProtoMessage nested : message.getNestedMessages()) {
-      emitMessageClass(w, nested, file, List.of());
-      w.blankLine();
-    }
+    // Nested messages (any depth, deepest first)
+    emitNestedTypes(w, message, file);
 
     // Main class — no lazy imports needed, imports are at top level
     emitMessageClass(w, message, file, List.of());
@@ -121,6 +118,19 @@ public class PbtkTypeScriptGenerator implements LanguageGenerator {
     emitExports(w, message, className);
 
     return w.toString();
+  }
+
+  /** Emit all nested enums and message classes of a container, deepest first. */
+  private void emitNestedTypes(CodeWriter w, ProtoMessage container, ProtoFile file) {
+    for (ProtoMessage nested : container.getNestedMessages()) {
+      emitNestedTypes(w, nested, file);
+      for (ProtoEnum protoEnum : nested.getEnums()) {
+        emitEnum(w, protoEnum);
+        w.blankLine();
+      }
+      emitMessageClass(w, nested, file, List.of());
+      w.blankLine();
+    }
   }
 
   private String emitTopLevelEnum(ProtoEnum protoEnum, ProtoFile file) {
@@ -358,9 +368,11 @@ public class PbtkTypeScriptGenerator implements LanguageGenerator {
 
   private void emitScalarSerialize(CodeWriter w, ProtoField field, String jsField, int fieldNum) {
     if (field.isProto3Optional()) {
+      // Presence is tracked in _presentFields, which the compiler cannot narrow from,
+      // so assert non-null explicitly.
       w.block(
           "if (this._presentFields[" + field.getArrayPosition() + "])",
-          () -> emitScalarAppend(w, field, jsField, fieldNum));
+          () -> emitScalarAppend(w, field, jsField + "!", fieldNum));
       return;
     }
     emitScalarAppend(w, field, jsField, fieldNum);
@@ -675,17 +687,22 @@ public class PbtkTypeScriptGenerator implements LanguageGenerator {
     for (ProtoEnum.EnumValue val : protoEnum.getValues()) {
       w.line("%s: %d as const,", nameResolver.enumConstantName(val.name()), val.number());
     }
+    // Reverse mapping: with allow_alias, the first name wins (duplicate object keys
+    // are a TypeScript error)
+    java.util.Set<Integer> seenNumbers = new java.util.LinkedHashSet<>();
     for (ProtoEnum.EnumValue val : protoEnum.getValues()) {
-      w.line("%d: '%s' as const,", val.number(), nameResolver.enumConstantName(val.name()));
+      if (seenNumbers.add(val.number())) {
+        w.line("%d: '%s' as const,", val.number(), nameResolver.enumConstantName(val.name()));
+      }
     }
     w.dedent();
     w.line("});");
 
-    // Type alias as numeric literal union
+    // Type alias as numeric literal union, deduplicated for aliased values
     StringBuilder unionType = new StringBuilder();
-    for (int i = 0; i < protoEnum.getValues().size(); i++) {
-      if (i > 0) unionType.append(" | ");
-      unionType.append(protoEnum.getValues().get(i).number());
+    for (Integer number : seenNumbers) {
+      if (unionType.length() > 0) unionType.append(" | ");
+      unionType.append(number);
     }
     w.line("type %s = %s;", enumName, unionType.toString());
   }
@@ -715,13 +732,18 @@ public class PbtkTypeScriptGenerator implements LanguageGenerator {
   private void emitExports(CodeWriter w, ProtoMessage message, String className) {
     StringBuilder exports = new StringBuilder();
     exports.append(className);
-    for (ProtoEnum protoEnum : message.getEnums()) {
+    appendNestedExports(exports, message);
+    w.line("export { %s };", exports.toString());
+  }
+
+  private void appendNestedExports(StringBuilder exports, ProtoMessage container) {
+    for (ProtoEnum protoEnum : container.getEnums()) {
       exports.append(", ").append(protoEnum.getName());
     }
-    for (ProtoMessage nested : message.getNestedMessages()) {
+    for (ProtoMessage nested : container.getNestedMessages()) {
       exports.append(", ").append(nameResolver.messageClassName(nested.getName()));
+      appendNestedExports(exports, nested);
     }
-    w.line("export { %s };", exports.toString());
   }
 
   private void collectReferencedTypeNames(ProtoMessage message, ProtoFile file, Set<String> names) {

@@ -77,11 +77,8 @@ public class TypeScriptCodeEmitter extends JavaScriptCodeEmitter {
       w.blankLine();
     }
 
-    // Emit nested message classes before the main class
-    for (ProtoMessage nested : message.getNestedMessages()) {
-      emitMessageClass(w, nested, file);
-      w.blankLine();
-    }
+    // Emit nested message classes (any depth, deepest first) before the main class
+    emitNestedTypes(w, message, file);
 
     // Main class — no lazy imports needed, imports are at top level
     emitMessageClass(w, message, file, List.of());
@@ -111,8 +108,9 @@ public class TypeScriptCodeEmitter extends JavaScriptCodeEmitter {
   }
 
   @Override
-  protected String formatImport(String simpleName) {
-    return String.format("import { %s } from './%s.js';", simpleName, simpleName);
+  protected String formatImport(String importSpec) {
+    return dev.protocgen.textcodecs.jsonarray.codegen.javascript.JsImportUtil.formatImport(
+        importSpec);
   }
 
   @Override
