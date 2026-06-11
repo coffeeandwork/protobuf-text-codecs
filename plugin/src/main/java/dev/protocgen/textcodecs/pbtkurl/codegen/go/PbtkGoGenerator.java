@@ -968,7 +968,6 @@ public class PbtkGoGenerator implements LanguageGenerator {
 
   private void emitMapKeyVarDecl(CodeWriter w, FieldDescriptorProto.Type keyType) {
     String goType = typeMapper.scalarType(keyType);
-    String defaultVal = scalarZeroLiteral(keyType);
     w.line("var mapKey %s", goType);
     // For string keys, initialize to empty string (already zero value)
     if (keyType != FieldDescriptorProto.Type.TYPE_STRING) {

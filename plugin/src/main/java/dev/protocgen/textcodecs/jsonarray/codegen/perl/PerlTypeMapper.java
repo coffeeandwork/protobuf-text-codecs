@@ -136,7 +136,7 @@ public class PerlTypeMapper implements TypeMapper {
         if ("-inf".equals(defaultValue)) yield "-(9**9**9)";
         if ("nan".equals(defaultValue)) yield "(\"NaN\" + 0)";
         // Validate numeric format to prevent code injection (VULN-003)
-        if (!defaultValue.matches("-?[0-9]+(\\.[0-9]+)?([eE][+-]?[0-9]+)?")) {
+        if (!defaultValue.matches("-?[0-9]++(\\.[0-9]++)?([eE][+-]?[0-9]++)?")) {
           throw new IllegalArgumentException(
               "Float default value '" + defaultValue + "' is not a valid number");
         }

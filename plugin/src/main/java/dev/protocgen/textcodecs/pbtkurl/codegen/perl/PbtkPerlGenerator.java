@@ -206,7 +206,7 @@ public class PbtkPerlGenerator implements LanguageGenerator {
     w.blankLine();
     w.line("sub new {");
     w.indent();
-    w.line("my ($class, %%args) = @_;");
+    w.line("my ($class, %args) = @_;");
     w.line("my $self = bless {}, $class;");
 
     for (ProtoField field : message.getFields()) {

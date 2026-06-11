@@ -34,6 +34,7 @@ public class TypeRegistry {
   private final Map<String, DescriptorProto> messageTypes = new HashMap<>();
   private final Map<String, EnumDescriptorProto> enumTypes = new HashMap<>();
   private final Map<String, FileDescriptorProto> filesByName = new HashMap<>();
+  private final Map<String, FileDescriptorProto> definingFiles = new HashMap<>();
 
   /** Register all types from a FileDescriptorProto. */
   public void registerFile(FileDescriptorProto file) {
@@ -41,16 +42,18 @@ public class TypeRegistry {
     String prefix = file.getPackage().isEmpty() ? "." : "." + file.getPackage() + ".";
 
     for (DescriptorProto message : file.getMessageTypeList()) {
-      registerMessage(prefix, message, 0);
+      registerMessage(prefix, message, file, 0);
     }
     for (EnumDescriptorProto enumType : file.getEnumTypeList()) {
       enumTypes.put(prefix + enumType.getName(), enumType);
+      definingFiles.put(prefix + enumType.getName(), file);
     }
   }
 
   private static final Pattern SAFE_IDENTIFIER = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*");
 
-  private void registerMessage(String prefix, DescriptorProto message, int depth) {
+  private void registerMessage(
+      String prefix, DescriptorProto message, FileDescriptorProto file, int depth) {
     if (depth > MAX_NESTING_DEPTH) {
       throw new IllegalArgumentException(
           "Message nesting depth exceeds maximum of "
@@ -65,14 +68,16 @@ public class TypeRegistry {
     validateIdentifier(message.getName(), "message");
     String fullName = prefix + message.getName();
     messageTypes.put(fullName, message);
+    definingFiles.put(fullName, file);
 
     // Register nested types
     for (DescriptorProto nested : message.getNestedTypeList()) {
-      registerMessage(fullName + ".", nested, depth + 1);
+      registerMessage(fullName + ".", nested, file, depth + 1);
     }
     for (EnumDescriptorProto enumType : message.getEnumTypeList()) {
       validateIdentifier(enumType.getName(), "enum");
       enumTypes.put(fullName + "." + enumType.getName(), enumType);
+      definingFiles.put(fullName + "." + enumType.getName(), file);
     }
   }
 
@@ -96,6 +101,14 @@ public class TypeRegistry {
 
   public FileDescriptorProto getFile(String fileName) {
     return filesByName.get(fileName);
+  }
+
+  /**
+   * Returns the FileDescriptorProto that defines the given type (message or enum, identified by
+   * proto full name with leading dot), or null if the type is unknown.
+   */
+  public FileDescriptorProto getDefiningFile(String typeFullName) {
+    return definingFiles.get(typeFullName);
   }
 
   /** Check if a message type is a synthetic map-entry message. */

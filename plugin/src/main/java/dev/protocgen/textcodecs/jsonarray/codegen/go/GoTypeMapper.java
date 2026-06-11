@@ -16,7 +16,6 @@
 package dev.protocgen.textcodecs.jsonarray.codegen.go;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
-import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.codegen.TypeMapper;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import java.nio.charset.StandardCharsets;
@@ -55,10 +54,12 @@ public class GoTypeMapper implements TypeMapper {
       return "*" + simpleTypeName(field.getTypeReference());
     }
     if (field.getKind() == ProtoField.FieldKind.ENUM) {
-      return simpleTypeName(field.getTypeReference());
+      // Proto3 optional enums use pointers for presence tracking (matches protoc-gen-go)
+      return (field.isProto3Optional() ? "*" : "") + simpleTypeName(field.getTypeReference());
     }
-    // Proto3 optional scalars use pointers for presence tracking
-    if (field.isProto3Optional()) {
+    // Proto3 optional scalars use pointers for presence tracking. Bytes are
+    // already nilable slices, so no pointer (matches protoc-gen-go).
+    if (field.isProto3Optional() && field.getProtoType() != FieldDescriptorProto.Type.TYPE_BYTES) {
       return "*" + scalarType(field.getProtoType());
     }
     return scalarType(field.getProtoType());
@@ -170,7 +171,7 @@ public class GoTypeMapper implements TypeMapper {
         if ("-inf".equals(defaultValue)) yield "math.Inf(-1)";
         if ("nan".equals(defaultValue)) yield "math.NaN()";
         // Validate numeric format to prevent code injection (VULN-003)
-        if (!defaultValue.matches("-?[0-9]+(\\.[0-9]+)?([eE][+-]?[0-9]+)?")) {
+        if (!defaultValue.matches("-?[0-9]++(\\.[0-9]++)?([eE][+-]?[0-9]++)?")) {
           throw new IllegalArgumentException(
               "Double default value '" + defaultValue + "' is not a valid number");
         }
@@ -181,7 +182,7 @@ public class GoTypeMapper implements TypeMapper {
         if ("-inf".equals(defaultValue)) yield "float32(math.Inf(-1))";
         if ("nan".equals(defaultValue)) yield "float32(math.NaN())";
         // Validate numeric format to prevent code injection (VULN-003)
-        if (!defaultValue.matches("-?[0-9]+(\\.[0-9]+)?([eE][+-]?[0-9]+)?")) {
+        if (!defaultValue.matches("-?[0-9]++(\\.[0-9]++)?([eE][+-]?[0-9]++)?")) {
           throw new IllegalArgumentException(
               "Float default value '" + defaultValue + "' is not a valid number");
         }
@@ -216,11 +217,29 @@ public class GoTypeMapper implements TypeMapper {
   }
 
   /**
-   * Extract the simple type name from a fully-qualified proto type reference. E.g.,
-   * ".example.sub.Address" -> "Address"
+   * Convert a fully-qualified proto type reference to the generated Go type name. Nested types are
+   * flattened with underscores, matching the declarations the emitter produces. E.g.,
+   * ".example.Address" -> "Address", ".example.KitchenSink.Status" -> "KitchenSink_Status".
+   *
+   * <p>Package segments are distinguished from type segments by case: proto style mandates
+   * lowercase package names and PascalCase type names.
    */
   String simpleTypeName(String protoFullName) {
-    String simple = ProtoTypeUtil.simpleTypeName(protoFullName);
-    return simple != null ? simple : "interface{}";
+    if (protoFullName == null || protoFullName.isEmpty()) {
+      return "interface{}";
+    }
+    String[] segments =
+        (protoFullName.startsWith(".") ? protoFullName.substring(1) : protoFullName).split("\\.");
+    StringBuilder name = new StringBuilder();
+    for (String segment : segments) {
+      if (name.length() == 0 && !segment.isEmpty() && Character.isLowerCase(segment.charAt(0))) {
+        continue; // package segment
+      }
+      if (name.length() > 0) {
+        name.append('_');
+      }
+      name.append(segment);
+    }
+    return name.length() > 0 ? name.toString() : "interface{}";
   }
 }

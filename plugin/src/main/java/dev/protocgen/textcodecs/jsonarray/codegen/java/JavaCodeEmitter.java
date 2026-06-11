@@ -21,6 +21,8 @@ import dev.protocgen.textcodecs.jsonarray.model.ProtoEnum;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoFile;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoMessage;
+import dev.protocgen.textcodecs.jsonarray.model.TypeRegistry;
+import java.util.Set;
 
 /** Generates complete Java source files for proto messages and enums. */
 public class JavaCodeEmitter {
@@ -40,8 +42,13 @@ public class JavaCodeEmitter {
     this.deserializerGen = new JavaDeserializerGenerator(typeMapper, nameResolver);
   }
 
-  /** Generate a complete Java source file for a message. */
+  /** Generate a complete Java source file for a message (no cross-package imports). */
   public String emitMessage(ProtoMessage message, ProtoFile file) {
+    return emitMessage(message, file, null);
+  }
+
+  /** Generate a complete Java source file for a message. */
+  public String emitMessage(ProtoMessage message, ProtoFile file, TypeRegistry registry) {
     CodeWriter w = new CodeWriter();
     String pkg = nameResolver.resolvePackage(file);
     String className = nameResolver.messageClassName(message.getName());
@@ -53,6 +60,16 @@ public class JavaCodeEmitter {
     // Package declaration
     if (!pkg.isEmpty()) {
       w.line("package %s;", pkg);
+      w.blankLine();
+    }
+
+    // Imports for types defined in other Java packages
+    Set<String> imports =
+        JavaImportUtil.collectCrossPackageImports(message, file, registry, nameResolver);
+    if (!imports.isEmpty()) {
+      for (String imp : imports) {
+        w.line("import %s;", imp);
+      }
       w.blankLine();
     }
 

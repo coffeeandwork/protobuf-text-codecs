@@ -36,11 +36,12 @@ public class JavaDeserializerGenerator {
   }
 
   public void generate(CodeWriter w, ProtoMessage message, String className) {
-    // Package-private: deserialize from a pre-parsed List<Object> (used by nested messages)
+    // Deserialize from a pre-parsed List<Object> (used by nested messages). Public so that
+    // messages in other Java packages can deserialize fields of this type.
     w.blankLine();
     w.line("@SuppressWarnings(\"unchecked\")");
     w.block(
-        "static " + className + " fromJsonArray(java.util.List<Object> array)",
+        "public static " + className + " fromJsonArray(java.util.List<Object> array)",
         () -> {
           w.line("%s.Builder builder = %s.newBuilder();", className, className);
           w.line("int size = array.size();");
@@ -82,7 +83,18 @@ public class JavaDeserializerGenerator {
   }
 
   private void emitFieldDeserialize(CodeWriter w, ProtoField field, int pos) {
-    String setter = "builder." + nameResolver.setterName(field.getName());
+    // Repeated and map fields use the protobuf-style bulk methods (addAllXxx/putAllXxx);
+    // the builder's setXxx for repeated fields is the indexed form setXxx(int, value).
+    String pascalName = nameResolver.setterName(field.getName()).substring(3);
+    String setterMethod;
+    if (field.isMap()) {
+      setterMethod = "putAll" + pascalName;
+    } else if (field.isRepeated()) {
+      setterMethod = "addAll" + pascalName;
+    } else {
+      setterMethod = nameResolver.setterName(field.getName());
+    }
+    String setter = "builder." + setterMethod;
 
     w.block(
         "if (size > " + pos + " && array.get(" + pos + ") != null)",

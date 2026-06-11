@@ -964,7 +964,6 @@ public class PbtkCGenerator implements LanguageGenerator {
 
   private void emitFieldCase(CodeWriter w, ProtoField field, String funcPrefix) {
     int fieldNum = field.getFieldNumber();
-    String fieldName = nameResolver.fieldName(field.getName());
 
     w.block(
         "case " + fieldNum + ":",

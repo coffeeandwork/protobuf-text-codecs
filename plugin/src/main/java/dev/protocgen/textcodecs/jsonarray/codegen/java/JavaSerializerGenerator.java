@@ -36,10 +36,11 @@ public class JavaSerializerGenerator {
   }
 
   public void generate(CodeWriter w, ProtoMessage message) {
-    // Internal method: appends the JSON array to a shared StringBuilder
+    // Appends the JSON array to a shared StringBuilder. Public so that messages in other
+    // Java packages can serialize fields of this type.
     w.blankLine();
     w.block(
-        "void appendJsonArray(StringBuilder sb)",
+        "public void appendJsonArray(StringBuilder sb)",
         () -> {
           w.line("sb.append('[');");
 

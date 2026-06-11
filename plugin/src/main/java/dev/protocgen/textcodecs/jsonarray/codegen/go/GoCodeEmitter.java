@@ -67,14 +67,9 @@ public class GoCodeEmitter {
     // Struct declaration
     emitStruct(w, message, structName);
 
-    // Nested message structs (Go doesn't have nested types, so they're top-level)
-    for (ProtoMessage nested : message.getNestedMessages()) {
-      w.blankLine();
-      String nestedName = structName + "_" + nameResolver.messageClassName(nested.getName());
-      emitStruct(w, nested, nestedName);
-      serializerGen.generate(w, nested, nestedName);
-      deserializerGen.generate(w, nested, nestedName);
-    }
+    // Nested message structs at any depth (Go doesn't have nested types, so they're
+    // top-level with underscore-flattened names)
+    emitNestedStructs(w, message, structName);
 
     // Nested enums
     for (ProtoEnum protoEnum : message.getEnums()) {
@@ -105,6 +100,20 @@ public class GoCodeEmitter {
     return w.toString();
   }
 
+  private void emitNestedStructs(CodeWriter w, ProtoMessage message, String structName) {
+    for (ProtoMessage nested : message.getNestedMessages()) {
+      w.blankLine();
+      String nestedName = structName + "_" + nameResolver.messageClassName(nested.getName());
+      emitStruct(w, nested, nestedName);
+      serializerGen.generate(w, nested, nestedName);
+      deserializerGen.generate(w, nested, nestedName);
+      emitNestedStructs(w, nested, nestedName);
+      for (ProtoEnum protoEnum : nested.getEnums()) {
+        emitEnum(w, protoEnum, nestedName);
+      }
+    }
+  }
+
   private void emitStruct(CodeWriter w, ProtoMessage message, String structName) {
     w.block(
         "type " + structName + " struct",
@@ -125,35 +134,12 @@ public class GoCodeEmitter {
   }
 
   /**
-   * Resolve the Go type for a field, handling nested message references. When a field references a
-   * nested message, the Go type uses the flattened name (e.g., User_Address instead of Address).
+   * Resolve the Go type for a field. GoTypeMapper.simpleTypeName already flattens nested type
+   * references (e.g. KitchenSink_InnerMessage), so no extra prefixing is needed here.
    */
   private String resolveFieldType(
       ProtoField field, String parentStructName, ProtoMessage parentMessage) {
-    if (isNestedMessageRef(field, parentMessage)) {
-      String nestedSimpleName = typeMapper.simpleTypeName(field.getTypeReference());
-      String flattenedName = parentStructName + "_" + nestedSimpleName;
-      if (field.isRepeated()) {
-        return "[]*" + flattenedName;
-      }
-      return "*" + flattenedName;
-    }
     return typeMapper.languageType(field);
-  }
-
-  /** Check whether a field references one of the parent message's nested message types. */
-  private boolean isNestedMessageRef(ProtoField field, ProtoMessage parentMessage) {
-    if (field.getKind() != ProtoField.FieldKind.MESSAGE
-        && field.getKind() != ProtoField.FieldKind.WELL_KNOWN_TYPE) {
-      return false;
-    }
-    if (field.getTypeReference() == null) return false;
-    for (ProtoMessage nested : parentMessage.getNestedMessages()) {
-      if (field.getTypeReference().endsWith("." + nested.getName())) {
-        return true;
-      }
-    }
-    return false;
   }
 
   private void emitEnum(CodeWriter w, ProtoEnum protoEnum, String parentPrefix) {
@@ -237,11 +223,11 @@ public class GoCodeEmitter {
   private boolean needsInt64(ProtoMessage message) {
     for (ProtoField field : message.getFields()) {
       com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type t = field.getProtoType();
-      if (t == com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT64
-          || t == com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type.TYPE_SINT64
-          || t == com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type.TYPE_SFIXED64
-          || t == com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type.TYPE_UINT64
-          || t == com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type.TYPE_FIXED64) {
+      if (isInt64Kind(t)) {
+        return true;
+      }
+      if (field.isMap()
+          && (isInt64Kind(field.getMapKeyType()) || isInt64Kind(field.getMapValueType()))) {
         return true;
       }
     }
@@ -273,12 +259,28 @@ public class GoCodeEmitter {
     return false;
   }
 
+  private static boolean isInt64Kind(
+      com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type t) {
+    return t == com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT64
+        || t == com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type.TYPE_SINT64
+        || t == com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type.TYPE_SFIXED64
+        || t == com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type.TYPE_UINT64
+        || t == com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type.TYPE_FIXED64;
+  }
+
   private boolean needsFloat(ProtoMessage message) {
     for (ProtoField field : message.getFields()) {
       com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type t = field.getProtoType();
       if (t == com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type.TYPE_FLOAT
           || t == com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type.TYPE_DOUBLE) {
         return true;
+      }
+      if (field.isMap()) {
+        com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type vt = field.getMapValueType();
+        if (vt == com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type.TYPE_FLOAT
+            || vt == com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type.TYPE_DOUBLE) {
+          return true;
+        }
       }
     }
     for (ProtoMessage nested : message.getNestedMessages()) {

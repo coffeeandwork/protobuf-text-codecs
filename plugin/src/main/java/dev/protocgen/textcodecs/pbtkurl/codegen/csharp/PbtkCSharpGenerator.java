@@ -19,7 +19,6 @@ import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse;
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
 import dev.protocgen.textcodecs.jsonarray.codegen.LanguageGenerator;
-import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.codegen.csharp.CSharpNameResolver;
 import dev.protocgen.textcodecs.jsonarray.codegen.csharp.CSharpTypeMapper;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoEnum;
@@ -89,6 +88,11 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
     w.line("using System.Collections.Generic;");
     w.line("using System.Linq;");
     w.line("using System.Text;");
+    for (String use :
+        dev.protocgen.textcodecs.jsonarray.codegen.csharp.CSharpCodeEmitter
+            .collectCrossNamespaceUsings(message, ns)) {
+      w.line("using %s;", use);
+    }
 
     if (!ns.isEmpty()) {
       w.blankLine();
@@ -198,15 +202,21 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
     // Builder class
     emitBuilderClass(w, message, className);
 
-    // Nested enums
-    for (ProtoEnum protoEnum : message.getEnums()) {
-      emitEnum(w, protoEnum);
-    }
-
-    // Nested messages
-    for (ProtoMessage nested : message.getNestedMessages()) {
+    // Nested types live in the protobuf-standard Types wrapper class so member
+    // names (e.g. a Status property) cannot collide with nested type names.
+    if (!message.getEnums().isEmpty() || !message.getNestedMessages().isEmpty()) {
       w.blankLine();
-      emitNestedMessage(w, nested, file);
+      w.block(
+          "public static class Types",
+          () -> {
+            for (ProtoEnum protoEnum : message.getEnums()) {
+              emitEnum(w, protoEnum);
+            }
+            for (ProtoMessage nested : message.getNestedMessages()) {
+              w.blankLine();
+              emitNestedMessage(w, nested, file);
+            }
+          });
     }
 
     // Serialize (pbtk URL)
@@ -684,9 +694,7 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
             String pvtName = "_" + nameResolver.fieldName(field.getName());
             String csName = nameResolver.fieldName(field.getName());
             if (field.isRepeated()) {
-              w.line(
-                  "this.%s = new List<%s>(builder.%s).AsReadOnly();",
-                  pvtName, elementType(field), csName);
+              w.line("this.%s = new List<%s>(builder.%s);", pvtName, elementType(field), csName);
             } else if (field.isMap()) {
               w.line(
                   "this.%s = new Dictionary<%s>(builder.%s);",
@@ -1225,7 +1233,6 @@ public class PbtkCSharpGenerator implements LanguageGenerator {
   }
 
   private String simpleTypeName(String protoFullName) {
-    String simple = ProtoTypeUtil.simpleTypeName(protoFullName);
-    return simple != null ? simple : "object";
+    return CSharpNameResolver.qualifiedTypeName(protoFullName);
   }
 }

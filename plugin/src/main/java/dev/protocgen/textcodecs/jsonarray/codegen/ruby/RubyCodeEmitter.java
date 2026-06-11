@@ -295,12 +295,16 @@ public class RubyCodeEmitter {
       w.line("%s = %d", nameResolver.enumConstantName(val.name()), val.number());
     }
 
-    // for_number class method
+    // for_number class method. Deduplicated for allow_alias enums (Ruby warns on
+    // duplicate hash keys).
     w.blankLine();
     w.line("BY_NUMBER = {");
     w.indent();
+    java.util.Set<Integer> seenNumbers = new java.util.LinkedHashSet<>();
     for (ProtoEnum.EnumValue val : protoEnum.getValues()) {
-      w.line("%d => %d,", val.number(), val.number());
+      if (seenNumbers.add(val.number())) {
+        w.line("%d => %d,", val.number(), val.number());
+      }
     }
     w.dedent();
     w.line("}.freeze");

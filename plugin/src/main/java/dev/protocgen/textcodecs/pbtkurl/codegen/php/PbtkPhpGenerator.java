@@ -52,8 +52,10 @@ public class PbtkPhpGenerator implements LanguageGenerator {
     for (ProtoMessage message : file.getMessages()) {
       nameResolver.validateFieldNames(message.getFields());
 
+      // PHP classes in the same namespace don't need use statements; cross-namespace
+      // references would need them, but the same-file nested messages pattern
+      // handles most cases, so the set stays empty.
       Set<String> useStatements = new LinkedHashSet<>();
-      collectReferencedTypes(message, file, useStatements, registry);
 
       String sourceCode = emitMessage(message, file, useStatements);
       String outputPath = nameResolver.outputFilePath(file, message.getName());
@@ -256,8 +258,6 @@ public class PbtkPhpGenerator implements LanguageGenerator {
           || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
         String simpleType = simpleTypeName(field.getTypeReference());
         w.line("public ?%s $%s = null;", simpleType, phpName);
-      } else if (field.isProto3Optional()) {
-        w.line("public %s $%s = %s;", phpType, phpName, defaultVal);
       } else {
         w.line("public %s $%s = %s;", phpType, phpName, defaultVal);
       }
@@ -993,16 +993,6 @@ public class PbtkPhpGenerator implements LanguageGenerator {
   // ---------------------------------------------------------------------------
   // Utility
   // ---------------------------------------------------------------------------
-
-  private void collectReferencedTypes(
-      ProtoMessage message, ProtoFile file, Set<String> uses, TypeRegistry registry) {
-    // PHP classes in the same namespace don't need use statements
-    // Cross-namespace references would need use statements, but for now
-    // the same-file nested messages pattern handles most cases
-    for (ProtoMessage nested : message.getNestedMessages()) {
-      collectReferencedTypes(nested, file, uses, registry);
-    }
-  }
 
   private boolean hasOptionalFields(ProtoMessage message) {
     return message.getFields().stream().anyMatch(ProtoField::isProto3Optional);

@@ -45,7 +45,6 @@ public class DartCodeEmitter {
   /** Generate a complete Dart source file for a message. */
   public String emitMessage(ProtoMessage message, ProtoFile file) {
     CodeWriter w = new CodeWriter("  "); // 2-space indent for Dart
-    String className = nameResolver.messageClassName(message.getName());
 
     emitFileHeader(w, file);
 
@@ -185,8 +184,6 @@ public class DartCodeEmitter {
           || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE
           || field.isProto3Optional()) {
         w.line("%s %s;", dartType, dartName);
-      } else if (field.isMap() || field.isRepeated()) {
-        w.line("%s %s = %s;", dartType, dartName, defaultVal);
       } else {
         w.line("%s %s = %s;", dartType, dartName, defaultVal);
       }

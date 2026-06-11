@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!-- Intentional exclusions go here, each with a justification comment. -->
+
+    <!-- Generator/emitter classes intentionally share NameResolver/TypeMapper/CodeWriter
+         collaborator instances passed via constructors. These are internal, single-threaded
+         codegen classes; defensive copies would add noise with no security benefit. -->
+    <Match>
+        <Or>
+            <Bug pattern="EI_EXPOSE_REP"/>
+            <Bug pattern="EI_EXPOSE_REP2"/>
+        </Or>
+    </Match>
+
+    <!-- findsecbugs flags the numeric default-value validator regex in every TypeMapper
+         (VULN-003 defense). The pattern uses possessive quantifiers exclusively
+         ("-?[0-9]++(\\.[0-9]++)?([eE][+-]?[0-9]++)?"), which permit no backtracking,
+         so catastrophic-backtracking ReDoS is impossible. The detector does not model
+         possessive quantifiers. -->
+    <Match>
+        <Class name="~.*TypeMapper"/>
+        <Bug pattern="REDOS"/>
+    </Match>
+</FindBugsFilter>

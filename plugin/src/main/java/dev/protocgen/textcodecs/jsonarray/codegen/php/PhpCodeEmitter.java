@@ -229,8 +229,6 @@ public class PhpCodeEmitter {
           || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
         String simpleType = simpleTypeName(field.getTypeReference());
         w.line("public ?%s $%s = null;", simpleType, phpName);
-      } else if (field.isProto3Optional()) {
-        w.line("public %s $%s = %s;", phpType, phpName, defaultVal);
       } else {
         w.line("public %s $%s = %s;", phpType, phpName, defaultVal);
       }

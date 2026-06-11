@@ -43,7 +43,7 @@ public class PbtkJavaSerializerGenerator {
     // Inner method that produces the field tokens without leading context
     w.blankLine();
     w.block(
-        "void appendPbtkFields(StringBuilder sb)",
+        "public void appendPbtkFields(StringBuilder sb)",
         () -> {
           for (ProtoField field : message.getFields()) {
             emitFieldSerialize(w, field);
@@ -53,7 +53,7 @@ public class PbtkJavaSerializerGenerator {
     // Count how many top-level fields this message serializes (for m<count> prefix)
     w.blankLine();
     w.block(
-        "int countPbtkFields()",
+        "public int countPbtkFields()",
         () -> {
           w.line("int count = 0;");
           for (ProtoField field : message.getFields()) {

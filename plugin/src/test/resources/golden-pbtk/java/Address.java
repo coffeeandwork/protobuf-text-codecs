@@ -128,14 +128,14 @@ public final class Address {
         }
     }
 
-    void appendPbtkFields(StringBuilder sb) {
+    public void appendPbtkFields(StringBuilder sb) {
         sb.append("!1s").append(java.net.URLEncoder.encode(this.street, java.nio.charset.StandardCharsets.UTF_8));
         sb.append("!2s").append(java.net.URLEncoder.encode(this.city, java.nio.charset.StandardCharsets.UTF_8));
         sb.append("!3s").append(java.net.URLEncoder.encode(this.state, java.nio.charset.StandardCharsets.UTF_8));
         sb.append("!4i").append(this.zip);
     }
 
-    int countPbtkFields() {
+    public int countPbtkFields() {
         int count = 0;
         count++;
         count++;
@@ -154,7 +154,7 @@ public final class Address {
         output.write(toByteArray());
     }
 
-    static Address parsePbtkTokens(java.util.List<String> tokens, int fieldCount, int[] offset) {
+    public static Address parsePbtkTokens(java.util.List<String> tokens, int fieldCount, int[] offset) {
         Address.Builder builder = Address.newBuilder();
         int consumed = 0;
         while (consumed < fieldCount && offset[0] < tokens.size()) {

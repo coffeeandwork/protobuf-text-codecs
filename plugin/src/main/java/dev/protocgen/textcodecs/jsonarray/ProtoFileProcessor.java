@@ -115,7 +115,7 @@ public class ProtoFileProcessor {
     }
     for (SourceCodeInfo.Location location : fileDescriptor.getSourceCodeInfo().getLocationList()) {
       String comment = location.getLeadingComments();
-      if (comment != null && !comment.isEmpty()) {
+      if (!comment.isEmpty()) {
         map.put(location.getPathList(), comment.strip());
       }
     }

@@ -17,12 +17,15 @@ package dev.protocgen.textcodecs.pbtkurl.codegen.java;
 
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
 import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
+import dev.protocgen.textcodecs.jsonarray.codegen.java.JavaImportUtil;
 import dev.protocgen.textcodecs.jsonarray.codegen.java.JavaNameResolver;
 import dev.protocgen.textcodecs.jsonarray.codegen.java.JavaTypeMapper;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoEnum;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoFile;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoMessage;
+import dev.protocgen.textcodecs.jsonarray.model.TypeRegistry;
+import java.util.Set;
 
 /**
  * Generates complete Java source files for proto messages with pbtk URL serialization. Produces
@@ -46,8 +49,13 @@ public class PbtkJavaCodeEmitter {
     this.deserializerGen = new PbtkJavaDeserializerGenerator(typeMapper, nameResolver);
   }
 
-  /** Generate a complete Java source file for a message. */
+  /** Generate a complete Java source file for a message (no cross-package imports). */
   public String emitMessage(ProtoMessage message, ProtoFile file) {
+    return emitMessage(message, file, null);
+  }
+
+  /** Generate a complete Java source file for a message. */
+  public String emitMessage(ProtoMessage message, ProtoFile file, TypeRegistry registry) {
     CodeWriter w = new CodeWriter();
     String pkg = nameResolver.resolvePackage(file);
     String className = nameResolver.messageClassName(message.getName());
@@ -57,6 +65,16 @@ public class PbtkJavaCodeEmitter {
 
     if (!pkg.isEmpty()) {
       w.line("package %s;", pkg);
+      w.blankLine();
+    }
+
+    // Imports for types defined in other Java packages
+    Set<String> imports =
+        JavaImportUtil.collectCrossPackageImports(message, file, registry, nameResolver);
+    if (!imports.isEmpty()) {
+      for (String imp : imports) {
+        w.line("import %s;", imp);
+      }
       w.blankLine();
     }
 

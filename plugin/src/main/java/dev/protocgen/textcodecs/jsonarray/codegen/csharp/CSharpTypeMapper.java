@@ -16,7 +16,6 @@
 package dev.protocgen.textcodecs.jsonarray.codegen.csharp;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
-import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.codegen.TypeMapper;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import java.nio.charset.StandardCharsets;
@@ -129,7 +128,7 @@ public class CSharpTypeMapper implements TypeMapper {
         if ("-inf".equals(defaultValue)) yield "double.NegativeInfinity";
         if ("nan".equals(defaultValue)) yield "double.NaN";
         // Validate numeric format to prevent code injection (VULN-003)
-        if (!defaultValue.matches("-?[0-9]+(\\.[0-9]+)?([eE][+-]?[0-9]+)?")) {
+        if (!defaultValue.matches("-?[0-9]++(\\.[0-9]++)?([eE][+-]?[0-9]++)?")) {
           throw new IllegalArgumentException(
               "Double default value '" + defaultValue + "' is not a valid number");
         }
@@ -140,7 +139,7 @@ public class CSharpTypeMapper implements TypeMapper {
         if ("-inf".equals(defaultValue)) yield "float.NegativeInfinity";
         if ("nan".equals(defaultValue)) yield "float.NaN";
         // Validate numeric format to prevent code injection (VULN-003)
-        if (!defaultValue.matches("-?[0-9]+(\\.[0-9]+)?([eE][+-]?[0-9]+)?")) {
+        if (!defaultValue.matches("-?[0-9]++(\\.[0-9]++)?([eE][+-]?[0-9]++)?")) {
           throw new IllegalArgumentException(
               "Float default value '" + defaultValue + "' is not a valid number");
         }
@@ -223,8 +222,7 @@ public class CSharpTypeMapper implements TypeMapper {
    * ".example.sub.Address" -> "Address"
    */
   private String simpleTypeName(String protoFullName) {
-    String simple = ProtoTypeUtil.simpleTypeName(protoFullName);
-    return simple != null ? simple : "object";
+    return CSharpNameResolver.qualifiedTypeName(protoFullName);
   }
 
   /** Get the generic type arguments string for a map field's Dictionary. */

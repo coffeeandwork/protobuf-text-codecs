@@ -363,8 +363,6 @@ public class ObjCSerializerGenerator {
       w.line("mapNode[%s] = %s;", keyExpr, valExpr);
       w.dedent();
       w.line("}");
-    } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_STRING) {
-      w.line("mapNode[%s] = (%s != nil) ? %s : [NSNull null];", keyExpr, valExpr, valExpr);
     } else {
       w.line("mapNode[%s] = (%s != nil) ? %s : [NSNull null];", keyExpr, valExpr, valExpr);
     }

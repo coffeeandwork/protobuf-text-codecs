@@ -307,8 +307,6 @@ public class PbtkZigGenerator implements LanguageGenerator {
   }
 
   private void emitScalarSerialize(CodeWriter w, ProtoField field, String zigField, int fieldNum) {
-    FieldDescriptorProto.Type type = field.getProtoType();
-
     if (field.isProto3Optional()) {
       w.block("if (" + zigField + ") |v|", () -> emitScalarAppendDirect(w, field, "v", fieldNum));
       return;
@@ -600,11 +598,7 @@ public class PbtkZigGenerator implements LanguageGenerator {
 
   private void emitScalarDeserialize(CodeWriter w, ProtoField field, String zigName) {
     String readExpr = scalarReadExpr(field.getProtoType(), "value");
-    if (field.isProto3Optional()) {
-      w.line("obj.%s = %s;", zigName, readExpr);
-    } else {
-      w.line("obj.%s = %s;", zigName, readExpr);
-    }
+    w.line("obj.%s = %s;", zigName, readExpr);
     if (field.isOneofMember()) {
       String unionField = nameResolver.fieldName(field.getOneofName());
       String tagName = nameResolver.fieldName(field.getName());

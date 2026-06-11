@@ -81,8 +81,11 @@ public class GoDeserializerGenerator {
   private void emitFieldDeserialize(CodeWriter w, ProtoField field, int pos, String structName) {
     String goField = "obj." + nameResolver.fieldName(field.getName());
 
-    w.block(
-        "if size > " + pos + " && arr[" + pos + "] != nil",
+    // Proto2 schema defaults need an else branch; Go requires "} else {" on one line
+    boolean hasSchemaDefault =
+        field.getDefaultValue() != null && !field.isRepeated() && !field.isMap();
+
+    Runnable body =
         () -> {
           String elemExpr = "arr[" + pos + "]";
 
@@ -103,15 +106,20 @@ public class GoDeserializerGenerator {
             String caseField = "obj." + GoNameResolver.snakeToPascal(field.getOneofName()) + "Case";
             w.line("%s = %d", caseField, field.getFieldNumber());
           }
-        });
-    // Apply schema-specified default for proto2 fields when absent/null
-    if (field.getDefaultValue() != null && !field.isRepeated() && !field.isMap()) {
+        };
+
+    String condition = "if size > " + pos + " && arr[" + pos + "] != nil";
+    if (hasSchemaDefault) {
+      w.blockContinue(condition, body);
+      w.raw(" ");
       w.block(
           "else",
           () -> {
             String defaultExpr = schemaDefaultExpression(field, field.getDefaultValue());
             w.line("%s = %s", goField, defaultExpr);
           });
+    } else {
+      w.block(condition, body);
     }
   }
 
@@ -130,7 +138,6 @@ public class GoDeserializerGenerator {
       CodeWriter w, ProtoField field, String goField, String elemExpr) {
     if (field.isProto3Optional()) {
       // Pointer assignment for optional scalars
-      String goType = typeMapper.scalarType(field.getProtoType());
       if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
         w.block(
             "if s, ok := " + elemExpr + ".(string); ok",
@@ -179,7 +186,12 @@ public class GoDeserializerGenerator {
     w.block(
         "if v, ok := " + elemExpr + ".(float64); ok",
         () -> {
-          w.line("%s = %s(int32(v))", goField, enumType);
+          if (field.isProto3Optional()) {
+            w.line("tmp := %s(int32(v))", enumType);
+            w.line("%s = &tmp", goField);
+          } else {
+            w.line("%s = %s(int32(v))", goField, enumType);
+          }
         });
   }
 
@@ -250,7 +262,7 @@ public class GoDeserializerGenerator {
                   boolean isUnsigned =
                       field.getProtoType() == FieldDescriptorProto.Type.TYPE_UINT64
                           || field.getProtoType() == FieldDescriptorProto.Type.TYPE_FIXED64;
-                  w.block(
+                  w.blockContinue(
                       "if s, ok := elem.(string); ok",
                       () -> {
                         if (isUnsigned) {
@@ -440,7 +452,7 @@ public class GoDeserializerGenerator {
     boolean isUnsigned =
         field.getProtoType() == FieldDescriptorProto.Type.TYPE_UINT64
             || field.getProtoType() == FieldDescriptorProto.Type.TYPE_FIXED64;
-    w.block(
+    w.blockContinue(
         "if s, ok := " + elemExpr + ".(string); ok",
         () -> {
           if (isUnsigned) {

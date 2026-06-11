@@ -139,7 +139,6 @@ public class ObjCDeserializerGenerator {
 
   private void emitOneofDeserialize(
       CodeWriter w, ProtoField field, String propName, String className) {
-    String oneofProp = nameResolver.fieldName(field.getOneofName());
     w.block(
         "if (item && item != (id)[NSNull null])",
         () -> {
@@ -304,10 +303,6 @@ public class ObjCDeserializerGenerator {
       w.line(
           "%s = (%s != nil && %s != (id)[NSNull null] && [%s isKindOfClass:[NSArray class]]) ? [%s fromJsonArray:(NSArray *)%s] : [NSNull null];",
           target, valExpr, valExpr, valExpr, refType, valExpr);
-    } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_STRING) {
-      w.line(
-          "%s = (%s != nil && %s != (id)[NSNull null]) ? %s : [NSNull null];",
-          target, valExpr, valExpr, valExpr);
     } else {
       w.line(
           "%s = (%s != nil && %s != (id)[NSNull null]) ? %s : [NSNull null];",

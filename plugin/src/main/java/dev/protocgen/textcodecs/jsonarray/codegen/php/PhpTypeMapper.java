@@ -103,7 +103,7 @@ public class PhpTypeMapper implements TypeMapper {
         if ("-inf".equals(defaultValue)) yield "-INF";
         if ("nan".equals(defaultValue)) yield "NAN";
         // Validate numeric format to prevent code injection (VULN-003)
-        if (!defaultValue.matches("-?[0-9]+(\\.[0-9]+)?([eE][+-]?[0-9]+)?")) {
+        if (!defaultValue.matches("-?[0-9]++(\\.[0-9]++)?([eE][+-]?[0-9]++)?")) {
           throw new IllegalArgumentException(
               "Float default value '" + defaultValue + "' is not a valid number");
         }

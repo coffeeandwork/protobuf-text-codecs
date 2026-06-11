@@ -17,7 +17,6 @@ package dev.protocgen.textcodecs.jsonarray.codegen.csharp;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
-import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoMessage;
 
@@ -329,7 +328,6 @@ public class CSharpSerializerGenerator {
   private void emitMapValueAppend(CodeWriter w, ProtoField field, String valueExpr) {
     FieldDescriptorProto.Type valueType = field.getMapValueType();
     if (valueType == FieldDescriptorProto.Type.TYPE_MESSAGE) {
-      String msgType = simpleTypeName(field.getMapValueTypeReference());
       w.block(
           "if (" + valueExpr + " != null)",
           () -> {
@@ -382,7 +380,6 @@ public class CSharpSerializerGenerator {
   }
 
   private String simpleTypeName(String protoFullName) {
-    String simple = ProtoTypeUtil.simpleTypeName(protoFullName);
-    return simple != null ? simple : "object";
+    return CSharpNameResolver.qualifiedTypeName(protoFullName);
   }
 }

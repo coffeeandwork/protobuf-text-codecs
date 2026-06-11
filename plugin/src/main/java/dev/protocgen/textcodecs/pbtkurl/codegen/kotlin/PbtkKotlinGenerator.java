@@ -499,7 +499,6 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
   }
 
   private void emitRepeatedSerialize(CodeWriter w, ProtoField field, String ktField, int fieldNum) {
-    String boxedType = elementType(field);
     w.block(
         "for (__item in " + ktField + ")",
         () -> {

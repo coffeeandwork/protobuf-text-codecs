@@ -139,7 +139,7 @@ public class PerlSerializerGenerator {
     } else if (isInt64Type(field.getProtoType())) {
       w.line("push @result, \"\" . %s;", plField);
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BOOL) {
-      w.line("push @result, %s ? JSON::true : JSON::false;", plField);
+      w.line("push @result, %s ? JSON::PP::true() : JSON::PP::false();", plField);
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_FLOAT
         || field.getProtoType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
       w.line(
@@ -182,7 +182,7 @@ public class PerlSerializerGenerator {
     } else if (isInt64Type(field.getProtoType())) {
       w.line("push @result, [map { \"\" . $_ } @{%s}];", plField);
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BOOL) {
-      w.line("push @result, [map { $_ ? JSON::true : JSON::false } @{%s}];", plField);
+      w.line("push @result, [map { $_ ? JSON::PP::true() : JSON::PP::false() } @{%s}];", plField);
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_FLOAT
         || field.getProtoType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
       w.line(

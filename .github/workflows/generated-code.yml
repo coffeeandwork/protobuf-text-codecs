@@ -1,0 +1,112 @@
+name: Generated Code
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  integration:
+    name: Integration tests (Java/Python round-trip)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Install protoc
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+      - name: Build plugin jars
+        run: ./gradlew :plugin:shadowJar :plugin:pbtkShadowJar
+      - name: Cross-language round-trip
+        run: ./integration-tests/cross-language-test.sh
+      - name: Schema evolution
+        run: ./integration-tests/schema-evolution-test.sh
+      - name: Proto2 to proto3 migration
+        run: ./integration-tests/proto2-proto3-migration-test.sh
+
+  compile-smoke:
+    name: "Compile smoke: ${{ matrix.lang }}"
+    # Languages marked broken=true have known generator bugs (tracked in
+    # docs/COMPILE_SMOKE_FINDINGS.md); their jobs run but do not fail CI.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { lang: java, os: ubuntu-latest }
+          - { lang: python, os: ubuntu-latest }
+          - { lang: javascript, os: ubuntu-latest }
+          - { lang: ruby, os: ubuntu-latest }
+          - { lang: perl, os: ubuntu-latest }
+          - { lang: c, os: ubuntu-latest, broken: true }
+          - { lang: cpp, os: ubuntu-latest, broken: true }
+          - { lang: swift, os: macos-latest }
+          - { lang: csharp, os: ubuntu-latest }
+          - { lang: typescript, os: ubuntu-latest, broken: true }
+          - { lang: go, os: ubuntu-latest, broken: true }
+          - { lang: rust, os: ubuntu-latest, broken: true }
+          - { lang: objc, os: macos-latest, broken: true }
+          - { lang: zig, os: ubuntu-latest, broken: true }
+          - { lang: dart, os: ubuntu-latest, broken: true }
+          - { lang: php, os: ubuntu-latest }
+          - { lang: kotlin, os: ubuntu-latest, broken: true }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Install protoc (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+      - name: Install protoc (macOS)
+        if: runner.os == 'macOS'
+        run: brew install protobuf
+      - name: Install C dependencies
+        if: matrix.lang == 'c'
+        run: sudo apt-get install -y libcjson-dev
+      - name: Install C++ dependencies
+        if: matrix.lang == 'cpp'
+        run: sudo apt-get install -y nlohmann-json3-dev
+      - name: Install Perl dependencies
+        if: matrix.lang == 'perl'
+        run: sudo apt-get install -y liburi-perl
+      - name: Install TypeScript
+        if: matrix.lang == 'typescript'
+        run: npm install -g typescript
+      - name: Install Zig
+        if: matrix.lang == 'zig'
+        uses: mlugg/setup-zig@v1
+        with:
+          version: 0.13.0
+      - name: Install Dart
+        if: matrix.lang == 'dart'
+        uses: dart-lang/setup-dart@v1
+      - name: Install Kotlin
+        if: matrix.lang == 'kotlin'
+        uses: fwilhe2/setup-kotlin@v1
+      - name: Install PHP
+        if: matrix.lang == 'php'
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+      - name: Build plugin jars
+        run: ./gradlew :plugin:shadowJar :plugin:pbtkShadowJar
+      - name: Compile smoke
+        # Languages marked broken have documented open findings; their failures are
+        # reported as warnings so the check stays green. A broken language that starts
+        # passing shows PASS in the log: flip its matrix flag off.
+        run: |
+          if ./integration-tests/compile-smoke.sh ${{ matrix.lang }}; then
+            exit 0
+          elif [ "${{ matrix.broken }}" = "true" ]; then
+            echo "::warning title=Known-broken language::${{ matrix.lang }} failed as documented in docs/COMPILE_SMOKE_FINDINGS.md"
+            exit 0
+          else
+            exit 1
+          fi

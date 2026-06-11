@@ -118,7 +118,7 @@ public class RustCodeEmitter {
 
   private void emitImports(CodeWriter w, ProtoMessage message) {
     w.line("use serde_json::{Value, json};");
-    // Check if any field uses bytes type
+    // Check if any field (including map keys/values) uses bytes type
     if (hasFieldOfType(
         message, com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type.TYPE_BYTES)) {
       w.line("use base64::{Engine as _, engine::general_purpose};");
@@ -146,14 +146,17 @@ public class RustCodeEmitter {
         file.getProtoPackage().isEmpty() ? "." : "." + file.getProtoPackage() + ".";
 
     for (ProtoField field : message.getFields()) {
+      if (field.isMap()) {
+        // A map field's own type reference is the synthetic *MapEntry message, which is
+        // never generated; only the value type may need an import.
+        if (field.getMapValueTypeReference() != null) {
+          addTypeImportIfNeeded(
+              field.getMapValueTypeReference(), false, message, currentPrefix, imports);
+        }
+        continue;
+      }
       addTypeImportIfNeeded(
           field.getTypeReference(), field.isWellKnownType(), message, currentPrefix, imports);
-
-      // For map value types
-      if (field.isMap() && field.getMapValueTypeReference() != null) {
-        addTypeImportIfNeeded(
-            field.getMapValueTypeReference(), false, message, currentPrefix, imports);
-      }
     }
 
     // Also check nested messages for their references
@@ -171,6 +174,9 @@ public class RustCodeEmitter {
     if (typeRef == null) return;
     if (isWellKnown) return;
 
+    // A message that references itself (recursive type) needs no import
+    if (typeRef.equals(message.getFullName())) return;
+
     // Check if the type is defined in the current message (nested type)
     for (ProtoMessage nested : message.getNestedMessages()) {
       if (typeRef.equals(message.getFullName() + "." + nested.getName())) {
@@ -183,20 +189,53 @@ public class RustCodeEmitter {
       }
     }
 
-    // Check if this is a type in the same package but different file
+    String simpleName = ProtoTypeUtil.simpleTypeName(typeRef);
+    String moduleName = RustNameResolver.toSnakeCase(simpleName);
+
+    // Type in the same package but different file
     if (typeRef.startsWith(currentPrefix)) {
-      String simpleName = ProtoTypeUtil.simpleTypeName(typeRef);
-      String moduleName = RustNameResolver.toSnakeCase(simpleName);
       imports.add("use super::" + moduleName + "::" + simpleName + ";");
+      return;
+    }
+
+    // Cross-package: import via the crate root. Each proto package maps to a module
+    // directory (with a generated mod.rs); the consuming crate mounts those directories
+    // as crate-root modules.
+    String withoutDot = typeRef.startsWith(".") ? typeRef.substring(1) : typeRef;
+    int lastDot = withoutDot.lastIndexOf('.');
+    if (lastDot > 0) {
+      String pkgPath = withoutDot.substring(0, lastDot).replace(".", "::");
+      imports.add("use crate::" + pkgPath + "::" + moduleName + "::" + simpleName + ";");
     }
   }
 
   private void emitFields(CodeWriter w, ProtoMessage message) {
     for (ProtoField field : message.getFields()) {
-      String rustType = typeMapper.languageType(field);
+      String rustType = fieldRustType(field, message);
       String rustName = nameResolver.fieldName(field.getName());
       w.line("pub %s: %s,", rustName, rustType);
     }
+  }
+
+  /**
+   * The Rust type for a field declaration. Self-referencing singular message fields are boxed
+   * (Option&lt;Box&lt;T&gt;&gt;) — without indirection the type would have infinite size.
+   */
+  private String fieldRustType(ProtoField field, ProtoMessage message) {
+    String rustType = typeMapper.languageType(field);
+    if (isSelfReference(field, message)) {
+      String inner = rustType.substring("Option<".length(), rustType.length() - 1);
+      return "Option<Box<" + inner + ">>";
+    }
+    return rustType;
+  }
+
+  static boolean isSelfReference(ProtoField field, ProtoMessage message) {
+    return field.getKind() == ProtoField.FieldKind.MESSAGE
+        && !field.isRepeated()
+        && !field.isMap()
+        && field.getTypeReference() != null
+        && field.getTypeReference().equals(message.getFullName());
   }
 
   private void emitOneofCaseFields(CodeWriter w, ProtoMessage message) {
@@ -208,7 +247,7 @@ public class RustCodeEmitter {
 
   private void emitGettersSetters(CodeWriter w, ProtoMessage message) {
     for (ProtoField field : message.getFields()) {
-      String rustType = typeMapper.languageType(field);
+      String rustType = fieldRustType(field, message);
       String rustName = nameResolver.fieldName(field.getName());
       String getterName = nameResolver.getterName(field.getName());
       String setterName = nameResolver.setterName(field.getName());
@@ -243,8 +282,11 @@ public class RustCodeEmitter {
             }
           });
 
-      // has_* method for optional and message fields
-      if (field.isProto3Optional() || field.getKind() == ProtoField.FieldKind.MESSAGE) {
+      // has_* method for optional and singular message fields (repeated/map fields
+      // are Vec/HashMap, not Option)
+      if ((field.isProto3Optional() || field.getKind() == ProtoField.FieldKind.MESSAGE)
+          && !field.isRepeated()
+          && !field.isMap()) {
         w.blankLine();
         String hasName = "has_" + nameResolver.fieldName(field.getName());
         w.block(
@@ -302,12 +344,17 @@ public class RustCodeEmitter {
     w.blankLine();
     w.line("#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]");
     w.line("#[repr(i32)]");
+    // With allow_alias, only the first name per number becomes a variant (Rust
+    // rejects duplicate discriminants).
+    java.util.Set<Integer> seenNumbers = new java.util.LinkedHashSet<>();
     w.block(
         "pub enum " + protoEnum.getName(),
         () -> {
           for (ProtoEnum.EnumValue val : protoEnum.getValues()) {
-            String rustName = nameResolver.enumConstantName(val.name());
-            w.line("%s = %d,", rustName, val.number());
+            if (seenNumbers.add(val.number())) {
+              String rustName = nameResolver.enumConstantName(val.name());
+              w.line("%s = %d,", rustName, val.number());
+            }
           }
         });
 
@@ -341,7 +388,11 @@ public class RustCodeEmitter {
                 w.block(
                     "match value",
                     () -> {
+                      java.util.Set<Integer> matchedNumbers = new java.util.LinkedHashSet<>();
                       for (ProtoEnum.EnumValue val : protoEnum.getValues()) {
+                        if (!matchedNumbers.add(val.number())) {
+                          continue; // aliased value: first name wins
+                        }
                         String rustName = nameResolver.enumConstantName(val.name());
                         w.line("%d => %s::%s,", val.number(), protoEnum.getName(), rustName);
                       }
@@ -417,6 +468,9 @@ public class RustCodeEmitter {
       ProtoMessage message, com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Type type) {
     for (ProtoField field : message.getFields()) {
       if (field.getProtoType() == type) return true;
+      if (field.isMap() && (field.getMapKeyType() == type || field.getMapValueType() == type)) {
+        return true;
+      }
     }
     for (ProtoMessage nested : message.getNestedMessages()) {
       if (hasFieldOfType(nested, type)) return true;

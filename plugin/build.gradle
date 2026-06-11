@@ -2,13 +2,36 @@ plugins {
     id 'application'
     id 'com.gradleup.shadow' version '8.3.6'
     id 'jacoco'
+    id 'net.ltgt.errorprone' version '4.1.0'
+    id 'com.github.spotbugs' version '6.1.3'
 }
 
 dependencies {
     implementation 'com.google.protobuf:protobuf-java:4.29.3'
 
+    errorprone 'com.google.errorprone:error_prone_core:2.36.0'
+    spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.13.0'
+
     testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+spotbugs {
+    // Analyze main sources only; test code is covered by ErrorProne.
+    effort = com.github.spotbugs.snom.Effort.valueOf('MAX')
+    reportLevel = com.github.spotbugs.snom.Confidence.valueOf('MEDIUM')
+    excludeFilter = file('spotbugs-exclude.xml')
+}
+
+tasks.named('spotbugsTest') {
+    enabled = false
+}
+
+tasks.named('spotbugsMain') {
+    reports {
+        html.required = true
+        xml.required = true
+    }
 }
 
 application {
@@ -25,6 +48,30 @@ jacocoTestReport {
         csv.required = true
     }
 }
+
+// Coverage gate: ratchet values set just below current coverage (71% instr / 58% branch).
+// Raise as coverage improves; never lower.
+jacocoTestCoverageVerification {
+    dependsOn test
+    violationRules {
+        rule {
+            limit {
+                counter = 'INSTRUCTION'
+                value = 'COVEREDRATIO'
+                minimum = 0.70
+            }
+        }
+        rule {
+            limit {
+                counter = 'BRANCH'
+                value = 'COVEREDRATIO'
+                minimum = 0.55
+            }
+        }
+    }
+}
+
+check.dependsOn jacocoTestCoverageVerification
 
 shadowJar {
     archiveBaseName = 'protoc-gen-jsonarray'

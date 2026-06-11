@@ -141,11 +141,7 @@ public class ZigDeserializerGenerator {
   private void emitScalarDeserialize(
       CodeWriter w, ProtoField field, String zigField, String elemExpr) {
     String readExpr = scalarReadExpr(field.getProtoType(), elemExpr);
-    if (field.isProto3Optional()) {
-      w.line("%s = %s;", zigField, readExpr);
-    } else {
-      w.line("%s = %s;", zigField, readExpr);
-    }
+    w.line("%s = %s;", zigField, readExpr);
   }
 
   private void emitEnumDeserialize(
@@ -161,7 +157,6 @@ public class ZigDeserializerGenerator {
 
   private void emitRepeatedDeserialize(
       CodeWriter w, ProtoField field, String zigField, String elemExpr) {
-    String elementType = typeMapper.elementZigType(field);
     w.line("const list_items = %s.array.items;", elemExpr);
     w.block(
         "for (list_items) |elem|",
@@ -214,7 +209,6 @@ public class ZigDeserializerGenerator {
   private void emitOneofDeserialize(CodeWriter w, ProtoField field, int pos) {
     String unionField = "obj." + nameResolver.fieldName(field.getOneofName());
     String tagName = nameResolver.fieldName(field.getName());
-    String unionType = ZigNameResolver.simpleTypeName(field.getOneofName());
 
     w.block(
         "if (size > " + pos + " and arr[" + pos + "] != .null)",

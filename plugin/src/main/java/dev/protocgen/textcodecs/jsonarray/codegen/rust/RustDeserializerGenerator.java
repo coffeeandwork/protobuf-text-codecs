@@ -51,7 +51,7 @@ public class RustDeserializerGenerator {
               w.line("// position %d: gap (no field)", pos);
               continue;
             }
-            emitFieldDeserialize(w, field, pos);
+            emitFieldDeserialize(w, field, pos, message);
           }
 
           w.line("Ok(obj)");
@@ -67,7 +67,7 @@ public class RustDeserializerGenerator {
         });
   }
 
-  private void emitFieldDeserialize(CodeWriter w, ProtoField field, int pos) {
+  private void emitFieldDeserialize(CodeWriter w, ProtoField field, int pos, ProtoMessage message) {
     String rustField = "obj." + nameResolver.fieldName(field.getName());
 
     w.block(
@@ -82,7 +82,8 @@ public class RustDeserializerGenerator {
           } else if (field.isWellKnownType()) {
             emitWellKnownDeserialize(w, field, rustField, nodeExpr);
           } else if (field.getKind() == ProtoField.FieldKind.MESSAGE) {
-            emitMessageDeserialize(w, field, rustField, nodeExpr);
+            emitMessageDeserialize(
+                w, field, rustField, nodeExpr, RustCodeEmitter.isSelfReference(field, message));
           } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
             emitEnumDeserialize(w, field, rustField, nodeExpr);
           } else {
@@ -138,9 +139,14 @@ public class RustDeserializerGenerator {
   }
 
   private void emitMessageDeserialize(
-      CodeWriter w, ProtoField field, String rustField, String nodeExpr) {
+      CodeWriter w, ProtoField field, String rustField, String nodeExpr, boolean selfReference) {
     String msgType = simpleTypeName(field.getTypeReference());
-    w.line("%s = Some(%s::deserialize(&%s)?);", rustField, msgType, nodeExpr);
+    if (selfReference) {
+      // Self-referencing fields are boxed (Option<Box<T>>) to give the type a finite size
+      w.line("%s = Some(Box::new(%s::deserialize(&%s)?));", rustField, msgType, nodeExpr);
+    } else {
+      w.line("%s = Some(%s::deserialize(&%s)?);", rustField, msgType, nodeExpr);
+    }
   }
 
   private void emitRepeatedDeserialize(
@@ -220,7 +226,7 @@ public class RustDeserializerGenerator {
   private void emitWellKnownDeserialize(
       CodeWriter w, ProtoField field, String rustField, String nodeExpr) {
     // Well-known types are deserialized as regular message fields
-    emitMessageDeserialize(w, field, rustField, nodeExpr);
+    emitMessageDeserialize(w, field, rustField, nodeExpr, false);
   }
 
   private String scalarReadExpr(FieldDescriptorProto.Type type, String nodeExpr) {
@@ -250,15 +256,18 @@ public class RustDeserializerGenerator {
   }
 
   private String mapValueReadExpr(ProtoField field, String nodeExpr) {
+    // Message deserialization takes the node by reference; scalar/enum read methods
+    // auto-deref, and a leading & would bind to the whole read expression instead.
+    String plainExpr = nodeExpr.startsWith("&") ? nodeExpr.substring(1) : nodeExpr;
     if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE) {
       String msgType = simpleTypeName(field.getMapValueTypeReference());
       return msgType + "::deserialize(" + nodeExpr + ").unwrap_or_default()";
     }
     if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
       String enumType = simpleTypeName(field.getMapValueTypeReference());
-      return enumType + "::from(" + nodeExpr + ".as_i64().unwrap_or(0) as i32)";
+      return enumType + "::from(" + plainExpr + ".as_i64().unwrap_or(0) as i32)";
     }
-    return scalarReadExpr(field.getMapValueType(), nodeExpr);
+    return scalarReadExpr(field.getMapValueType(), plainExpr);
   }
 
   private String simpleTypeName(String protoFullName) {
