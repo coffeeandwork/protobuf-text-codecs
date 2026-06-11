@@ -104,6 +104,30 @@ public class CSharpNameResolver implements NameResolver {
     return dir + "/" + messageName + ".cs";
   }
 
+  /**
+   * Convert a proto type reference to the generated C# type name. Nested types live in the
+   * protobuf-standard {@code Types} wrapper class: ".pkg.Outer.Inner" -> "Outer.Types.Inner".
+   * Package segments (lowercase by proto convention) are dropped; the namespace is resolved via a
+   * using directive.
+   */
+  public static String qualifiedTypeName(String protoFullName) {
+    if (protoFullName == null || protoFullName.isEmpty()) {
+      return "object";
+    }
+    StringBuilder name = new StringBuilder();
+    for (String segment :
+        (protoFullName.startsWith(".") ? protoFullName.substring(1) : protoFullName).split("\\.")) {
+      if (name.length() == 0 && !segment.isEmpty() && Character.isLowerCase(segment.charAt(0))) {
+        continue; // package segment
+      }
+      if (name.length() > 0) {
+        name.append(".Types.");
+      }
+      name.append(segment);
+    }
+    return name.length() > 0 ? name.toString() : "object";
+  }
+
   /** Convert snake_case to camelCase. */
   static String snakeToCamel(String snake) {
     if (snake == null || snake.isEmpty()) return snake;

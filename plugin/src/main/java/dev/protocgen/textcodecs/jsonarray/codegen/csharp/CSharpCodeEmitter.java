@@ -16,7 +16,6 @@
 package dev.protocgen.textcodecs.jsonarray.codegen.csharp;
 
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
-import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoEnum;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoFile;
@@ -54,7 +53,7 @@ public class CSharpCodeEmitter {
     w.blankLine();
 
     // Using declarations
-    emitUsings(w);
+    emitUsings(w, message, file);
 
     // Namespace declaration
     if (!ns.isEmpty()) {
@@ -90,6 +89,10 @@ public class CSharpCodeEmitter {
     w.line(GENERATED_MARKER);
     w.blankLine();
 
+    // The ForNumber extension helper uses Enum.GetValues
+    w.line("using System;");
+    w.blankLine();
+
     if (!ns.isEmpty()) {
       w.block(
           "namespace " + ns,
@@ -106,12 +109,68 @@ public class CSharpCodeEmitter {
   // Using declarations
   // ---------------------------------------------------------------------------
 
-  private void emitUsings(CodeWriter w) {
+  private void emitUsings(CodeWriter w, ProtoMessage message, ProtoFile file) {
     w.line("using System;");
     w.line("using System.Collections.Generic;");
     w.line("using System.Linq;");
     w.line("using System.Text;");
     w.line("using System.Text.Json;");
+    for (String ns : collectCrossNamespaceUsings(message, file)) {
+      w.line("using %s;", ns);
+    }
+  }
+
+  private java.util.Set<String> collectCrossNamespaceUsings(ProtoMessage message, ProtoFile file) {
+    return collectCrossNamespaceUsings(message, nameResolver.resolvePackage(file));
+  }
+
+  /**
+   * Collect using directives for message/enum types referenced from other C# namespaces. Generated
+   * code references types by simple name, which only resolves across namespaces via a using
+   * directive. The namespace is derived from the proto package in the type reference (package
+   * segments are lowercase by proto convention). Shared with the pbtk C# generator.
+   */
+  public static java.util.Set<String> collectCrossNamespaceUsings(
+      ProtoMessage message, String currentNs) {
+    java.util.Set<String> usings = new java.util.TreeSet<>();
+    collectCrossNamespaceRefs(message, currentNs, usings);
+    return usings;
+  }
+
+  private static void collectCrossNamespaceRefs(
+      ProtoMessage message, String currentNs, java.util.Set<String> usings) {
+    for (ProtoField field : message.getFields()) {
+      if (field.getKind() == ProtoField.FieldKind.MESSAGE
+          || field.getKind() == ProtoField.FieldKind.ENUM) {
+        addCrossNamespaceUsing(field.getTypeReference(), currentNs, usings);
+      }
+      if (field.isMap()) {
+        addCrossNamespaceUsing(field.getMapValueTypeReference(), currentNs, usings);
+      }
+    }
+    for (ProtoMessage nested : message.getNestedMessages()) {
+      collectCrossNamespaceRefs(nested, currentNs, usings);
+    }
+  }
+
+  private static void addCrossNamespaceUsing(
+      String typeRef, String currentNs, java.util.Set<String> usings) {
+    if (typeRef == null || typeRef.startsWith(".google.protobuf.")) {
+      return;
+    }
+    StringBuilder ns = new StringBuilder();
+    for (String segment : (typeRef.startsWith(".") ? typeRef.substring(1) : typeRef).split("\\.")) {
+      if (segment.isEmpty() || !Character.isLowerCase(segment.charAt(0))) {
+        break; // first PascalCase segment is the type, not the package
+      }
+      if (ns.length() > 0) {
+        ns.append('.');
+      }
+      ns.append(Character.toUpperCase(segment.charAt(0))).append(segment.substring(1));
+    }
+    if (ns.length() > 0 && !ns.toString().equals(currentNs)) {
+      usings.add(ns.toString());
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -174,19 +233,25 @@ public class CSharpCodeEmitter {
           w.line("return new Builder(this);");
         });
 
-    // Nested enums
-    for (ProtoEnum protoEnum : message.getEnums()) {
-      emitEnum(w, protoEnum);
+    // Nested types live in the protobuf-standard Types wrapper class so member
+    // names (e.g. a Status property) cannot collide with nested type names.
+    if (!message.getEnums().isEmpty() || !message.getNestedMessages().isEmpty()) {
+      w.blankLine();
+      w.block(
+          "public static class Types",
+          () -> {
+            for (ProtoEnum protoEnum : message.getEnums()) {
+              emitEnum(w, protoEnum);
+            }
+            for (ProtoMessage nested : message.getNestedMessages()) {
+              w.blankLine();
+              emitNestedMessage(w, nested);
+            }
+          });
     }
 
     // Oneof case enums
     emitOneofCaseEnums(w, message);
-
-    // Nested message classes
-    for (ProtoMessage nested : message.getNestedMessages()) {
-      w.blankLine();
-      emitNestedMessage(w, nested);
-    }
 
     // Serialize method
     serializerGen.generate(w, message);
@@ -289,7 +354,7 @@ public class CSharpCodeEmitter {
             String csName = nameResolver.fieldName(field.getName());
             if (field.isRepeated()) {
               w.line(
-                  "this.%s = new List<%s>(builder.%s).AsReadOnly();",
+                  "this.%s = new List<%s>(builder.%s);",
                   pvtName, repeatedElementType(field), csName);
             } else if (field.isMap()) {
               w.line(
@@ -1069,7 +1134,6 @@ public class CSharpCodeEmitter {
   }
 
   private String simpleTypeName(String protoFullName) {
-    String simple = ProtoTypeUtil.simpleTypeName(protoFullName);
-    return simple != null ? simple : "object";
+    return CSharpNameResolver.qualifiedTypeName(protoFullName);
   }
 }

@@ -16,7 +16,6 @@
 package dev.protocgen.textcodecs.jsonarray.codegen.csharp;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
-import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.codegen.TypeMapper;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import java.nio.charset.StandardCharsets;
@@ -223,8 +222,7 @@ public class CSharpTypeMapper implements TypeMapper {
    * ".example.sub.Address" -> "Address"
    */
   private String simpleTypeName(String protoFullName) {
-    String simple = ProtoTypeUtil.simpleTypeName(protoFullName);
-    return simple != null ? simple : "object";
+    return CSharpNameResolver.qualifiedTypeName(protoFullName);
   }
 
   /** Get the generic type arguments string for a map field's Dictionary. */
