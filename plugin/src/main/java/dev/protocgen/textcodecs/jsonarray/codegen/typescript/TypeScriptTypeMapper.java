@@ -94,7 +94,6 @@ public class TypeScriptTypeMapper implements TypeMapper {
 
   /** The TS type annotation for a map field. */
   private String mapTypeAnnotation(ProtoField field) {
-    String keyType = scalarType(field.getMapKeyType());
     String valueType;
     if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE) {
       valueType = jsTypeMapper.simpleTypeName(field.getMapValueTypeReference());
