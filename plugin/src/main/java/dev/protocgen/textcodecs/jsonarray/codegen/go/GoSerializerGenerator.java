@@ -135,7 +135,7 @@ public class GoSerializerGenerator {
               w.line("arr[%d] = %s", pos, int64ToStringExpr("*" + goField, field.getProtoType()));
             } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_FLOAT
                 || field.getProtoType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
-              w.block(
+              w.blockContinue(
                   "if math.IsNaN(float64(*"
                       + goField
                       + ")) || math.IsInf(float64(*"
@@ -144,6 +144,7 @@ public class GoSerializerGenerator {
                   () -> {
                     w.line("arr[%d] = nil", pos);
                   });
+              w.raw(" ");
               w.block(
                   "else",
                   () -> {
@@ -172,11 +173,12 @@ public class GoSerializerGenerator {
         break;
       case TYPE_FLOAT:
       case TYPE_DOUBLE:
-        w.block(
+        w.blockContinue(
             "if math.IsNaN(float64(" + goField + ")) || math.IsInf(float64(" + goField + "), 0)",
             () -> {
               w.line("arr[%d] = nil", pos);
             });
+        w.raw(" ");
         w.block(
             "else",
             () -> {
@@ -240,7 +242,7 @@ public class GoSerializerGenerator {
                   w.line("listArr[i] = %s", int64ToStringExpr(itemVar, field.getProtoType()));
                 } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_FLOAT
                     || field.getProtoType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
-                  w.block(
+                  w.blockContinue(
                       "if math.IsNaN(float64("
                           + itemVar
                           + ")) || math.IsInf(float64("
@@ -249,6 +251,7 @@ public class GoSerializerGenerator {
                       () -> {
                         w.line("listArr[i] = nil");
                       });
+                  w.raw(" ");
                   w.block(
                       "else",
                       () -> {
@@ -289,7 +292,7 @@ public class GoSerializerGenerator {
                   if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT
                       || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
                     w.line("var mapVal any");
-                    w.block(
+                    w.blockContinue(
                         "if math.IsNaN(float64("
                             + valVar
                             + ")) || math.IsInf(float64("
@@ -298,6 +301,7 @@ public class GoSerializerGenerator {
                         () -> {
                           w.line("mapVal = nil");
                         });
+                    w.raw(" ");
                     w.block(
                         "else",
                         () -> {
@@ -336,11 +340,12 @@ public class GoSerializerGenerator {
       w.line("%s[%s] = %s", mapVar, keyExpr, int64ToStringExpr(valueExpr, field.getMapValueType()));
     } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT
         || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
-      w.block(
+      w.blockContinue(
           "if math.IsNaN(float64(" + valueExpr + ")) || math.IsInf(float64(" + valueExpr + "), 0)",
           () -> {
             w.line("%s[%s] = nil", mapVar, keyExpr);
           });
+      w.raw(" ");
       w.block(
           "else",
           () -> {
