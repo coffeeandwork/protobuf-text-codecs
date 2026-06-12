@@ -2,6 +2,7 @@
 // Source: address.proto
 
 import 'dart:convert';
+import 'dart:typed_data';
 
 class Address {
   String street = '';
