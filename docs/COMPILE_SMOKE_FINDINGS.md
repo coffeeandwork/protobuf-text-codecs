@@ -26,6 +26,7 @@ Status as of 2026-06-11.
 | Dart (both formats) | Synthetic `*MapEntry` imports; no cross-package import paths; nested messages deeper than one level dropped | Shared path-aware collector in `DartCodeEmitter`; recursive nested emission |
 | Objective-C (both formats) | Nested-type references used a bogus prefix (last-dot split); oneof case property never declared and serializer referenced a phantom `<group>Value` property; enum properties typed `id`; cross-package/nested-container imports missing; deep-nested forward declarations missing; pbtk codec methods undeclared in headers | Package/type segment split in resolveTypeReference; case property + member-property serialization; NSInteger enums; container-header and package-path imports; recursive forward decls; header declarations |
 | Zig (both formats) | Cross-package references undeclared; synthetic `*MapEntry` imports; recursive messages imported themselves; `zig ast-check` strictness: unused params, never-mutated `var`, shadowed locals, redeclared iterators, missing switch-prong commas; base64 decode allocated with the outer array length (real bug exposed by un-shadowing) | Path-aware relative imports; unique per-field locals; conditional discards and const bindings; prong commas; decoded-length alloc |
+| C (jsonarray) | Function-prefix derivation mismatched declarations for nested types; anonymous-struct typedefs conflicted with named forward declarations; repeated enum arrays typed `void**`; optional string/bytes serialized through the numeric path; oneof bytes had no length storage; nested enum and map-entry references produced includes of nonexistent headers; deep-nested typedefs missing | Package/type segment prefixes; named struct tags with forward typedefs; enum-typed arrays; string/bytes cases in the optional path; struct-level `<member>_len` siblings; container-header includes; recursive typedefs |
 
 ## Open (CI marked broken)
 
@@ -33,7 +34,7 @@ Status as of 2026-06-11.
 |----------|---------|
 | Go | Cross-package references unsupported: Go imports need a module path, which requires honoring the `go_package` option (feature work). Same-package code (incl. nested types, optional enums/bytes, NaN handling) now compiles — see Fixed below |
 | Rust (pbtk format only) | `PbtkRustGenerator` output has never compiled: 244 errors across 8 classes (unresolved modules, private methods called cross-module, missing imports, bad derefs). Best addressed by the planned pbtk generator restructuring (Phase F); jsonarray Rust passes |
-| C | Nested-type free-function name mismatch (`proto2test_Wrapper_inner_data_free` called, `proto2test_wrapper__inner_data_free` declared); same-named structs from different packages produce conflicting typedefs across headers |
+| C (pbtk format only) | Cross-package includes/declarations missing; nested struct definitions incomplete at use; same classes as the now-fixed jsonarray side, in `PbtkCGenerator`'s own emission code |
 | C++ | Cross-package references not declared (`Address`); recursive messages use incomplete types by value (`TreeNode` needs pointer indirection); `std::nullopt` assigned to non-optional members |
 | Kotlin | Generated code references a `dev.protocgen...` runtime package that isn't a published Kotlin dependency |
 

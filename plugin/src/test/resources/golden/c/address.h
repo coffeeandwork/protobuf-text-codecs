@@ -14,12 +14,13 @@
 extern "C" {
 #endif
 
-typedef struct {
+typedef struct example_Address example_Address;
+struct example_Address {
   char* street;
   char* city;
   char* state;
   int32_t zip;
-} example_Address;
+};
 
 /* Serialization */
 cJSON* example_address_serialize(const example_Address* msg);
