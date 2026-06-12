@@ -50,7 +50,7 @@ jobs:
           - { lang: rust, os: ubuntu-latest, broken: true }
           - { lang: objc, os: macos-latest, broken: true }
           - { lang: zig, os: ubuntu-latest, broken: true }
-          - { lang: dart, os: ubuntu-latest, broken: true }
+          - { lang: dart, os: ubuntu-latest }
           - { lang: php, os: ubuntu-latest }
           - { lang: kotlin, os: ubuntu-latest, broken: true }
     runs-on: ${{ matrix.os }}

@@ -23,6 +23,7 @@ Status as of 2026-06-11.
 | C# (both formats) | Nested enum collided with same-named property (CS0102); cross-namespace refs missing `using`; `AsReadOnly()` assigned to `List<T>`; top-level enums missing `using System;` | protobuf-standard `Types` wrapper + `Outer.Types.Inner` references; namespace-derived using directives; defensive copy without AsReadOnly |
 | Rust (jsonarray) | `has_*` with `is_some()` on Vec/HashMap fields; cross-package refs unresolved; synthetic `*MapEntry` imports; base64 import missed for bytes map values; `&`-prefixed scalar reads in map pairs; recursive types had infinite size; aliased enums duplicated discriminants | has_* only for Option fields; `use crate::<pkg>::...` imports; map-entry skip; map-aware bytes check; deref-corrected reads; `Option<Box<T>>` for self-references; first-name-wins enums |
 | TypeScript/JavaScript (both formats) | Cross-package and nested-type references had no resolvable imports; nested messages deeper than one level were dropped; maps typed as pair arrays but stored as objects; optional scalars failed strict null checks | Path-aware import specs via `JsImportUtil`; recursive nested emission/exports; `Record<string, V>` map typing; non-null assertions under presence guards |
+| Dart (both formats) | Synthetic `*MapEntry` imports; no cross-package import paths; nested messages deeper than one level dropped | Shared path-aware collector in `DartCodeEmitter`; recursive nested emission |
 
 ## Open (CI marked broken)
 
@@ -33,7 +34,6 @@ Status as of 2026-06-11.
 | Objective-C | Cross-file references to types with a different file prefix don't import/forward-declare (`PWInnerData` unknown in `PRWrapper.h`); proto2 enum properties boxed with `@()` on `id` type |
 | C | Nested-type free-function name mismatch (`proto2test_Wrapper_inner_data_free` called, `proto2test_wrapper__inner_data_free` declared); same-named structs from different packages produce conflicting typedefs across headers |
 | C++ | Cross-package references not declared (`Address`); recursive messages use incomplete types by value (`TreeNode` needs pointer indirection); `std::nullopt` assigned to non-optional members |
-| Dart | Map fields import the synthetic `*MapEntry` file (same class as the fixed JS/TS bug) |
 | Kotlin | Generated code references a `dev.protocgen...` runtime package that isn't a published Kotlin dependency |
 | Zig | Cross-package references undeclared; `zig ast-check` treats unused parameters and never-mutated `var` as errors |
 
