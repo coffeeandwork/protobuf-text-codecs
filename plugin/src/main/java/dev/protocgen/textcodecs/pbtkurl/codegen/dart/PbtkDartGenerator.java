@@ -19,7 +19,6 @@ import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse;
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
 import dev.protocgen.textcodecs.jsonarray.codegen.LanguageGenerator;
-import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.codegen.dart.DartNameResolver;
 import dev.protocgen.textcodecs.jsonarray.codegen.dart.DartTypeMapper;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoEnum;
@@ -28,7 +27,6 @@ import dev.protocgen.textcodecs.jsonarray.model.ProtoFile;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoMessage;
 import dev.protocgen.textcodecs.jsonarray.model.TypeRegistry;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -81,8 +79,9 @@ public class PbtkDartGenerator implements LanguageGenerator {
 
     emitFileHeader(w, file);
 
-    Set<String> importNames = new LinkedHashSet<>();
-    collectReferencedTypeNames(message, file, importNames);
+    Set<String> importNames =
+        dev.protocgen.textcodecs.jsonarray.codegen.dart.DartCodeEmitter.collectImportPaths(
+            message, file);
     emitImports(w, importNames);
 
     // Nested enums
@@ -91,11 +90,8 @@ public class PbtkDartGenerator implements LanguageGenerator {
       w.blankLine();
     }
 
-    // Nested messages
-    for (ProtoMessage nested : message.getNestedMessages()) {
-      emitMessageClass(w, nested, file);
-      w.blankLine();
-    }
+    // Nested messages (any depth, deepest first)
+    emitNestedTypes(w, message, file);
 
     // Main class
     emitMessageClass(w, message, file);
@@ -118,12 +114,24 @@ public class PbtkDartGenerator implements LanguageGenerator {
     w.blankLine();
   }
 
-  private void emitImports(CodeWriter w, Set<String> importNames) {
-    for (String name : importNames) {
-      String fileName = DartNameResolver.pascalToSnake(name);
-      w.line("import '%s.dart';", fileName);
+  /** Emit all nested enums and message classes of a container, deepest first. */
+  private void emitNestedTypes(CodeWriter w, ProtoMessage container, ProtoFile file) {
+    for (ProtoMessage nested : container.getNestedMessages()) {
+      emitNestedTypes(w, nested, file);
+      for (ProtoEnum protoEnum : nested.getEnums()) {
+        emitEnum(w, protoEnum);
+        w.blankLine();
+      }
+      emitMessageClass(w, nested, file);
+      w.blankLine();
     }
-    if (!importNames.isEmpty()) {
+  }
+
+  private void emitImports(CodeWriter w, Set<String> importPaths) {
+    for (String path : importPaths) {
+      w.line("import '%s.dart';", path);
+    }
+    if (!importPaths.isEmpty()) {
       w.blankLine();
     }
   }
@@ -689,43 +697,6 @@ public class PbtkDartGenerator implements LanguageGenerator {
           sb.append("}';");
           w.line(sb.toString());
         });
-  }
-
-  private void collectReferencedTypeNames(ProtoMessage message, ProtoFile file, Set<String> names) {
-    String currentPrefix =
-        file.getProtoPackage().isEmpty() ? "." : "." + file.getProtoPackage() + ".";
-
-    for (ProtoField field : message.getFields()) {
-      String typeRef = field.getTypeReference();
-      if (typeRef == null) continue;
-      if (field.isWellKnownType()) continue;
-
-      boolean isNested = false;
-      for (ProtoMessage nested : message.getNestedMessages()) {
-        if (typeRef.equals(message.getFullName() + "." + nested.getName())) {
-          isNested = true;
-          break;
-        }
-      }
-      if (isNested) continue;
-
-      String simpleName = ProtoTypeUtil.simpleTypeName(typeRef);
-      if (typeRef.startsWith(currentPrefix)) {
-        names.add(simpleName);
-      }
-
-      if (field.isMap() && field.getMapValueTypeReference() != null) {
-        String valRef = field.getMapValueTypeReference();
-        String valName = ProtoTypeUtil.simpleTypeName(valRef);
-        if (valRef.startsWith(currentPrefix)) {
-          names.add(valName);
-        }
-      }
-    }
-
-    for (ProtoMessage nested : message.getNestedMessages()) {
-      collectReferencedTypeNames(nested, file, names);
-    }
   }
 
   private boolean hasOptionalFields(ProtoMessage message) {

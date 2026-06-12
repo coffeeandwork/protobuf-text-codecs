@@ -16,7 +16,6 @@
 package dev.protocgen.textcodecs.jsonarray.codegen.dart;
 
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
-import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoEnum;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoFile;
@@ -59,11 +58,8 @@ public class DartCodeEmitter {
       w.blankLine();
     }
 
-    // Emit nested message classes before the main class
-    for (ProtoMessage nested : message.getNestedMessages()) {
-      emitMessageClass(w, nested, file);
-      w.blankLine();
-    }
+    // Emit nested message classes (any depth, deepest first) before the main class
+    emitNestedTypes(w, message, file);
 
     // Main class
     emitMessageClass(w, message, file);
@@ -87,12 +83,24 @@ public class DartCodeEmitter {
     w.blankLine();
   }
 
-  private void emitImports(CodeWriter w, Set<String> importNames) {
-    for (String name : importNames) {
-      String fileName = DartNameResolver.pascalToSnake(name);
-      w.line("import '%s.dart';", fileName);
+  /** Emit all nested enums and message classes of a container, deepest first. */
+  private void emitNestedTypes(CodeWriter w, ProtoMessage container, ProtoFile file) {
+    for (ProtoMessage nested : container.getNestedMessages()) {
+      emitNestedTypes(w, nested, file);
+      for (ProtoEnum protoEnum : nested.getEnums()) {
+        emitEnum(w, protoEnum);
+        w.blankLine();
+      }
+      emitMessageClass(w, nested, file);
+      w.blankLine();
     }
-    if (!importNames.isEmpty()) {
+  }
+
+  private void emitImports(CodeWriter w, Set<String> importPaths) {
+    for (String path : importPaths) {
+      w.line("import '%s.dart';", path);
+    }
+    if (!importPaths.isEmpty()) {
       w.blankLine();
     }
   }
@@ -102,46 +110,89 @@ public class DartCodeEmitter {
    * statements.
    */
   private void collectReferencedTypeNames(ProtoMessage message, ProtoFile file, Set<String> names) {
+    names.addAll(collectImportPaths(message, file));
+  }
+
+  /** Collect relative import paths for a top-level message's file. Shared with pbtk. */
+  public static Set<String> collectImportPaths(ProtoMessage topLevelMessage, ProtoFile file) {
+    Set<String> names = new LinkedHashSet<>();
+    collectImportPaths(topLevelMessage, topLevelMessage, file, names);
+    return names;
+  }
+
+  /**
+   * Collect relative import paths (extensionless, snake_case) for types referenced from other
+   * files, including other proto packages. Nested types are imported via their top-level
+   * container's file. {@code topLevel} is the message whose file is being emitted; everything
+   * nested under it lives in the same file and needs no import.
+   */
+  private static void collectImportPaths(
+      ProtoMessage message, ProtoMessage topLevel, ProtoFile file, Set<String> names) {
     String currentPrefix =
         file.getProtoPackage().isEmpty() ? "." : "." + file.getProtoPackage() + ".";
 
     for (ProtoField field : message.getFields()) {
-      String typeRef = field.getTypeReference();
-      if (typeRef == null) continue;
+      // A map field's own type reference is the synthetic *MapEntry message, which is
+      // never generated as a file; only the value type may need an import.
+      if (field.isMap()) {
+        addImportPath(field.getMapValueTypeReference(), topLevel, file, currentPrefix, names);
+        continue;
+      }
       if (field.isWellKnownType()) continue;
-
-      // Check if the type is defined in the current message (nested type)
-      boolean isNested = false;
-      for (ProtoMessage nested : message.getNestedMessages()) {
-        if (typeRef.equals(message.getFullName() + "." + nested.getName())) {
-          isNested = true;
-          break;
-        }
-      }
-      if (isNested) continue;
-
-      // Extract the simple name
-      String simpleName = ProtoTypeUtil.simpleTypeName(typeRef);
-
-      // Check if this is a type in the same package but different file
-      if (typeRef.startsWith(currentPrefix)) {
-        names.add(simpleName);
-      }
-
-      // For map value types
-      if (field.isMap() && field.getMapValueTypeReference() != null) {
-        String valRef = field.getMapValueTypeReference();
-        String valName = ProtoTypeUtil.simpleTypeName(valRef);
-        if (valRef.startsWith(currentPrefix)) {
-          names.add(valName);
-        }
-      }
+      addImportPath(field.getTypeReference(), topLevel, file, currentPrefix, names);
     }
 
-    // Also check nested messages for their references
     for (ProtoMessage nested : message.getNestedMessages()) {
-      collectReferencedTypeNames(nested, file, names);
+      collectImportPaths(nested, topLevel, file, names);
     }
+  }
+
+  private static void addImportPath(
+      String typeRef,
+      ProtoMessage topLevel,
+      ProtoFile file,
+      String currentPrefix,
+      Set<String> names) {
+    if (typeRef == null || typeRef.startsWith(".google.protobuf.")) return;
+
+    // Anything in this file's own type tree needs no import (and a Dart file must
+    // not import itself)
+    if (typeRef.equals(topLevel.getFullName())
+        || typeRef.startsWith(topLevel.getFullName() + ".")) {
+      return;
+    }
+
+    // Split into package segments (lowercase by proto convention) and type segments;
+    // the first type segment is the top-level container whose file we import.
+    String withoutDot = typeRef.startsWith(".") ? typeRef.substring(1) : typeRef;
+    String[] segments = withoutDot.split("\\.");
+    int firstType = 0;
+    while (firstType < segments.length
+        && !segments[firstType].isEmpty()
+        && Character.isLowerCase(segments[firstType].charAt(0))) {
+      firstType++;
+    }
+    if (firstType >= segments.length) return;
+    String fileBase = DartNameResolver.pascalToSnake(segments[firstType]);
+
+    if (typeRef.startsWith(currentPrefix)) {
+      // Same package: sibling file
+      names.add(fileBase);
+      return;
+    }
+
+    // Cross-package: path relative to this file's package directory
+    int currentDepth =
+        file.getProtoPackage().isEmpty() ? 0 : file.getProtoPackage().split("\\.").length;
+    StringBuilder path = new StringBuilder();
+    for (int i = 0; i < currentDepth; i++) {
+      path.append("../");
+    }
+    for (int i = 0; i < firstType; i++) {
+      path.append(segments[i]).append('/');
+    }
+    path.append(fileBase);
+    names.add(path.toString());
   }
 
   /** Emit a complete Dart class for a message. */
