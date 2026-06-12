@@ -81,7 +81,7 @@ jobs:
         run: npm install -g typescript
       - name: Install Zig
         if: matrix.lang == 'zig'
-        uses: mlugg/setup-zig@v1
+        uses: mlugg/setup-zig@v2
       - name: Install Dart
         if: matrix.lang == 'dart'
         uses: dart-lang/setup-dart@v1
