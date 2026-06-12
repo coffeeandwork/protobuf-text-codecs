@@ -25,6 +25,7 @@ Status as of 2026-06-11.
 | TypeScript/JavaScript (both formats) | Cross-package and nested-type references had no resolvable imports; nested messages deeper than one level were dropped; maps typed as pair arrays but stored as objects; optional scalars failed strict null checks | Path-aware import specs via `JsImportUtil`; recursive nested emission/exports; `Record<string, V>` map typing; non-null assertions under presence guards |
 | Dart (both formats) | Synthetic `*MapEntry` imports; no cross-package import paths; nested messages deeper than one level dropped | Shared path-aware collector in `DartCodeEmitter`; recursive nested emission |
 | Objective-C (both formats) | Nested-type references used a bogus prefix (last-dot split); oneof case property never declared and serializer referenced a phantom `<group>Value` property; enum properties typed `id`; cross-package/nested-container imports missing; deep-nested forward declarations missing; pbtk codec methods undeclared in headers | Package/type segment split in resolveTypeReference; case property + member-property serialization; NSInteger enums; container-header and package-path imports; recursive forward decls; header declarations |
+| Zig (both formats) | Cross-package references undeclared; synthetic `*MapEntry` imports; recursive messages imported themselves; `zig ast-check` strictness: unused params, never-mutated `var`, shadowed locals, redeclared iterators, missing switch-prong commas; base64 decode allocated with the outer array length (real bug exposed by un-shadowing) | Path-aware relative imports; unique per-field locals; conditional discards and const bindings; prong commas; decoded-length alloc |
 
 ## Open (CI marked broken)
 
@@ -35,7 +36,6 @@ Status as of 2026-06-11.
 | C | Nested-type free-function name mismatch (`proto2test_Wrapper_inner_data_free` called, `proto2test_wrapper__inner_data_free` declared); same-named structs from different packages produce conflicting typedefs across headers |
 | C++ | Cross-package references not declared (`Address`); recursive messages use incomplete types by value (`TreeNode` needs pointer indirection); `std::nullopt` assigned to non-optional members |
 | Kotlin | Generated code references a `dev.protocgen...` runtime package that isn't a published Kotlin dependency |
-| Zig | Cross-package references undeclared; `zig ast-check` treats unused parameters and never-mutated `var` as errors |
 
 PHP passed its first CI verdict (both formats) and is no longer marked broken.
 

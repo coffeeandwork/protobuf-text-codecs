@@ -123,14 +123,17 @@ public class ZigCodeEmitter {
         file.getProtoPackage().isEmpty() ? "." : "." + file.getProtoPackage() + ".";
 
     for (ProtoField field : message.getFields()) {
-      addTypeImportIfNeeded(
-          field.getTypeReference(), field.isWellKnownType(), message, currentPrefix, imports);
-
-      // For map value types
-      if (field.isMap() && field.getMapValueTypeReference() != null) {
-        addTypeImportIfNeeded(
-            field.getMapValueTypeReference(), false, message, currentPrefix, imports);
+      // A map field's own type reference is the synthetic *MapEntry message, which is
+      // never generated as a file; only the value type may need an import.
+      if (field.isMap()) {
+        if (field.getMapValueTypeReference() != null) {
+          addTypeImportIfNeeded(
+              field.getMapValueTypeReference(), false, message, file, currentPrefix, imports);
+        }
+        continue;
       }
+      addTypeImportIfNeeded(
+          field.getTypeReference(), field.isWellKnownType(), message, file, currentPrefix, imports);
     }
 
     // Also check nested messages for their references
@@ -143,6 +146,7 @@ public class ZigCodeEmitter {
       String typeRef,
       boolean isWellKnown,
       ProtoMessage message,
+      ProtoFile file,
       String currentPrefix,
       Set<String> imports) {
     if (typeRef == null) return;
@@ -160,13 +164,47 @@ public class ZigCodeEmitter {
       }
     }
 
-    // Check if this is a type in the same package but different file
+    // A message that references itself (recursive type) needs no import
+    if (typeRef.equals(message.getFullName())) return;
+
+    String simpleName = ProtoTypeUtil.simpleTypeName(typeRef);
+    String moduleName = ZigNameResolver.toSnakeCase(simpleName);
+
+    // Type in the same package but different file
     if (typeRef.startsWith(currentPrefix)) {
-      String simpleName = ProtoTypeUtil.simpleTypeName(typeRef);
-      String moduleName = ZigNameResolver.toSnakeCase(simpleName);
       imports.add(
           "const " + simpleName + " = @import(\"" + moduleName + ".zig\")." + simpleName + ";");
+      return;
     }
+
+    // Cross-package: relative path from this file's package directory
+    String withoutDot = typeRef.startsWith(".") ? typeRef.substring(1) : typeRef;
+    String[] segments = withoutDot.split("\\.");
+    int firstType = 0;
+    StringBuilder pkgPath = new StringBuilder();
+    while (firstType < segments.length
+        && !segments[firstType].isEmpty()
+        && Character.isLowerCase(segments[firstType].charAt(0))) {
+      pkgPath.append(segments[firstType]).append('/');
+      firstType++;
+    }
+    if (firstType >= segments.length) return;
+    int currentDepth =
+        file.getProtoPackage().isEmpty() ? 0 : file.getProtoPackage().split("\\.").length;
+    StringBuilder rel = new StringBuilder();
+    for (int i = 0; i < currentDepth; i++) {
+      rel.append("../");
+    }
+    imports.add(
+        "const "
+            + simpleName
+            + " = @import(\""
+            + rel
+            + pkgPath
+            + moduleName
+            + ".zig\")."
+            + simpleName
+            + ";");
   }
 
   private void emitFields(CodeWriter w, ProtoMessage message) {
@@ -302,18 +340,29 @@ public class ZigCodeEmitter {
             if (field.isMap()) {
               // Free allocator-owned string keys
               if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_STRING) {
+                // Own block scope: several map fields share this function
                 w.block(
-                    "var key_it = " + zigName + ".keyIterator(); while (key_it.next()) |key|",
+                    "",
                     () -> {
-                      w.line("allocator.free(key.*);");
+                      w.block(
+                          "var key_it = " + zigName + ".keyIterator(); while (key_it.next()) |key|",
+                          () -> {
+                            w.line("allocator.free(key.*);");
+                          });
                     });
               }
               // Free allocator-owned string values
               if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_STRING) {
                 w.block(
-                    "var val_it = " + zigName + ".valueIterator(); while (val_it.next()) |val|",
+                    "",
                     () -> {
-                      w.line("allocator.free(val.*);");
+                      w.block(
+                          "var val_it = "
+                              + zigName
+                              + ".valueIterator(); while (val_it.next()) |val|",
+                          () -> {
+                            w.line("allocator.free(val.*);");
+                          });
                     });
               }
               w.line("%s.deinit();", zigName);
@@ -396,6 +445,7 @@ public class ZigCodeEmitter {
           }
 
           if (!hasCleanup) {
+            w.line("_ = self;");
             w.line("_ = allocator;");
           }
         });

@@ -40,6 +40,13 @@ public class ZigDeserializerGenerator {
         "pub fn deserializeFromValue(value: json.Value, allocator: std.mem.Allocator) !"
             + structName,
         () -> {
+          if (message.getMaxFieldNumber() == 0) {
+            // No fields: nothing to read; keep ast-check happy about unused params
+            w.line("_ = value;");
+            w.line("_ = allocator;");
+            w.line("return .{};");
+            return;
+          }
           w.line("const arr = value.array.items;");
           w.line("const size = arr.len;");
           w.line("var obj: %s = undefined;", structName);
@@ -170,8 +177,9 @@ public class ZigDeserializerGenerator {
             w.line("try %s.append(@enumFromInt(@as(i64, elem.integer)));", zigField);
           } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
             w.line("const src = elem.string;");
-            w.line("const size = std.base64.standard.Decoder.calcSizeForSlice(src.len) catch 0;");
-            w.line("const decoded = try allocator.alloc(u8, size);");
+            w.line(
+                "const decoded_len = std.base64.standard.Decoder.calcSizeForSlice(src.len) catch 0;");
+            w.line("const decoded = try allocator.alloc(u8, decoded_len);");
             w.line("std.base64.standard.Decoder.decode(decoded, src) catch {};");
             w.line("try %s.append(decoded);", zigField);
           } else {
@@ -245,7 +253,7 @@ public class ZigDeserializerGenerator {
       case TYPE_BYTES ->
           "blk: { const src = "
               + elemExpr
-              + ".string; const size = std.base64.standard.Decoder.calcSizeForSlice(src.len) catch 0; const dest = try allocator.alloc(u8, size); std.base64.standard.Decoder.decode(dest, src) catch {}; break :blk dest; }";
+              + ".string; const decoded_len = std.base64.standard.Decoder.calcSizeForSlice(src.len) catch 0; const dest = try allocator.alloc(u8, decoded_len); std.base64.standard.Decoder.decode(dest, src) catch {}; break :blk dest; }";
       default -> "try allocator.dupe(u8, " + elemExpr + ".string)";
     };
   }

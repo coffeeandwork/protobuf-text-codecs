@@ -10,18 +10,19 @@ pub const Address = struct {
 
     fn appendPbtkFields(self: *const Address, buf: *std.ArrayList(u8)) void {
         buf.writer().print("!1s", .{}) catch {};
-        const pct = std.Uri.percentEncode(self.street, std.Uri.Component.query) catch return;
-        buf.writer().writeAll(pct) catch {};
+        const pct_1 = std.Uri.percentEncode(self.street, std.Uri.Component.query) catch return;
+        buf.writer().writeAll(pct_1) catch {};
         buf.writer().print("!2s", .{}) catch {};
-        const pct = std.Uri.percentEncode(self.city, std.Uri.Component.query) catch return;
-        buf.writer().writeAll(pct) catch {};
+        const pct_2 = std.Uri.percentEncode(self.city, std.Uri.Component.query) catch return;
+        buf.writer().writeAll(pct_2) catch {};
         buf.writer().print("!3s", .{}) catch {};
-        const pct = std.Uri.percentEncode(self.state, std.Uri.Component.query) catch return;
-        buf.writer().writeAll(pct) catch {};
+        const pct_3 = std.Uri.percentEncode(self.state, std.Uri.Component.query) catch return;
+        buf.writer().writeAll(pct_3) catch {};
         buf.writer().print("!4i{d}", .{self.zip}) catch {};
     }
 
     fn countPbtkFields(self: *const Address) usize {
+        _ = self;
         var count: usize = 0;
         count += 1;
         count += 1;
@@ -57,26 +58,26 @@ pub const Address = struct {
                     obj.street = std.Uri.percentDecode(value) catch value;
                     offset.* += 1;
                     consumed += 1;
-                }
+                },
                 2 => {
                     obj.city = std.Uri.percentDecode(value) catch value;
                     offset.* += 1;
                     consumed += 1;
-                }
+                },
                 3 => {
                     obj.state = std.Uri.percentDecode(value) catch value;
                     offset.* += 1;
                     consumed += 1;
-                }
+                },
                 4 => {
                     obj.zip = std.fmt.parseInt(i32, value, 10) catch 0;
                     offset.* += 1;
                     consumed += 1;
-                }
+                },
                 else => {
                     offset.* += 1;
                     consumed += 1;
-                }
+                },
             }
         }
         return obj;

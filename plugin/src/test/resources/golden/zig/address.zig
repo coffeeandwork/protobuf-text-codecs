@@ -8,7 +8,7 @@ pub const Address = struct {
     zip: i32 = 0,
 
     pub fn serializeToValue(self: *const Address, allocator: std.mem.Allocator) !json.Value {
-        var arr = try allocator.alloc(json.Value, 4);
+        const arr = try allocator.alloc(json.Value, 4);
         arr[0] = json.Value{ .string = self.street };
         arr[1] = json.Value{ .string = self.city };
         arr[2] = json.Value{ .string = self.state };

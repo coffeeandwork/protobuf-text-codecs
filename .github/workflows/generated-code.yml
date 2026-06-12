@@ -49,7 +49,7 @@ jobs:
           - { lang: go, os: ubuntu-latest, broken: true }
           - { lang: rust, os: ubuntu-latest, broken: true }
           - { lang: objc, os: macos-latest }
-          - { lang: zig, os: ubuntu-latest, broken: true }
+          - { lang: zig, os: ubuntu-latest }
           - { lang: dart, os: ubuntu-latest }
           - { lang: php, os: ubuntu-latest }
           - { lang: kotlin, os: ubuntu-latest, broken: true }
@@ -83,7 +83,7 @@ jobs:
         if: matrix.lang == 'zig'
         uses: mlugg/setup-zig@v1
         with:
-          version: 0.13.0
+          version: 0.16.0
       - name: Install Dart
         if: matrix.lang == 'dart'
         uses: dart-lang/setup-dart@v1
