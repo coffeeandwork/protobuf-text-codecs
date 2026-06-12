@@ -82,8 +82,6 @@ jobs:
       - name: Install Zig
         if: matrix.lang == 'zig'
         uses: mlugg/setup-zig@v1
-        with:
-          version: 0.16.0
       - name: Install Dart
         if: matrix.lang == 'dart'
         uses: dart-lang/setup-dart@v1
