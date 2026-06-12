@@ -48,7 +48,7 @@ jobs:
           - { lang: typescript, os: ubuntu-latest }
           - { lang: go, os: ubuntu-latest, broken: true }
           - { lang: rust, os: ubuntu-latest, broken: true }
-          - { lang: objc, os: macos-latest, broken: true }
+          - { lang: objc, os: macos-latest }
           - { lang: zig, os: ubuntu-latest, broken: true }
           - { lang: dart, os: ubuntu-latest }
           - { lang: php, os: ubuntu-latest }

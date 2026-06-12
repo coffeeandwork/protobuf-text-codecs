@@ -80,7 +80,7 @@ public class ObjCSerializerGenerator {
       w.block(
           "if (self." + oneofProp + "Case == " + field.getFieldNumber() + ")",
           () -> {
-            emitValueAdd(w, field, "self." + oneofProp + "Value");
+            emitValueAdd(w, field, "self." + propName);
           });
       w.block(
           "else",
