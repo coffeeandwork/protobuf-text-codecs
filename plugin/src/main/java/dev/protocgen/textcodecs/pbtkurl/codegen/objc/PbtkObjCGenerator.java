@@ -19,7 +19,6 @@ import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse;
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
 import dev.protocgen.textcodecs.jsonarray.codegen.LanguageGenerator;
-import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.codegen.objc.ObjCNameResolver;
 import dev.protocgen.textcodecs.jsonarray.codegen.objc.ObjCTypeMapper;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoEnum;
@@ -122,13 +121,11 @@ public class PbtkObjCGenerator implements LanguageGenerator {
       emitEnumDef(w, protoEnum, file, message.getName() + "_");
     }
 
-    // Nested message forward declarations
-    for (ProtoMessage nested : message.getNestedMessages()) {
-      String nestedClass =
-          nameResolver.qualifiedClassName(file, message.getName() + "_" + nested.getName());
-      w.line("@class %s;", nestedClass);
-    }
-    if (!message.getNestedMessages().isEmpty()) {
+    // Nested message forward declarations (any depth: interfaces reference
+    // deeper-nested types before their declarations)
+    boolean hadNested = !message.getNestedMessages().isEmpty();
+    emitNestedForwardDecls(w, message, file, message.getName() + "_");
+    if (hadNested) {
       w.blankLine();
     }
 
@@ -162,9 +159,14 @@ public class PbtkObjCGenerator implements LanguageGenerator {
     // pbtk URL serialization methods
     w.line("/* pbtk URL serialization */");
     w.line("- (NSData *)data;");
+    w.line("- (NSInteger)countPbtkFields;");
+    w.line("- (void)appendPbtkFieldsTo:(NSMutableString *)buf;");
     w.blankLine();
     w.line("/* pbtk URL deserialization */");
     w.line("+ (instancetype)parseFromData:(NSData *)data error:(NSError **)errorPtr;");
+    w.line(
+        "+ (instancetype)parsePbtkTokens:(NSArray<NSString *> *)tokens"
+            + " fieldCount:(NSInteger)fieldCount offset:(NSInteger *)offset;");
 
     w.blankLine();
     w.line("@end");
@@ -988,6 +990,15 @@ public class PbtkObjCGenerator implements LanguageGenerator {
     w.blankLine();
   }
 
+  private void emitNestedForwardDecls(
+      CodeWriter w, ProtoMessage container, ProtoFile file, String prefix) {
+    for (ProtoMessage nested : container.getNestedMessages()) {
+      String nestedClass = nameResolver.qualifiedClassName(file, prefix + nested.getName());
+      w.line("@class %s;", nestedClass);
+      emitNestedForwardDecls(w, nested, file, prefix + nested.getName() + "_");
+    }
+  }
+
   private void emitPropertyDecl(CodeWriter w, ProtoField field) {
     String propName = nameResolver.fieldName(field.getName());
     String attrs = typeMapper.propertyAttributes(field);
@@ -1006,6 +1017,9 @@ public class PbtkObjCGenerator implements LanguageGenerator {
         || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
       String refType = nameResolver.resolveTypeReference(field.getTypeReference(), null);
       w.line("@property (%s, nullable) %s *%s;", attrs, refType, propName);
+    } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
+      // Enums are NSInteger-typed; scalarType would fall through to id
+      w.line("@property (%s) NSInteger %s;", attrs, propName);
     } else if (isObj) {
       w.line(
           "@property (%s, nullable) %s%s;",
@@ -1076,33 +1090,52 @@ public class PbtkObjCGenerator implements LanguageGenerator {
   }
 
   private void collectCrossFileImports(ProtoMessage message, ProtoFile file, Set<String> imports) {
+    collectCrossFileImports(message, message.getName(), file, imports);
+  }
+
+  private void collectCrossFileImports(
+      ProtoMessage message, String topLevelName, ProtoFile file, Set<String> imports) {
     String currentPrefix =
         file.getProtoPackage().isEmpty() ? "." : "." + file.getProtoPackage() + ".";
 
     for (ProtoField field : message.getFields()) {
-      if (field.getTypeReference() == null) continue;
-      if (field.isWellKnownType()) continue;
+      // A map field's own type reference is the synthetic *MapEntry message, which has
+      // no header; only the value type may need an import.
+      String typeRef = field.isMap() ? field.getMapValueTypeReference() : field.getTypeReference();
+      if (typeRef == null) continue;
+      if (!field.isMap() && field.isWellKnownType()) continue;
+      if (typeRef.startsWith(".google.protobuf.")) continue;
 
-      // Check if nested
-      boolean isNested = false;
-      for (ProtoMessage nested : message.getNestedMessages()) {
-        if (field.getTypeReference().equals(message.getFullName() + "." + nested.getName())) {
-          isNested = true;
-          break;
+      if (typeRef.startsWith(currentPrefix)) {
+        // Only the top-level container has a header file
+        String path = typeRef.substring(currentPrefix.length());
+        int dot = path.indexOf('.');
+        String topLevel = dot >= 0 ? path.substring(0, dot) : path;
+        if (!topLevel.equals(topLevelName)) {
+          imports.add("#import \"" + nameResolver.classPrefix(file) + topLevel + ".h\"");
         }
+        continue;
       }
-      if (isNested) continue;
 
-      if (field.getTypeReference().startsWith(currentPrefix)) {
-        String simpleName = ProtoTypeUtil.simpleTypeName(field.getTypeReference());
-        if (!simpleName.equals(message.getName())) {
-          String className = nameResolver.resolveTypeReference(field.getTypeReference(), file);
-          imports.add("#import \"" + className + ".h\"");
-        }
+      // Cross-package: import via the package directory (resolved against the
+      // generation root on the include path)
+      String withoutDot = typeRef.startsWith(".") ? typeRef.substring(1) : typeRef;
+      String[] segments = withoutDot.split("\\.");
+      int firstType = 0;
+      StringBuilder pkgDir = new StringBuilder();
+      while (firstType < segments.length
+          && !segments[firstType].isEmpty()
+          && Character.isLowerCase(segments[firstType].charAt(0))) {
+        pkgDir.append(segments[firstType]).append('/');
+        firstType++;
       }
+      if (firstType >= segments.length) continue;
+      String pkg = String.join(".", java.util.Arrays.copyOfRange(segments, 0, firstType));
+      String topLevelClass = nameResolver.classPrefix(pkg) + segments[firstType];
+      imports.add("#import \"" + pkgDir + topLevelClass + ".h\"");
     }
     for (ProtoMessage nested : message.getNestedMessages()) {
-      collectCrossFileImports(nested, file, imports);
+      collectCrossFileImports(nested, topLevelName, file, imports);
     }
   }
 
@@ -1134,7 +1167,12 @@ public class PbtkObjCGenerator implements LanguageGenerator {
 
     w.blankLine();
     w.line("- (NSData *)data;");
+    w.line("- (NSInteger)countPbtkFields;");
+    w.line("- (void)appendPbtkFieldsTo:(NSMutableString *)buf;");
     w.line("+ (instancetype)parseFromData:(NSData *)data error:(NSError **)errorPtr;");
+    w.line(
+        "+ (instancetype)parsePbtkTokens:(NSArray<NSString *> *)tokens"
+            + " fieldCount:(NSInteger)fieldCount offset:(NSInteger *)offset;");
 
     w.blankLine();
     w.line("@end");

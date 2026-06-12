@@ -139,6 +139,7 @@ public class ObjCDeserializerGenerator {
 
   private void emitOneofDeserialize(
       CodeWriter w, ProtoField field, String propName, String className) {
+    String caseProp = nameResolver.fieldName(field.getOneofName()) + "Case";
     w.block(
         "if (item && item != (id)[NSNull null])",
         () -> {
@@ -151,6 +152,7 @@ public class ObjCDeserializerGenerator {
           } else {
             emitScalarDeserialize(w, field, propName);
           }
+          w.line("msg.%s = %d;", caseProp, field.getFieldNumber());
         });
   }
 

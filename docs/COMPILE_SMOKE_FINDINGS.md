@@ -24,6 +24,7 @@ Status as of 2026-06-11.
 | Rust (jsonarray) | `has_*` with `is_some()` on Vec/HashMap fields; cross-package refs unresolved; synthetic `*MapEntry` imports; base64 import missed for bytes map values; `&`-prefixed scalar reads in map pairs; recursive types had infinite size; aliased enums duplicated discriminants | has_* only for Option fields; `use crate::<pkg>::...` imports; map-entry skip; map-aware bytes check; deref-corrected reads; `Option<Box<T>>` for self-references; first-name-wins enums |
 | TypeScript/JavaScript (both formats) | Cross-package and nested-type references had no resolvable imports; nested messages deeper than one level were dropped; maps typed as pair arrays but stored as objects; optional scalars failed strict null checks | Path-aware import specs via `JsImportUtil`; recursive nested emission/exports; `Record<string, V>` map typing; non-null assertions under presence guards |
 | Dart (both formats) | Synthetic `*MapEntry` imports; no cross-package import paths; nested messages deeper than one level dropped | Shared path-aware collector in `DartCodeEmitter`; recursive nested emission |
+| Objective-C (both formats) | Nested-type references used a bogus prefix (last-dot split); oneof case property never declared and serializer referenced a phantom `<group>Value` property; enum properties typed `id`; cross-package/nested-container imports missing; deep-nested forward declarations missing; pbtk codec methods undeclared in headers | Package/type segment split in resolveTypeReference; case property + member-property serialization; NSInteger enums; container-header and package-path imports; recursive forward decls; header declarations |
 
 ## Open (CI marked broken)
 
@@ -31,7 +32,6 @@ Status as of 2026-06-11.
 |----------|---------|
 | Go | Cross-package references unsupported: Go imports need a module path, which requires honoring the `go_package` option (feature work). Same-package code (incl. nested types, optional enums/bytes, NaN handling) now compiles — see Fixed below |
 | Rust (pbtk format only) | `PbtkRustGenerator` output has never compiled: 244 errors across 8 classes (unresolved modules, private methods called cross-module, missing imports, bad derefs). Best addressed by the planned pbtk generator restructuring (Phase F); jsonarray Rust passes |
-| Objective-C | Cross-file references to types with a different file prefix don't import/forward-declare (`PWInnerData` unknown in `PRWrapper.h`); proto2 enum properties boxed with `@()` on `id` type |
 | C | Nested-type free-function name mismatch (`proto2test_Wrapper_inner_data_free` called, `proto2test_wrapper__inner_data_free` declared); same-named structs from different packages produce conflicting typedefs across headers |
 | C++ | Cross-package references not declared (`Address`); recursive messages use incomplete types by value (`TreeNode` needs pointer indirection); `std::nullopt` assigned to non-optional members |
 | Kotlin | Generated code references a `dev.protocgen...` runtime package that isn't a published Kotlin dependency |

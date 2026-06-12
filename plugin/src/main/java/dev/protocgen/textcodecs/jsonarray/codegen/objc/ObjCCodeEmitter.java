@@ -17,7 +17,6 @@ package dev.protocgen.textcodecs.jsonarray.codegen.objc;
 
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
-import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoEnum;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoFile;
@@ -74,13 +73,11 @@ public class ObjCCodeEmitter {
       emitEnumDef(w, protoEnum, file, message.getName() + "_");
     }
 
-    // Nested message forward declarations
-    for (ProtoMessage nested : message.getNestedMessages()) {
-      String nestedClass =
-          nameResolver.qualifiedClassName(file, message.getName() + "_" + nested.getName());
-      w.line("@class %s;", nestedClass);
-    }
-    if (!message.getNestedMessages().isEmpty()) {
+    // Nested message forward declarations (any depth: interfaces reference
+    // deeper-nested types before their declarations)
+    boolean hadNested = !message.getNestedMessages().isEmpty();
+    emitNestedForwardDecls(w, message, file, message.getName() + "_");
+    if (hadNested) {
       w.blankLine();
     }
 
@@ -253,7 +250,7 @@ public class ObjCCodeEmitter {
 
   private void emitCrossFileImports(CodeWriter w, ProtoMessage message, ProtoFile file) {
     Set<String> imports = new LinkedHashSet<>();
-    collectCrossFileImports(message, file, imports);
+    collectCrossFileImports(message, message.getName(), file, imports);
     for (String imp : imports) {
       w.line(imp);
     }
@@ -262,19 +259,32 @@ public class ObjCCodeEmitter {
     }
   }
 
-  private void collectCrossFileImports(ProtoMessage message, ProtoFile file, Set<String> imports) {
+  private void collectCrossFileImports(
+      ProtoMessage message, String topLevelName, ProtoFile file, Set<String> imports) {
     String currentPrefix =
         file.getProtoPackage().isEmpty() ? "." : "." + file.getProtoPackage() + ".";
 
     for (ProtoField field : message.getFields()) {
-      collectTypeImport(field.getTypeReference(), field, message, file, currentPrefix, imports);
-      if (field.isMap() && field.getMapValueTypeReference() != null) {
-        collectTypeImport(
-            field.getMapValueTypeReference(), null, message, file, currentPrefix, imports);
+      // A map field's own type reference is the synthetic *MapEntry message, which has
+      // no header; only the value type may need an import.
+      if (field.isMap()) {
+        if (field.getMapValueTypeReference() != null) {
+          collectTypeImport(
+              field.getMapValueTypeReference(),
+              null,
+              message,
+              topLevelName,
+              file,
+              currentPrefix,
+              imports);
+        }
+        continue;
       }
+      collectTypeImport(
+          field.getTypeReference(), field, message, topLevelName, file, currentPrefix, imports);
     }
     for (ProtoMessage nested : message.getNestedMessages()) {
-      collectCrossFileImports(nested, file, imports);
+      collectCrossFileImports(nested, topLevelName, file, imports);
     }
   }
 
@@ -282,6 +292,7 @@ public class ObjCCodeEmitter {
       String typeRef,
       ProtoField field,
       ProtoMessage message,
+      String topLevelName,
       ProtoFile file,
       String currentPrefix,
       Set<String> imports) {
@@ -296,12 +307,33 @@ public class ObjCCodeEmitter {
     }
 
     if (typeRef.startsWith(currentPrefix)) {
-      String simpleName = ProtoTypeUtil.simpleTypeName(typeRef);
-      if (simpleName.equals(message.getName())) return;
+      // Only the top-level container has a header file; nested types are declared in it
+      String path = typeRef.substring(currentPrefix.length());
+      int dot = path.indexOf('.');
+      String topLevel = dot >= 0 ? path.substring(0, dot) : path;
+      if (topLevel.equals(topLevelName)) return;
 
-      String className = nameResolver.resolveTypeReference(typeRef, file);
-      imports.add("#import \"" + className + ".h\"");
+      imports.add("#import \"" + nameResolver.classPrefix(file) + topLevel + ".h\"");
+      return;
     }
+
+    // Cross-package: import via the package directory (resolved against the
+    // generation root on the include path). Only the top-level container has a
+    // header file; nested types are declared inside it.
+    String withoutDot = typeRef.startsWith(".") ? typeRef.substring(1) : typeRef;
+    String[] segments = withoutDot.split("\\.");
+    int firstType = 0;
+    StringBuilder pkgDir = new StringBuilder();
+    while (firstType < segments.length
+        && !segments[firstType].isEmpty()
+        && Character.isLowerCase(segments[firstType].charAt(0))) {
+      pkgDir.append(segments[firstType]).append('/');
+      firstType++;
+    }
+    if (firstType >= segments.length) return;
+    String pkg = String.join(".", java.util.Arrays.copyOfRange(segments, 0, firstType));
+    String topLevelClass = nameResolver.classPrefix(pkg) + segments[firstType];
+    imports.add("#import \"" + pkgDir + topLevelClass + ".h\"");
   }
 
   private void emitEnumDef(CodeWriter w, ProtoEnum protoEnum, ProtoFile file, String parentPrefix) {
@@ -348,6 +380,9 @@ public class ObjCCodeEmitter {
         || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
       String refType = nameResolver.resolveTypeReference(field.getTypeReference(), null);
       w.line("@property (%s, nullable) %s *%s;", attrs, refType, propName);
+    } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
+      // Enums are NSInteger-typed; scalarType would fall through to id
+      w.line("@property (%s) NSInteger %s;", attrs, propName);
     } else if (isObj && (field.isProto3Optional() || !field.isRequired())) {
       w.line(
           "@property (%s, nullable) %s%s;",
@@ -367,6 +402,17 @@ public class ObjCCodeEmitter {
     // plus a case tracking property
     for (ProtoField member : group.members()) {
       emitPropertyDecl(w, member);
+    }
+    String caseProp = nameResolver.fieldName(group.name()) + "Case";
+    w.line("@property (nonatomic, assign) NSInteger %s; // 0 = not set", caseProp);
+  }
+
+  private void emitNestedForwardDecls(
+      CodeWriter w, ProtoMessage container, ProtoFile file, String prefix) {
+    for (ProtoMessage nested : container.getNestedMessages()) {
+      String nestedClass = nameResolver.qualifiedClassName(file, prefix + nested.getName());
+      w.line("@class %s;", nestedClass);
+      emitNestedForwardDecls(w, nested, file, prefix + nested.getName() + "_");
     }
   }
 

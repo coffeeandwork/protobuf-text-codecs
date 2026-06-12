@@ -13,9 +13,12 @@ NS_ASSUME_NONNULL_BEGIN
 
 /* pbtk URL serialization */
 - (NSData *)data;
+- (NSInteger)countPbtkFields;
+- (void)appendPbtkFieldsTo:(NSMutableString *)buf;
 
 /* pbtk URL deserialization */
 + (instancetype)parseFromData:(NSData *)data error:(NSError **)errorPtr;
++ (instancetype)parsePbtkTokens:(NSArray<NSString *> *)tokens fieldCount:(NSInteger)fieldCount offset:(NSInteger *)offset;
 
 @end
 
