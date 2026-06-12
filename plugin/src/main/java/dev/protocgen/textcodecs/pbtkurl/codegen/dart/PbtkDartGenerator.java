@@ -111,6 +111,7 @@ public class PbtkDartGenerator implements LanguageGenerator {
     w.line("// Source: %s", file.getFileName());
     w.blankLine();
     w.line("import 'dart:convert';");
+    w.line("import 'dart:typed_data';");
     w.blankLine();
   }
 
@@ -166,9 +167,11 @@ public class PbtkDartGenerator implements LanguageGenerator {
       String dartType = typeMapper.dartType(field);
       String defaultVal = typeMapper.defaultValue(field);
 
-      if (field.getKind() == ProtoField.FieldKind.MESSAGE
-          || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE
-          || field.isProto3Optional()) {
+      if (!field.isMap()
+          && !field.isRepeated()
+          && (field.getKind() == ProtoField.FieldKind.MESSAGE
+              || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE
+              || field.isProto3Optional())) {
         w.line("%s %s;", dartType, dartName);
       } else {
         w.line("%s %s = %s;", dartType, dartName, defaultVal);
@@ -248,11 +251,11 @@ public class PbtkDartGenerator implements LanguageGenerator {
   // ---------------------------------------------------------------------------
 
   private void emitToPbtkUrl(CodeWriter w, ProtoMessage message) {
-    // _countPbtkFields()
+    // countPbtkFields()
     w.blankLine();
     w.line("/// @private Counts how many top-level tokens this message produces.");
     w.block(
-        "int _countPbtkFields()",
+        "int countPbtkFields()",
         () -> {
           w.line("int count = 0;");
           for (ProtoField field : message.getFields()) {
@@ -261,11 +264,11 @@ public class PbtkDartGenerator implements LanguageGenerator {
           w.line("return count;");
         });
 
-    // _appendPbtkFields(parts)
+    // appendPbtkFields(parts)
     w.blankLine();
     w.line("/// @private Appends pbtk tokens to the given list.");
     w.block(
-        "void _appendPbtkFields(List<String> parts)",
+        "void appendPbtkFields(List<String> parts)",
         () -> {
           for (ProtoField field : message.getFields()) {
             emitFieldSerialize(w, field);
@@ -279,7 +282,7 @@ public class PbtkDartGenerator implements LanguageGenerator {
         "Uint8List writeToBuffer()",
         () -> {
           w.line("final parts = <String>[];");
-          w.line("_appendPbtkFields(parts);");
+          w.line("appendPbtkFields(parts);");
           w.line("return Uint8List.fromList(utf8.encode(parts.join('')));");
         });
   }
@@ -347,9 +350,11 @@ public class PbtkDartGenerator implements LanguageGenerator {
 
   private void emitScalarSerialize(CodeWriter w, ProtoField field, String dartField, int fieldNum) {
     if (field.isProto3Optional()) {
+      // Presence is tracked in _presentFields, which the compiler cannot narrow from,
+      // so assert non-null explicitly.
       w.block(
           "if (_presentFields[" + field.getArrayPosition() + "] == true)",
-          () -> emitScalarAppend(w, field, dartField, fieldNum));
+          () -> emitScalarAppend(w, field, dartField + "!", fieldNum));
       return;
     }
     emitScalarAppend(w, field, dartField, fieldNum);
@@ -396,8 +401,8 @@ public class PbtkDartGenerator implements LanguageGenerator {
     w.block(
         "if (" + dartField + " != null)",
         () -> {
-          w.line("parts.add('!%dm${%s!._countPbtkFields()}');", fieldNum, dartField);
-          w.line("%s!._appendPbtkFields(parts);", dartField);
+          w.line("parts.add('!%dm${%s!.countPbtkFields()}');", fieldNum, dartField);
+          w.line("%s!.appendPbtkFields(parts);", dartField);
         });
   }
 
@@ -413,8 +418,8 @@ public class PbtkDartGenerator implements LanguageGenerator {
             w.block(
                 "if (" + elem + " != null)",
                 () -> {
-                  w.line("parts.add('!%dm${%s._countPbtkFields()}');", fieldNum, elem);
-                  w.line("%s._appendPbtkFields(parts);", elem);
+                  w.line("parts.add('!%dm${%s.countPbtkFields()}');", fieldNum, elem);
+                  w.line("%s.appendPbtkFields(parts);", elem);
                 });
           } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
             w.line("parts.add('!%de${%s ?? 0}');", fieldNum, elem);
@@ -445,8 +450,8 @@ public class PbtkDartGenerator implements LanguageGenerator {
             w.block(
                 "if (entry.value != null)",
                 () -> {
-                  w.line("parts.add('!2m${entry.value._countPbtkFields()}');");
-                  w.line("entry.value._appendPbtkFields(parts);");
+                  w.line("parts.add('!2m${entry.value.countPbtkFields()}');");
+                  w.line("entry.value.appendPbtkFields(parts);");
                 });
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
             w.line("parts.add('!2e${entry.value ?? 0}');");
@@ -474,13 +479,13 @@ public class PbtkDartGenerator implements LanguageGenerator {
   // ---------------------------------------------------------------------------
 
   private void emitFromPbtkUrl(CodeWriter w, ProtoMessage message, String className) {
-    // _parsePbtkTokens -- internal parser
+    // parsePbtkTokens -- internal parser
     w.blankLine();
     w.line("/// @private Parses pbtk tokens into this message type.");
     w.block(
         "static "
             + className
-            + " _parsePbtkTokens(List<String> tokens, int fieldCount, List<int> offset)",
+            + " parsePbtkTokens(List<String> tokens, int fieldCount, List<int> offset)",
         () -> {
           w.line("final obj = %s();", className);
           w.line("int consumed = 0;");
@@ -519,7 +524,7 @@ public class PbtkDartGenerator implements LanguageGenerator {
           w.line("if (input.isEmpty) return %s();", className);
           w.line("final tokens = %s._tokenizePbtk(input);", className);
           w.line("final offset = [0];");
-          w.line("return %s._parsePbtkTokens(tokens, tokens.length, offset);", className);
+          w.line("return %s.parsePbtkTokens(tokens, tokens.length, offset);", className);
         });
 
     // _tokenizePbtk -- split on '!'
@@ -591,7 +596,7 @@ public class PbtkDartGenerator implements LanguageGenerator {
     String msgType = typeMapper.simpleTypeName(field.getTypeReference());
     w.line("final subCount = int.parse(value);");
     w.line("offset[0]++;");
-    w.line("%s(%s._parsePbtkTokens(tokens, subCount, offset));", setter, msgType);
+    w.line("%s(%s.parsePbtkTokens(tokens, subCount, offset));", setter, msgType);
     w.line("offset[0]--;"); // compensate for outer offset[0]++
   }
 
@@ -600,7 +605,7 @@ public class PbtkDartGenerator implements LanguageGenerator {
       String msgType = typeMapper.simpleTypeName(field.getTypeReference());
       w.line("final subCount = int.parse(value);");
       w.line("offset[0]++;");
-      w.line("%s.add(%s._parsePbtkTokens(tokens, subCount, offset));", getter, msgType);
+      w.line("%s.add(%s.parsePbtkTokens(tokens, subCount, offset));", getter, msgType);
       w.line("offset[0]--;");
     } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
       w.line("%s.add(int.parse(value));", getter);
@@ -643,7 +648,7 @@ public class PbtkDartGenerator implements LanguageGenerator {
                   String msgType = typeMapper.simpleTypeName(field.getMapValueTypeReference());
                   w.line("final valSubCount = int.parse(mval);");
                   w.line("offset[0]++;");
-                  w.line("entryVal = %s._parsePbtkTokens(tokens, valSubCount, offset);", msgType);
+                  w.line("entryVal = %s.parsePbtkTokens(tokens, valSubCount, offset);", msgType);
                   w.line("offset[0]--;");
                 } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
                   w.line("entryVal = int.parse(mval);");

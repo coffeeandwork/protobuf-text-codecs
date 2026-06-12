@@ -80,6 +80,7 @@ public class DartCodeEmitter {
     w.line("// Source: %s", file.getFileName());
     w.blankLine();
     w.line("import 'dart:convert';");
+    w.line("import 'dart:typed_data';");
     w.blankLine();
   }
 
@@ -231,9 +232,11 @@ public class DartCodeEmitter {
       String dartType = typeMapper.dartType(field);
       String defaultVal = typeMapper.defaultValue(field);
 
-      if (field.getKind() == ProtoField.FieldKind.MESSAGE
-          || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE
-          || field.isProto3Optional()) {
+      if (!field.isMap()
+          && !field.isRepeated()
+          && (field.getKind() == ProtoField.FieldKind.MESSAGE
+              || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE
+              || field.isProto3Optional())) {
         w.line("%s %s;", dartType, dartName);
       } else {
         w.line("%s %s = %s;", dartType, dartName, defaultVal);

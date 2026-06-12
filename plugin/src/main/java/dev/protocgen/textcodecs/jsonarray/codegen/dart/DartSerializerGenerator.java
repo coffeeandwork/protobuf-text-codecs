@@ -118,7 +118,9 @@ public class DartSerializerGenerator {
       w.block(
           "if (" + hasCheck + " == true)",
           () -> {
-            emitScalarPush(w, field, dartField);
+            // Presence is tracked in _presentFields, which the compiler cannot narrow
+            // from, so assert non-null explicitly.
+            emitScalarPush(w, field, dartField + "!");
           });
       w.line("else { array.add(null); }");
       return;

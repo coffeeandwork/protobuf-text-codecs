@@ -139,9 +139,10 @@ public class DartDeserializerGenerator {
     if (field.getKind() == ProtoField.FieldKind.MESSAGE
         || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
       String msgType = typeMapper.simpleTypeName(field.getTypeReference());
+      // Null elements become default instances so the list stays non-nullable
       w.line(
-          "final list = (%s as List).map((elem) => elem != null ? %s.deserialize(elem as List<dynamic>) : null).toList();",
-          nodeExpr, msgType);
+          "final list = (%s as List).map((elem) => elem != null ? %s.deserialize(elem as List<dynamic>) : %s()).toList();",
+          nodeExpr, msgType, msgType);
     } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
       w.line("final list = (%s as List).map((elem) => (elem as num).toInt()).toList();", nodeExpr);
     } else {
@@ -154,8 +155,10 @@ public class DartDeserializerGenerator {
   private void emitMapDeserialize(CodeWriter w, ProtoField field, String setter, String nodeExpr) {
     boolean stringKey = field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_STRING;
 
+    // Type the literal so it can be assigned to the typed field
+    String typeArgs = typeMapper.languageType(field).substring("Map".length());
     if (stringKey) {
-      w.line("final map = <String, dynamic>{};");
+      w.line("final map = %s{};", typeArgs);
       w.block(
           "for (final entry in (" + nodeExpr + " as Map).entries)",
           () -> {
@@ -163,7 +166,7 @@ public class DartDeserializerGenerator {
             w.line("map[entry.key as String] = %s;", valueExpr);
           });
     } else {
-      w.line("final map = <dynamic, dynamic>{};");
+      w.line("final map = %s{};", typeArgs);
       w.block(
           "for (final pair in (" + nodeExpr + " as List))",
           () -> {
@@ -210,7 +213,9 @@ public class DartDeserializerGenerator {
           + msgType
           + ".deserialize("
           + nodeExpr
-          + " as List<dynamic>) : null";
+          + " as List<dynamic>) : "
+          + msgType
+          + "()";
     }
     if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
       return "(" + nodeExpr + " as num).toInt()";

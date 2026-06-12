@@ -2,6 +2,7 @@
 // Source: address.proto
 
 import 'dart:convert';
+import 'dart:typed_data';
 
 class Address {
   String street = '';
@@ -53,7 +54,7 @@ class Address {
   }
 
   /// @private Counts how many top-level tokens this message produces.
-  int _countPbtkFields() {
+  int countPbtkFields() {
     int count = 0;
     count++;
     count++;
@@ -63,7 +64,7 @@ class Address {
   }
 
   /// @private Appends pbtk tokens to the given list.
-  void _appendPbtkFields(List<String> parts) {
+  void appendPbtkFields(List<String> parts) {
     parts.add('!1s${Uri.encodeComponent(street)}');
     parts.add('!2s${Uri.encodeComponent(city)}');
     parts.add('!3s${Uri.encodeComponent(state)}');
@@ -73,12 +74,12 @@ class Address {
   /// Serialize this message to a Uint8List.
   Uint8List writeToBuffer() {
     final parts = <String>[];
-    _appendPbtkFields(parts);
+    appendPbtkFields(parts);
     return Uint8List.fromList(utf8.encode(parts.join('')));
   }
 
   /// @private Parses pbtk tokens into this message type.
-  static Address _parsePbtkTokens(List<String> tokens, int fieldCount, List<int> offset) {
+  static Address parsePbtkTokens(List<String> tokens, int fieldCount, List<int> offset) {
     final obj = Address();
     int consumed = 0;
     while (consumed < fieldCount && offset[0] < tokens.length) {
@@ -126,7 +127,7 @@ class Address {
     if (input.isEmpty) return Address();
     final tokens = Address._tokenizePbtk(input);
     final offset = [0];
-    return Address._parsePbtkTokens(tokens, tokens.length, offset);
+    return Address.parsePbtkTokens(tokens, tokens.length, offset);
   }
 
   /// @private Tokenizes a pbtk URL string into individual tokens.

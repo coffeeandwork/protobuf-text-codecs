@@ -122,19 +122,21 @@ public class ObjCNameResolver implements NameResolver {
   @Override
   public String resolveTypeReference(String protoFullName, ProtoFile currentFile) {
     if (protoFullName == null) return "NSObject";
-    // Extract the package and simple name
+    // Package segments are lowercase by proto convention; the remaining segments are the
+    // type path, which declarations flatten with underscores (PRWrapper_InnerData).
     String withoutDot = protoFullName.startsWith(".") ? protoFullName.substring(1) : protoFullName;
-    int lastDot = withoutDot.lastIndexOf('.');
-    String pkg;
-    String simpleName;
-    if (lastDot >= 0) {
-      pkg = withoutDot.substring(0, lastDot);
-      simpleName = withoutDot.substring(lastDot + 1);
-    } else {
-      pkg = "";
-      simpleName = withoutDot;
+    String[] segments = withoutDot.split("\\.");
+    int firstType = 0;
+    while (firstType < segments.length
+        && !segments[firstType].isEmpty()
+        && Character.isLowerCase(segments[firstType].charAt(0))) {
+      firstType++;
     }
-    return classPrefix(pkg) + simpleName;
+    if (firstType >= segments.length) return "NSObject";
+    String pkg = String.join(".", java.util.Arrays.copyOfRange(segments, 0, firstType));
+    String typePath =
+        String.join("_", java.util.Arrays.copyOfRange(segments, firstType, segments.length));
+    return classPrefix(pkg) + typePath;
   }
 
   @Override
