@@ -129,13 +129,13 @@ public class PbtkCGenerator implements LanguageGenerator {
     w.line("#endif");
     w.blankLine();
 
-    // Forward declarations for nested messages
-    for (ProtoMessage nested : message.getNestedMessages()) {
-      String nestedType =
-          nameResolver.qualifiedTypeName(pkg, message.getName() + "_" + nested.getName());
-      w.line("typedef struct %s %s;", nestedType, nestedType);
-    }
-    if (!message.getNestedMessages().isEmpty()) {
+    // Forward declarations for externally-referenced message types
+    emitExternalForwardDeclarations(w, message, file);
+
+    // Forward declarations for nested messages (any depth)
+    boolean hadNested = !message.getNestedMessages().isEmpty();
+    emitNestedTypedefs(w, message, pkg, message.getName() + "_");
+    if (hadNested) {
       w.blankLine();
     }
 
@@ -1474,6 +1474,9 @@ public class PbtkCGenerator implements LanguageGenerator {
         w.indent();
         w.line("%s key;", keyType);
         w.line("%s value;", valType);
+        if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+          w.line("size_t value_len;");
+        }
         w.dedent();
         w.line("} %s;", entryType);
         w.blankLine();
@@ -1516,7 +1519,12 @@ public class PbtkCGenerator implements LanguageGenerator {
 
   private void emitStructDef(
       CodeWriter w, ProtoMessage message, String typeName, String funcPrefix, String pkg) {
-    w.line("typedef struct {");
+    // Named tag with a preceding forward typedef: forward declarations elsewhere
+    // (typedef struct X X;) and self-references inside the body then refer to this
+    // same type, avoiding the conflicting/anonymous-struct issues that arise when a
+    // separately forward-declared name is typedef'd to an anonymous struct body.
+    w.line("typedef struct %s %s;", typeName, typeName);
+    w.line("struct %s {", typeName);
     w.indent();
 
     for (ProtoField field : message.getFields()) {
@@ -1566,10 +1574,16 @@ public class PbtkCGenerator implements LanguageGenerator {
       String caseEnumType = funcPrefix.toUpperCase() + "_" + group.name().toUpperCase() + "_CASE";
       w.line("%s %s;", unionType, oneofField);
       w.line("%s %s_case;", caseEnumType, oneofField);
+      // Bytes lengths live outside the union (they accompany the active pointer)
+      for (ProtoField member : group.members()) {
+        if (member.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
+          w.line("size_t %s_len;", nameResolver.fieldName(member.getName()));
+        }
+      }
     }
 
     w.dedent();
-    w.line("} %s;", typeName);
+    w.line("};");
   }
 
   private void emitCrossFileIncludes(CodeWriter w, ProtoMessage message, ProtoFile file) {
@@ -1587,12 +1601,17 @@ public class PbtkCGenerator implements LanguageGenerator {
         file.getProtoPackage().isEmpty() ? "." : "." + file.getProtoPackage() + ".";
 
     for (ProtoField field : message.getFields()) {
+      // A map field's own type reference is the synthetic *MapEntry message, which has
+      // no header; only the value type may need an include.
+      if (field.isMap()) {
+        if (field.getMapValueTypeReference() != null) {
+          collectTypeInclude(
+              field.getMapValueTypeReference(), null, message, file, currentPrefix, pkg, includes);
+        }
+        continue;
+      }
       collectTypeInclude(
           field.getTypeReference(), field, message, file, currentPrefix, pkg, includes);
-      if (field.isMap() && field.getMapValueTypeReference() != null) {
-        collectTypeInclude(
-            field.getMapValueTypeReference(), null, message, file, currentPrefix, pkg, includes);
-      }
     }
 
     for (ProtoMessage nested : message.getNestedMessages()) {
@@ -1611,16 +1630,119 @@ public class PbtkCGenerator implements LanguageGenerator {
     if (typeRef == null) return;
     if (field != null && field.isWellKnownType()) return;
 
+    // Check if the type is a nested type within the current message
     for (ProtoMessage nested : message.getNestedMessages()) {
       if (typeRef.equals(message.getFullName() + "." + nested.getName())) return;
     }
 
+    // Check if this is a type in the same package but different file. Only the
+    // top-level container has a header; nested types are declared inside it.
+    if (typeRef.startsWith(currentPrefix)) {
+      String path = typeRef.substring(currentPrefix.length());
+      int dot = path.indexOf('.');
+      String topLevel = dot >= 0 ? path.substring(0, dot) : path;
+      // Skip references into the file being generated
+      if (topLevel.equals(message.getName())) return;
+
+      String snakeName = pascalToSnake(topLevel);
+      String dir = pkg.isEmpty() ? "" : pkg.replace('.', '/') + "/";
+      includes.add("#include \"" + dir + snakeName + ".h\"");
+      return;
+    }
+
+    // Cross-package: include via the package directory (resolved against the
+    // generation root on the include path)
+    String withoutDot = typeRef.startsWith(".") ? typeRef.substring(1) : typeRef;
+    String[] segments = withoutDot.split("\\.");
+    int firstType = 0;
+    StringBuilder pkgDir = new StringBuilder();
+    while (firstType < segments.length
+        && !segments[firstType].isEmpty()
+        && Character.isLowerCase(segments[firstType].charAt(0))) {
+      pkgDir.append(segments[firstType]).append('/');
+      firstType++;
+    }
+    if (firstType >= segments.length) return;
+    includes.add("#include \"" + pkgDir + pascalToSnake(segments[firstType]) + ".h\"");
+  }
+
+  // ========================================================================
+  // Forward declarations
+  // ========================================================================
+
+  /** Recursively emit forward typedefs for nested messages at any depth. */
+  private void emitNestedTypedefs(CodeWriter w, ProtoMessage container, String pkg, String prefix) {
+    for (ProtoMessage nested : container.getNestedMessages()) {
+      String nestedType = nameResolver.qualifiedTypeName(pkg, prefix + nested.getName());
+      w.line("typedef struct %s %s;", nestedType, nestedType);
+      emitNestedTypedefs(w, nested, pkg, prefix + nested.getName() + "_");
+    }
+  }
+
+  /**
+   * Emit forward declarations (typedef struct X X;) for externally-referenced message types so the
+   * struct type is known even if the #include is guarded out (circular references).
+   */
+  private void emitExternalForwardDeclarations(CodeWriter w, ProtoMessage message, ProtoFile file) {
+    Set<String> forwardDecls = new LinkedHashSet<>();
+    collectExternalForwardDeclarations(message, file, forwardDecls);
+    for (String decl : forwardDecls) {
+      w.line(decl);
+    }
+    if (!forwardDecls.isEmpty()) {
+      w.blankLine();
+    }
+  }
+
+  private void collectExternalForwardDeclarations(
+      ProtoMessage message, ProtoFile file, Set<String> forwardDecls) {
+    String currentPrefix =
+        file.getProtoPackage().isEmpty() ? "." : "." + file.getProtoPackage() + ".";
+
+    for (ProtoField field : message.getFields()) {
+      collectTypeForwardDecl(
+          field.getTypeReference(), field, message, file, currentPrefix, forwardDecls);
+      // Only message-typed map values can be forward-declared (C enums cannot);
+      // enum references are satisfied by the emitted #include instead
+      if (field.isMap()
+          && field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE
+          && field.getMapValueTypeReference() != null) {
+        collectTypeForwardDecl(
+            field.getMapValueTypeReference(), null, message, file, currentPrefix, forwardDecls);
+      }
+    }
+
+    for (ProtoMessage nested : message.getNestedMessages()) {
+      collectExternalForwardDeclarations(nested, file, forwardDecls);
+    }
+  }
+
+  private void collectTypeForwardDecl(
+      String typeRef,
+      ProtoField field,
+      ProtoMessage message,
+      ProtoFile file,
+      String currentPrefix,
+      Set<String> forwardDecls) {
+    if (typeRef == null) return;
+    if (field != null && field.isWellKnownType()) return;
+    // Only message types need forward declarations (not enums)
+    if (field != null
+        && field.getKind() != ProtoField.FieldKind.MESSAGE
+        && field.getKind() != ProtoField.FieldKind.WELL_KNOWN_TYPE) return;
+
+    // Check if the type is a nested type within the current message
+    for (ProtoMessage nested : message.getNestedMessages()) {
+      if (typeRef.equals(message.getFullName() + "." + nested.getName())) return;
+    }
+
+    // Check if this is a type in the same package but different file
     if (typeRef.startsWith(currentPrefix)) {
       String simpleName = ProtoTypeUtil.simpleTypeName(typeRef);
       if (simpleName.equals(message.getName())) return;
-      String snakeName = pascalToSnake(simpleName);
-      String dir = pkg.isEmpty() ? "" : pkg.replace('.', '/') + "/";
-      includes.add("#include \"" + dir + snakeName + ".h\"");
+
+      String cTypeName = nameResolver.resolveTypeReference(typeRef, null);
+      forwardDecls.add("typedef struct " + cTypeName + " " + cTypeName + ";");
     }
   }
 
