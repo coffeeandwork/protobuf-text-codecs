@@ -102,7 +102,7 @@ check_c() {
         [ ${#extra[@]} -gt 0 ] || skip "cJSON headers not found (install libcjson-dev)"
     fi
     find "$1" -name '*.c' -print0 | xargs -0 -n1 gcc -fsyntax-only -std=c11 \
-        -I "$1" -I "$PROJECT_ROOT/runtime/c/include" "${extra[@]}" \
+        -I "$1" -I "$PROJECT_ROOT/runtime/c/include" ${extra[@]+"${extra[@]}"} \
         || die "gcc -fsyntax-only failed in $1"
 }
 
@@ -116,7 +116,7 @@ check_cpp() {
         [ ${#extra[@]} -gt 0 ] || skip "nlohmann/json headers not found (install nlohmann-json3-dev)"
     fi
     find "$1" -name '*.hpp' -print0 | xargs -0 -n1 g++ -fsyntax-only -std=c++17 \
-        -I "$1" -I "$PROJECT_ROOT/runtime/cpp/include" "${extra[@]}" \
+        -I "$1" -I "$PROJECT_ROOT/runtime/cpp/include" ${extra[@]+"${extra[@]}"} \
         || die "g++ -fsyntax-only failed in $1"
 }
 

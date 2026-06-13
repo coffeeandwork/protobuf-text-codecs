@@ -138,7 +138,12 @@ public class CSerializerGenerator {
     } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
       w.line("cJSON_AddItemToArray(array, cJSON_CreateNumber((double)%s));", accessor);
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_BYTES) {
-      w.line("char* pb_b64 = jsonarray_base64_encode(%s, %s_len);", accessor, accessor);
+      // Oneof bytes lengths are struct-level siblings of the union
+      String lenAccessor =
+          field.isOneofMember()
+              ? "msg->" + nameResolver.fieldName(field.getName()) + "_len"
+              : accessor + "_len";
+      w.line("char* pb_b64 = jsonarray_base64_encode(%s, %s);", accessor, lenAccessor);
       w.line("cJSON_AddItemToArray(array, cJSON_CreateString(pb_b64));");
       w.line("free(pb_b64);");
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_STRING) {
@@ -216,6 +221,17 @@ public class CSerializerGenerator {
         w.line(
             "{ char pb_buf[32]; snprintf(pb_buf, sizeof(pb_buf), \"%%llu\", (unsigned long long)%s); cJSON_AddItemToArray(array, cJSON_CreateString(pb_buf)); }",
             accessor);
+        break;
+      case TYPE_STRING:
+        w.line(
+            "cJSON_AddItemToArray(array, %s ? cJSON_CreateString(%s) : cJSON_CreateNull());",
+            accessor, accessor);
+        break;
+      case TYPE_BYTES:
+        w.line(
+            "{ char* pb_b64 = jsonarray_base64_encode(%s, %s_len); cJSON_AddItemToArray(array,"
+                + " cJSON_CreateString(pb_b64)); free(pb_b64); }",
+            accessor, accessor);
         break;
       default:
         w.line("cJSON_AddItemToArray(array, cJSON_CreateNumber((double)%s));", accessor);

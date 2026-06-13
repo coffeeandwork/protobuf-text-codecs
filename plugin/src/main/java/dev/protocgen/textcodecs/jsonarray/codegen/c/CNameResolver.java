@@ -114,14 +114,23 @@ public class CNameResolver implements NameResolver {
   public String resolveTypeFunctionPrefix(String protoFullName) {
     if (protoFullName == null) return "unknown";
     String withoutDot = protoFullName.startsWith(".") ? protoFullName.substring(1) : protoFullName;
-    // Split by '.', snake_case the last component (message name), keep package parts as-is
-    int lastDot = withoutDot.lastIndexOf('.');
-    if (lastDot < 0) {
-      return pascalToSnake(withoutDot);
+    // Package segments are lowercase by proto convention; the remaining segments form the
+    // type path, snake_cased as one unit to match declaration prefixes
+    String[] segments = withoutDot.split("\\.");
+    int firstType = 0;
+    while (firstType < segments.length
+        && !segments[firstType].isEmpty()
+        && Character.isLowerCase(segments[firstType].charAt(0))) {
+      firstType++;
     }
-    String pkg = withoutDot.substring(0, lastDot).replace('.', '_');
-    String name = pascalToSnake(withoutDot.substring(lastDot + 1));
-    return pkg + "_" + name;
+    if (firstType >= segments.length) {
+      return pascalToSnake(withoutDot.replace('.', '_'));
+    }
+    String pkg = String.join("_", java.util.Arrays.copyOfRange(segments, 0, firstType));
+    String typePath =
+        String.join("_", java.util.Arrays.copyOfRange(segments, firstType, segments.length));
+    String snake = pascalToSnake(typePath);
+    return pkg.isEmpty() ? snake : pkg + "_" + snake;
   }
 
   @Override
