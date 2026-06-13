@@ -139,9 +139,7 @@ public class KotlinSerializerGenerator {
     FieldDescriptorProto.Type protoType = field.getProtoType();
     switch (protoType) {
       case TYPE_STRING:
-        w.line(
-            "dev.protocgen.textcodecs.jsonarray.runtime.JsonArrayWriter.appendQuotedString(sb, %s)",
-            ktField);
+        w.line("appendJsonString(sb, %s)", ktField);
         break;
       case TYPE_BYTES:
         w.line(
@@ -258,8 +256,7 @@ public class KotlinSerializerGenerator {
                 "for ((__key, __value) in " + ktField + ")",
                 () -> {
                   w.line("if (%s > 0) sb.append(',')", indexVar);
-                  w.line(
-                      "dev.protocgen.textcodecs.jsonarray.runtime.JsonArrayWriter.appendQuotedString(sb, __key as String)");
+                  w.line("appendJsonString(sb, __key as String)");
                   w.line("sb.append(':')");
                   emitMapValueAppend(w, field, "__value");
                   w.line("%s++", indexVar);
@@ -289,9 +286,7 @@ public class KotlinSerializerGenerator {
     FieldDescriptorProto.Type keyType = field.getMapKeyType();
     switch (keyType) {
       case TYPE_STRING:
-        w.line(
-            "dev.protocgen.textcodecs.jsonarray.runtime.JsonArrayWriter.appendQuotedString(sb, %s as String)",
-            keyExpr);
+        w.line("appendJsonString(sb, %s as String)", keyExpr);
         break;
       case TYPE_BOOL:
         w.line("sb.append(%s as Boolean)", keyExpr);
@@ -329,9 +324,7 @@ public class KotlinSerializerGenerator {
           "sb.append(if (%s != null) (%s as %s).getNumber() else 0)",
           valueExpr, valueExpr, enumType);
     } else if (valueType == FieldDescriptorProto.Type.TYPE_STRING) {
-      w.line(
-          "dev.protocgen.textcodecs.jsonarray.runtime.JsonArrayWriter.appendQuotedString(sb, %s as String)",
-          valueExpr);
+      w.line("appendJsonString(sb, %s as String)", valueExpr);
     } else if (valueType == FieldDescriptorProto.Type.TYPE_BYTES) {
       w.line(
           "sb.append('\"').append(java.util.Base64.getEncoder().encodeToString(%s as ByteArray)).append('\"')",

@@ -20,6 +20,7 @@ import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse;
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
 import dev.protocgen.textcodecs.jsonarray.codegen.LanguageGenerator;
 import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
+import dev.protocgen.textcodecs.jsonarray.codegen.kotlin.KotlinImportUtil;
 import dev.protocgen.textcodecs.jsonarray.codegen.kotlin.KotlinNameResolver;
 import dev.protocgen.textcodecs.jsonarray.codegen.kotlin.KotlinTypeMapper;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoEnum;
@@ -53,7 +54,7 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
 
     for (ProtoMessage message : file.getMessages()) {
       nameResolver.validateFieldNames(message.getFields());
-      String sourceCode = emitMessage(message, file);
+      String sourceCode = emitMessage(message, file, registry);
       String outputPath = nameResolver.outputFilePath(file, message.getName());
 
       result.add(
@@ -81,7 +82,7 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
   // Top-level message / enum emission
   // ---------------------------------------------------------------------------
 
-  private String emitMessage(ProtoMessage message, ProtoFile file) {
+  private String emitMessage(ProtoMessage message, ProtoFile file, TypeRegistry registry) {
     CodeWriter w = new CodeWriter();
     String pkg = nameResolver.resolvePackage(file);
     String className = nameResolver.messageClassName(message.getName());
@@ -91,6 +92,15 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
 
     if (!pkg.isEmpty()) {
       w.line("package %s", pkg);
+      w.blankLine();
+    }
+
+    boolean wroteImport = false;
+    for (String imp : KotlinImportUtil.collectImports(message, file, registry)) {
+      w.line(imp);
+      wroteImport = true;
+    }
+    if (wroteImport) {
       w.blankLine();
     }
 
@@ -309,7 +319,7 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
       w.blankLine();
       String enumName = KotlinNameResolver.snakeToPascal(group.name()) + "Case";
       w.block(
-          "enum class " + enumName + "(val number: Int)",
+          "enum class " + enumName + "(private val num: Int)",
           () -> {
             w.line("%s_NOT_SET(0),", snakeToUpperSnake(group.name()));
             for (int i = 0; i < group.members().size(); i++) {
@@ -320,7 +330,7 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
             }
 
             w.blankLine();
-            w.block("fun getNumber(): Int", () -> w.line("return number"));
+            w.block("fun getNumber(): Int", () -> w.line("return num"));
             w.blankLine();
             w.block(
                 "companion object",
@@ -330,7 +340,7 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
                       () -> {
                         w.block(
                             "for (v in entries)",
-                            () -> w.block("if (v.number == number)", () -> w.line("return v")));
+                            () -> w.block("if (v.num == number)", () -> w.line("return v")));
                         w.line("return %s_NOT_SET", snakeToUpperSnake(group.name()));
                       });
                 });
@@ -565,10 +575,10 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
             w.line("sb.append(\"!2b\").append(if (__value as Boolean) \"1\" else \"0\")");
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_DOUBLE) {
             w.line(
-                "{ val __dv = (__value as Number).toDouble(); if (!__dv.isNaN() && !__dv.isInfinite()) sb.append(\"!2d\").append(__dv) }");
+                "run { val __dv = (__value as Number).toDouble(); if (!__dv.isNaN() && !__dv.isInfinite()) sb.append(\"!2d\").append(__dv) }");
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FLOAT) {
             w.line(
-                "{ val __fv = (__value as Number).toFloat(); if (!__fv.isNaN() && !__fv.isInfinite()) sb.append(\"!2f\").append(__fv) }");
+                "run { val __fv = (__value as Number).toFloat(); if (!__fv.isNaN() && !__fv.isInfinite()) sb.append(\"!2f\").append(__fv) }");
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_UINT32
               || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_FIXED32) {
             w.line("sb.append(\"!2i\").append(Integer.toUnsignedLong(__value as Int))");
@@ -738,7 +748,9 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
       w.line("offset[0]--");
     } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
       String enumType = simpleTypeName(field.getTypeReference());
-      w.line("%s(%s.forNumber(value.toInt()))", addCall, enumType);
+      // forNumber returns a nullable enum; the add* method takes a non-null element.
+      w.line("val __re = %s.forNumber(value.toInt())", enumType);
+      w.line("if (__re != null) %s(__re)", addCall);
     } else {
       String readExpr = scalarReadExpr(field.getProtoType(), "value");
       w.line("%s(%s)", addCall, readExpr);
@@ -1165,7 +1177,7 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
   private void emitEnum(CodeWriter w, ProtoEnum protoEnum) {
     w.blankLine();
     w.block(
-        "enum class " + protoEnum.getName() + "(val number: Int)",
+        "enum class " + protoEnum.getName() + "(private val num: Int)",
         () -> {
           for (int i = 0; i < protoEnum.getValues().size(); i++) {
             ProtoEnum.EnumValue val = protoEnum.getValues().get(i);
@@ -1174,7 +1186,7 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
           }
 
           w.blankLine();
-          w.block("fun getNumber(): Int", () -> w.line("return number"));
+          w.block("fun getNumber(): Int", () -> w.line("return num"));
           w.blankLine();
           w.block(
               "companion object",
@@ -1185,7 +1197,7 @@ public class PbtkKotlinGenerator implements LanguageGenerator {
                     () -> {
                       w.block(
                           "for (v in entries)",
-                          () -> w.block("if (v.number == number)", () -> w.line("return v")));
+                          () -> w.block("if (v.num == number)", () -> w.line("return v")));
                       w.line("return null");
                     });
               });
