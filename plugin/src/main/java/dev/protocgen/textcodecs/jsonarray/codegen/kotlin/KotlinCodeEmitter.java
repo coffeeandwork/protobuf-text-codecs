@@ -22,6 +22,7 @@ import dev.protocgen.textcodecs.jsonarray.model.ProtoEnum;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoFile;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoMessage;
+import dev.protocgen.textcodecs.jsonarray.model.TypeRegistry;
 
 /** Generates complete Kotlin source files for proto messages and enums. */
 public class KotlinCodeEmitter {
@@ -42,7 +43,7 @@ public class KotlinCodeEmitter {
   }
 
   /** Generate a complete Kotlin source file for a message. */
-  public String emitMessage(ProtoMessage message, ProtoFile file) {
+  public String emitMessage(ProtoMessage message, ProtoFile file, TypeRegistry registry) {
     CodeWriter w = new CodeWriter();
     String pkg = nameResolver.resolvePackage(file);
     String className = nameResolver.messageClassName(message.getName());
@@ -55,6 +56,15 @@ public class KotlinCodeEmitter {
       w.blankLine();
     }
 
+    boolean wroteImport = false;
+    for (String imp : KotlinImportUtil.collectImports(message, file, registry)) {
+      w.line(imp);
+      wroteImport = true;
+    }
+    if (wroteImport) {
+      w.blankLine();
+    }
+
     emitDocComment(w, message.getComment());
 
     w.block(
@@ -62,6 +72,9 @@ public class KotlinCodeEmitter {
         () -> {
           emitMessageBody(w, message, className);
         });
+
+    // Zero-dependency JSON helpers, inlined per file (no shared runtime artifact).
+    emitJsonRuntime(w, className);
 
     return w.toString();
   }
@@ -340,7 +353,7 @@ public class KotlinCodeEmitter {
       w.blankLine();
       String enumName = KotlinNameResolver.snakeToPascal(group.name()) + "Case";
       w.block(
-          "enum class " + enumName + "(val number: Int)",
+          "enum class " + enumName + "(private val num: Int)",
           () -> {
             w.line("%s_NOT_SET(0),", snakeToUpperSnake(group.name()));
             for (int i = 0; i < group.members().size(); i++) {
@@ -354,7 +367,7 @@ public class KotlinCodeEmitter {
             w.block(
                 "fun getNumber(): Int",
                 () -> {
-                  w.line("return number");
+                  w.line("return num");
                 });
 
             w.blankLine();
@@ -368,7 +381,7 @@ public class KotlinCodeEmitter {
                             "for (v in entries)",
                             () -> {
                               w.block(
-                                  "if (v.number == number)",
+                                  "if (v.num == number)",
                                   () -> {
                                     w.line("return v");
                                   });
@@ -852,7 +865,7 @@ public class KotlinCodeEmitter {
   private void emitEnum(CodeWriter w, ProtoEnum protoEnum) {
     w.blankLine();
     w.block(
-        "enum class " + protoEnum.getName() + "(val number: Int)",
+        "enum class " + protoEnum.getName() + "(private val num: Int)",
         () -> {
           for (int i = 0; i < protoEnum.getValues().size(); i++) {
             ProtoEnum.EnumValue val = protoEnum.getValues().get(i);
@@ -864,7 +877,7 @@ public class KotlinCodeEmitter {
           w.block(
               "fun getNumber(): Int",
               () -> {
-                w.line("return number");
+                w.line("return num");
               });
 
           w.blankLine();
@@ -879,7 +892,7 @@ public class KotlinCodeEmitter {
                           "for (v in entries)",
                           () -> {
                             w.block(
-                                "if (v.number == number)",
+                                "if (v.num == number)",
                                 () -> {
                                   w.line("return v");
                                 });
@@ -888,6 +901,199 @@ public class KotlinCodeEmitter {
                     });
               });
         });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Inlined zero-dependency JSON runtime (file-private top-level declarations)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Emits a self-contained JSON string writer and array parser as file-private top-level
+   * declarations, so generated code needs no shared runtime artifact. Emitted once per message
+   * file.
+   */
+  private void emitJsonRuntime(CodeWriter w, String className) {
+    w.blankLine();
+    // A top-level private class compiles to a package-level JVM class and would collide with the
+    // same-named helper in sibling files; derive a file-unique name from the owning class.
+    String parser = className + "JsonReader";
+    String[] lines = {
+      "private fun appendJsonString(sb: StringBuilder, value: String) {",
+      "    sb.append('\"')",
+      "    for (element in value) {",
+      "        when {",
+      "            element == '\"' -> { sb.append('\\\\'); sb.append('\"') }",
+      "            element == '\\\\' -> { sb.append('\\\\'); sb.append('\\\\') }",
+      "            element == '\\n' -> { sb.append('\\\\'); sb.append('n') }",
+      "            element == '\\r' -> { sb.append('\\\\'); sb.append('r') }",
+      "            element == '\\t' -> { sb.append('\\\\'); sb.append('t') }",
+      "            element.code < 0x20 -> {",
+      "                sb.append('\\\\')",
+      "                sb.append('u')",
+      "                sb.append(element.code.toString(16).padStart(4, '0'))",
+      "            }",
+      "            else -> sb.append(element)",
+      "        }",
+      "    }",
+      "    sb.append('\"')",
+      "}",
+      "",
+      "private fun parseJsonArray(json: String): List<Any?> {",
+      "    return " + parser + "(json).parseArray()",
+      "}",
+      "",
+      "private class " + parser + "(private val json: String) {",
+      "    private var pos = 0",
+      "    private val sb = StringBuilder(64)",
+      "",
+      "    fun parseArray(): List<Any?> {",
+      "        val value = readValue()",
+      "        skipWhitespace()",
+      "        require(pos >= json.length) { \"unexpected trailing content\" }",
+      "        @Suppress(\"UNCHECKED_CAST\")",
+      "        return value as? List<Any?>",
+      "            ?: throw IllegalArgumentException(\"expected JSON array\")",
+      "    }",
+      "",
+      "    private fun readValue(): Any? {",
+      "        skipWhitespace()",
+      "        if (pos >= json.length) throw IllegalArgumentException(\"unexpected end of input\")",
+      "        return when (val c = json[pos]) {",
+      "            '\"' -> readString()",
+      "            '{' -> readObject()",
+      "            '[' -> readArray()",
+      "            't', 'f' -> readBoolean()",
+      "            'n' -> readNull()",
+      "            else -> {",
+      "                if (c == '-' || c in '0'..'9') readNumber()",
+      "                else throw IllegalArgumentException(\"unexpected character '$c'\")",
+      "            }",
+      "        }",
+      "    }",
+      "",
+      "    private fun readArray(): MutableList<Any?> {",
+      "        expect('[')",
+      "        val list = mutableListOf<Any?>()",
+      "        skipWhitespace()",
+      "        if (pos < json.length && json[pos] == ']') { pos++; return list }",
+      "        while (true) {",
+      "            list.add(readValue())",
+      "            skipWhitespace()",
+      "            if (pos >= json.length) throw IllegalArgumentException(\"unterminated array\")",
+      "            if (json[pos] == ']') { pos++; return list }",
+      "            expect(',')",
+      "        }",
+      "    }",
+      "",
+      "    private fun readObject(): MutableMap<String, Any?> {",
+      "        expect('{')",
+      "        val map = LinkedHashMap<String, Any?>()",
+      "        skipWhitespace()",
+      "        if (pos < json.length && json[pos] == '}') { pos++; return map }",
+      "        while (true) {",
+      "            skipWhitespace()",
+      "            if (pos >= json.length || json[pos] != '\"')",
+      "                throw IllegalArgumentException(\"expected string key\")",
+      "            val key = readString()",
+      "            skipWhitespace()",
+      "            expect(':')",
+      "            map[key] = readValue()",
+      "            skipWhitespace()",
+      "            if (pos >= json.length) throw IllegalArgumentException(\"unterminated object\")",
+      "            if (json[pos] == '}') { pos++; return map }",
+      "            expect(',')",
+      "        }",
+      "    }",
+      "",
+      "    private fun readString(): String {",
+      "        expect('\"')",
+      "        sb.setLength(0)",
+      "        while (pos < json.length) {",
+      "            val c = json[pos++]",
+      "            if (c == '\"') return sb.toString()",
+      "            if (c == '\\\\') {",
+      "                if (pos >= json.length)",
+      "                    throw IllegalArgumentException(\"unterminated string escape\")",
+      "                when (json[pos++]) {",
+      "                    '\"' -> sb.append('\"')",
+      "                    '\\\\' -> sb.append('\\\\')",
+      "                    '/' -> sb.append('/')",
+      "                    'b' -> sb.append('\\b')",
+      "                    'f' -> sb.append(0x0C.toChar())",
+      "                    'n' -> sb.append('\\n')",
+      "                    'r' -> sb.append('\\r')",
+      "                    't' -> sb.append('\\t')",
+      "                    'u' -> {",
+      "                        if (pos + 4 > json.length)",
+      "                            throw IllegalArgumentException(\"incomplete unicode escape\")",
+      "                        sb.append(json.substring(pos, pos + 4).toInt(16).toChar())",
+      "                        pos += 4",
+      "                    }",
+      "                    else -> throw IllegalArgumentException(\"invalid escape\")",
+      "                }",
+      "            } else {",
+      "                sb.append(c)",
+      "            }",
+      "        }",
+      "        throw IllegalArgumentException(\"unterminated string\")",
+      "    }",
+      "",
+      "    private fun readNumber(): Any {",
+      "        val start = pos",
+      "        var isDouble = false",
+      "        if (pos < json.length && json[pos] == '-') pos++",
+      "        if (pos < json.length && json[pos] == '0') {",
+      "            pos++",
+      "        } else {",
+      "            readDigits()",
+      "        }",
+      "        if (pos < json.length && json[pos] == '.') {",
+      "            isDouble = true; pos++; readDigits()",
+      "        }",
+      "        if (pos < json.length && (json[pos] == 'e' || json[pos] == 'E')) {",
+      "            isDouble = true; pos++",
+      "            if (pos < json.length && (json[pos] == '+' || json[pos] == '-')) pos++",
+      "            readDigits()",
+      "        }",
+      "        val text = json.substring(start, pos)",
+      "        return if (isDouble) text.toDouble() else text.toLong()",
+      "    }",
+      "",
+      "    private fun readDigits() {",
+      "        val start = pos",
+      "        while (pos < json.length && json[pos] in '0'..'9') pos++",
+      "        if (pos == start) throw IllegalArgumentException(\"expected digit\")",
+      "    }",
+      "",
+      "    private fun readBoolean(): Boolean {",
+      "        if (json.startsWith(\"true\", pos)) { pos += 4; return true }",
+      "        if (json.startsWith(\"false\", pos)) { pos += 5; return false }",
+      "        throw IllegalArgumentException(\"expected 'true' or 'false'\")",
+      "    }",
+      "",
+      "    private fun readNull(): Any? {",
+      "        if (json.startsWith(\"null\", pos)) { pos += 4; return null }",
+      "        throw IllegalArgumentException(\"expected 'null'\")",
+      "    }",
+      "",
+      "    private fun skipWhitespace() {",
+      "        while (pos < json.length) {",
+      "            val c = json[pos]",
+      "            if (c != ' ' && c != '\\t' && c != '\\r' && c != '\\n') break",
+      "            pos++",
+      "        }",
+      "    }",
+      "",
+      "    private fun expect(expected: Char) {",
+      "        if (pos >= json.length || json[pos] != expected)",
+      "            throw IllegalArgumentException(\"expected '$expected'\")",
+      "        pos++",
+      "    }",
+      "}",
+    };
+    for (String line : lines) {
+      w.line(line);
+    }
   }
 
   // ---------------------------------------------------------------------------

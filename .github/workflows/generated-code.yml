@@ -52,7 +52,7 @@ jobs:
           - { lang: zig, os: ubuntu-latest }
           - { lang: dart, os: ubuntu-latest }
           - { lang: php, os: ubuntu-latest }
-          - { lang: kotlin, os: ubuntu-latest, broken: true }
+          - { lang: kotlin, os: ubuntu-latest }
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6

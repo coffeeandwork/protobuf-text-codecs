@@ -19,11 +19,11 @@ class Address private constructor(builder: Builder) {
 
     internal fun appendJsonArray(sb: StringBuilder) {
         sb.append('[')
-        dev.protocgen.textcodecs.jsonarray.runtime.JsonArrayWriter.appendQuotedString(sb, this.street)
+        appendJsonString(sb, this.street)
         sb.append(',')
-        dev.protocgen.textcodecs.jsonarray.runtime.JsonArrayWriter.appendQuotedString(sb, this.city)
+        appendJsonString(sb, this.city)
         sb.append(',')
-        dev.protocgen.textcodecs.jsonarray.runtime.JsonArrayWriter.appendQuotedString(sb, this.state)
+        appendJsonString(sb, this.state)
         sb.append(',')
         sb.append(this.zip)
         sb.append(']')
@@ -166,8 +166,181 @@ class Address private constructor(builder: Builder) {
 
         fun parseFrom(bytes: ByteArray): Address {
             val json = String(bytes, Charsets.UTF_8)
-            val array = dev.protocgen.textcodecs.jsonarray.runtime.JsonArrayReader.parseArray(json)
+            val array = parseJsonArray(json)
             return fromJsonArray(array)
         }
+    }
+}
+
+private fun appendJsonString(sb: StringBuilder, value: String) {
+    sb.append('"')
+    for (element in value) {
+        when {
+            element == '"' -> { sb.append('\\'); sb.append('"') }
+            element == '\\' -> { sb.append('\\'); sb.append('\\') }
+            element == '\n' -> { sb.append('\\'); sb.append('n') }
+            element == '\r' -> { sb.append('\\'); sb.append('r') }
+            element == '\t' -> { sb.append('\\'); sb.append('t') }
+            element.code < 0x20 -> {
+                sb.append('\\')
+                sb.append('u')
+                sb.append(element.code.toString(16).padStart(4, '0'))
+            }
+            else -> sb.append(element)
+        }
+    }
+    sb.append('"')
+}
+
+private fun parseJsonArray(json: String): List<Any?> {
+    return AddressJsonReader(json).parseArray()
+}
+
+private class AddressJsonReader(private val json: String) {
+    private var pos = 0
+    private val sb = StringBuilder(64)
+
+    fun parseArray(): List<Any?> {
+        val value = readValue()
+        skipWhitespace()
+        require(pos >= json.length) { "unexpected trailing content" }
+        @Suppress("UNCHECKED_CAST")
+        return value as? List<Any?>
+            ?: throw IllegalArgumentException("expected JSON array")
+    }
+
+    private fun readValue(): Any? {
+        skipWhitespace()
+        if (pos >= json.length) throw IllegalArgumentException("unexpected end of input")
+        return when (val c = json[pos]) {
+            '"' -> readString()
+            '{' -> readObject()
+            '[' -> readArray()
+            't', 'f' -> readBoolean()
+            'n' -> readNull()
+            else -> {
+                if (c == '-' || c in '0'..'9') readNumber()
+                else throw IllegalArgumentException("unexpected character '$c'")
+            }
+        }
+    }
+
+    private fun readArray(): MutableList<Any?> {
+        expect('[')
+        val list = mutableListOf<Any?>()
+        skipWhitespace()
+        if (pos < json.length && json[pos] == ']') { pos++; return list }
+        while (true) {
+            list.add(readValue())
+            skipWhitespace()
+            if (pos >= json.length) throw IllegalArgumentException("unterminated array")
+            if (json[pos] == ']') { pos++; return list }
+            expect(',')
+        }
+    }
+
+    private fun readObject(): MutableMap<String, Any?> {
+        expect('{')
+        val map = LinkedHashMap<String, Any?>()
+        skipWhitespace()
+        if (pos < json.length && json[pos] == '}') { pos++; return map }
+        while (true) {
+            skipWhitespace()
+            if (pos >= json.length || json[pos] != '"')
+                throw IllegalArgumentException("expected string key")
+            val key = readString()
+            skipWhitespace()
+            expect(':')
+            map[key] = readValue()
+            skipWhitespace()
+            if (pos >= json.length) throw IllegalArgumentException("unterminated object")
+            if (json[pos] == '}') { pos++; return map }
+            expect(',')
+        }
+    }
+
+    private fun readString(): String {
+        expect('"')
+        sb.setLength(0)
+        while (pos < json.length) {
+            val c = json[pos++]
+            if (c == '"') return sb.toString()
+            if (c == '\\') {
+                if (pos >= json.length)
+                    throw IllegalArgumentException("unterminated string escape")
+                when (json[pos++]) {
+                    '"' -> sb.append('"')
+                    '\\' -> sb.append('\\')
+                    '/' -> sb.append('/')
+                    'b' -> sb.append('\b')
+                    'f' -> sb.append(0x0C.toChar())
+                    'n' -> sb.append('\n')
+                    'r' -> sb.append('\r')
+                    't' -> sb.append('\t')
+                    'u' -> {
+                        if (pos + 4 > json.length)
+                            throw IllegalArgumentException("incomplete unicode escape")
+                        sb.append(json.substring(pos, pos + 4).toInt(16).toChar())
+                        pos += 4
+                    }
+                    else -> throw IllegalArgumentException("invalid escape")
+                }
+            } else {
+                sb.append(c)
+            }
+        }
+        throw IllegalArgumentException("unterminated string")
+    }
+
+    private fun readNumber(): Any {
+        val start = pos
+        var isDouble = false
+        if (pos < json.length && json[pos] == '-') pos++
+        if (pos < json.length && json[pos] == '0') {
+            pos++
+        } else {
+            readDigits()
+        }
+        if (pos < json.length && json[pos] == '.') {
+            isDouble = true; pos++; readDigits()
+        }
+        if (pos < json.length && (json[pos] == 'e' || json[pos] == 'E')) {
+            isDouble = true; pos++
+            if (pos < json.length && (json[pos] == '+' || json[pos] == '-')) pos++
+            readDigits()
+        }
+        val text = json.substring(start, pos)
+        return if (isDouble) text.toDouble() else text.toLong()
+    }
+
+    private fun readDigits() {
+        val start = pos
+        while (pos < json.length && json[pos] in '0'..'9') pos++
+        if (pos == start) throw IllegalArgumentException("expected digit")
+    }
+
+    private fun readBoolean(): Boolean {
+        if (json.startsWith("true", pos)) { pos += 4; return true }
+        if (json.startsWith("false", pos)) { pos += 5; return false }
+        throw IllegalArgumentException("expected 'true' or 'false'")
+    }
+
+    private fun readNull(): Any? {
+        if (json.startsWith("null", pos)) { pos += 4; return null }
+        throw IllegalArgumentException("expected 'null'")
+    }
+
+    private fun skipWhitespace() {
+        while (pos < json.length) {
+            val c = json[pos]
+            if (c != ' ' && c != '\t' && c != '\r' && c != '\n') break
+            pos++
+        }
+    }
+
+    private fun expect(expected: Char) {
+        if (pos >= json.length || json[pos] != expected)
+            throw IllegalArgumentException("expected '$expected'")
+        pos++
     }
 }

@@ -65,8 +65,7 @@ public class KotlinDeserializerGenerator {
         "fun parseFrom(bytes: ByteArray): " + className,
         () -> {
           w.line("val json = String(bytes, Charsets.UTF_8)");
-          w.line(
-              "val array = dev.protocgen.textcodecs.jsonarray.runtime.JsonArrayReader.parseArray(json)");
+          w.line("val array = parseJsonArray(json)");
           w.line("return fromJsonArray(array)");
         });
   }
@@ -135,12 +134,26 @@ public class KotlinDeserializerGenerator {
           if (field.getKind() == ProtoField.FieldKind.MESSAGE
               || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
             String msgType = simpleTypeName(field.getTypeReference());
-            w.line(
-                "%s.add(if (%s == null) null else %s.fromJsonArray(%s as List<Any?>))",
-                listVar, elemVar, msgType, elemVar);
+            // Repeated message elements are never null in proto; skip stray nulls.
+            w.block(
+                "if (" + elemVar + " != null)",
+                () -> {
+                  w.line("%s.add(%s.fromJsonArray(%s as List<Any?>))", listVar, msgType, elemVar);
+                });
           } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
             String enumType = simpleTypeName(field.getTypeReference());
-            w.line("%s.add(%s.forNumber((%s as Number).toInt()))", listVar, enumType, elemVar);
+            String enumVar = "__enum" + pos;
+            w.block(
+                "if (" + elemVar + " != null)",
+                () -> {
+                  w.line(
+                      "val %s = %s.forNumber((%s as Number).toInt())", enumVar, enumType, elemVar);
+                  w.block(
+                      "if (" + enumVar + " != null)",
+                      () -> {
+                        w.line("%s.add(%s)", listVar, enumVar);
+                      });
+                });
           } else {
             String readExpr = scalarReadExpr(field.getProtoType(), elemVar);
             w.line("%s.add(%s)", listVar, readExpr);
@@ -160,8 +173,7 @@ public class KotlinDeserializerGenerator {
       w.block(
           "for ((__key" + pos + ", __val" + pos + ") in __mapObj" + pos + ")",
           () -> {
-            String valueExpr = mapValueReadExpr(field, "__val" + pos);
-            w.line("map%d[__key%d] = %s", pos, pos, valueExpr);
+            emitMapEntryPut(w, field, pos, "__key" + pos, "__val" + pos);
           });
     } else {
       w.line("val __pairs%d = %s as List<Any?>", pos, elemExpr);
@@ -170,11 +182,44 @@ public class KotlinDeserializerGenerator {
           () -> {
             w.line("val __kv%d = %s as List<Any?>", pos, "__pair" + pos);
             String keyRead = scalarReadExpr(field.getMapKeyType(), "__kv" + pos + "[0]");
-            String valueRead = mapValueReadExpr(field, "__kv" + pos + "[1]");
-            w.line("map%d[%s] = %s", pos, keyRead, valueRead);
+            emitMapEntryPut(w, field, pos, keyRead, "__kv" + pos + "[1]");
           });
     }
     w.line("%s(map%d)", setter, pos);
+  }
+
+  /**
+   * Emit a single {@code map[key] = value} assignment. Message and enum values are non-null in the
+   * map type, so stray null/unknown entries are skipped rather than coerced.
+   */
+  private void emitMapEntryPut(
+      CodeWriter w, ProtoField field, int pos, String keyExpr, String rawValExpr) {
+    if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE) {
+      String msgType = simpleTypeName(field.getMapValueTypeReference());
+      w.block(
+          "if (" + rawValExpr + " != null)",
+          () -> {
+            w.line(
+                "map%d[%s] = %s.fromJsonArray(%s as List<Any?>)",
+                pos, keyExpr, msgType, rawValExpr);
+          });
+    } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
+      String enumType = simpleTypeName(field.getMapValueTypeReference());
+      String enumVar = "__mapEnum" + pos;
+      w.block(
+          "if (" + rawValExpr + " != null)",
+          () -> {
+            w.line("val %s = %s.forNumber((%s as Number).toInt())", enumVar, enumType, rawValExpr);
+            w.block(
+                "if (" + enumVar + " != null)",
+                () -> {
+                  w.line("map%d[%s] = %s", pos, keyExpr, enumVar);
+                });
+          });
+    } else {
+      String valueRead = scalarReadExpr(field.getMapValueType(), rawValExpr);
+      w.line("map%d[%s] = %s", pos, keyExpr, valueRead);
+    }
   }
 
   private String scalarReadExpr(FieldDescriptorProto.Type type, String elemExpr) {
@@ -204,24 +249,6 @@ public class KotlinDeserializerGenerator {
       case TYPE_BYTES -> "java.util.Base64.getDecoder().decode(" + elemExpr + " as String)";
       default -> elemExpr + " as String";
     };
-  }
-
-  private String mapValueReadExpr(ProtoField field, String elemExpr) {
-    if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE) {
-      String msgType = simpleTypeName(field.getMapValueTypeReference());
-      return "if ("
-          + elemExpr
-          + " == null) null else "
-          + msgType
-          + ".fromJsonArray("
-          + elemExpr
-          + " as List<Any?>)";
-    }
-    if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
-      String enumType = simpleTypeName(field.getMapValueTypeReference());
-      return enumType + ".forNumber((" + elemExpr + " as Number).toInt())";
-    }
-    return scalarReadExpr(field.getMapValueType(), elemExpr);
   }
 
   /**
