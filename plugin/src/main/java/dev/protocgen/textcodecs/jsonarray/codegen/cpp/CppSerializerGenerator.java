@@ -35,7 +35,10 @@ public class CppSerializerGenerator {
     this.nameResolver = nameResolver;
   }
 
+  private ProtoMessage currentMessage;
+
   public void generate(CodeWriter w, ProtoMessage message, String className) {
+    this.currentMessage = message;
     w.blankLine();
     w.block(
         "inline nlohmann::json " + className + "::serialize() const",
@@ -70,7 +73,7 @@ public class CppSerializerGenerator {
     String cppField = nameResolver.fieldName(field.getName()) + "_";
 
     if (field.isOneofMember()) {
-      String caseField = "__oneof_" + nameResolver.fieldName(field.getOneofName()) + "_case_";
+      String caseField = "pb_oneof_" + nameResolver.fieldName(field.getOneofName()) + "_case_";
       w.block(
           "if (" + caseField + " == " + field.getFieldNumber() + ")",
           () -> {
@@ -164,7 +167,16 @@ public class CppSerializerGenerator {
   }
 
   private void emitMessageSerialize(CodeWriter w, ProtoField field, String cppField) {
-    // Singular message fields are std::optional<T>; check presence
+    // Self-referential singular message fields are std::shared_ptr<T>; others are std::optional<T>.
+    if (CppTypeUtil.isSelfReference(field, currentMessage)) {
+      w.block(
+          "if (" + cppField + ")",
+          () -> {
+            w.line("arr.push_back(%s->serialize());", cppField);
+          });
+      w.line("else { arr.push_back(nullptr); }");
+      return;
+    }
     w.block(
         "if (" + cppField + ".has_value())",
         () -> {

@@ -42,7 +42,7 @@ jobs:
           - { lang: ruby, os: ubuntu-latest }
           - { lang: perl, os: ubuntu-latest }
           - { lang: c, os: ubuntu-latest, broken: true }
-          - { lang: cpp, os: ubuntu-latest, broken: true }
+          - { lang: cpp, os: ubuntu-latest }
           - { lang: swift, os: macos-latest }
           - { lang: csharp, os: ubuntu-latest }
           - { lang: typescript, os: ubuntu-latest }

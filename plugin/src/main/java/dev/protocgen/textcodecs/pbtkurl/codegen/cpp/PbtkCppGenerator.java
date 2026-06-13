@@ -22,6 +22,7 @@ import dev.protocgen.textcodecs.jsonarray.codegen.LanguageGenerator;
 import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.codegen.cpp.CppNameResolver;
 import dev.protocgen.textcodecs.jsonarray.codegen.cpp.CppTypeMapper;
+import dev.protocgen.textcodecs.jsonarray.codegen.cpp.CppTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoEnum;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoFile;
@@ -46,6 +47,11 @@ public class PbtkCppGenerator implements LanguageGenerator {
 
   private final CppNameResolver nameResolver = new CppNameResolver();
   private final CppTypeMapper typeMapper = new CppTypeMapper();
+
+  // The file/message currently being emitted, used to resolve cross-package references and detect
+  // self-referential message fields. Generation is single-threaded so this shared context is safe.
+  private ProtoFile currentFile;
+  private ProtoMessage currentMessage;
 
   @Override
   public List<CodeGeneratorResponse.File> generate(ProtoFile file, TypeRegistry registry) {
@@ -82,6 +88,8 @@ public class PbtkCppGenerator implements LanguageGenerator {
   // ========================================================================
 
   private String emitMessage(ProtoMessage message, ProtoFile file) {
+    currentFile = file;
+    typeMapper.setCurrentFile(file);
     CodeWriter w = new CodeWriter("  ");
 
     w.line(GENERATED_MARKER);
@@ -98,33 +106,35 @@ public class PbtkCppGenerator implements LanguageGenerator {
       w.blankLine();
     }
 
-    // Forward declarations for externally-referenced message types
-    emitExternalForwardDeclarations(w, message, file);
+    // Every nested message and enum is flattened to a namespace-level definition; emit them
+    // deepest-first so each is complete before the type that uses it.
+    List<ProtoMessage> nestedMessages = CppTypeUtil.descendantMessages(message);
 
-    // Forward-declare nested types
-    emitForwardDeclarations(w, message);
+    // Forward-declare flattened nested message types.
+    for (ProtoMessage nested : nestedMessages) {
+      w.line("class %s;", nested.getName());
+    }
+    if (!nestedMessages.isEmpty()) {
+      w.blankLine();
+    }
 
-    // Nested enums first
-    for (ProtoEnum protoEnum : message.getEnums()) {
+    // Enums first (including those nested at any depth) -- must precede classes that use them.
+    for (ProtoEnum protoEnum : collectEnums(message)) {
       emitEnum(w, protoEnum);
       w.blankLine();
     }
 
-    // Nested message class definitions
-    for (ProtoMessage nested : message.getNestedMessages()) {
+    // Nested message class definitions, then the main class.
+    for (ProtoMessage nested : nestedMessages) {
       emitClassDeclaration(w, nested);
       w.blankLine();
     }
-
-    // Main class declaration
     emitClassDeclaration(w, message);
 
-    // Inline implementations for nested messages
-    for (ProtoMessage nested : message.getNestedMessages()) {
+    // Inline implementations for nested messages, then the main message.
+    for (ProtoMessage nested : nestedMessages) {
       emitInlineImplementations(w, nested, nested.getName());
     }
-
-    // Inline implementations for the main message
     emitInlineImplementations(w, message, message.getName());
 
     // Close namespaces
@@ -137,7 +147,18 @@ public class PbtkCppGenerator implements LanguageGenerator {
     return w.toString();
   }
 
+  /** Collect all enums declared in {@code message} or any of its nested messages (any depth). */
+  private List<ProtoEnum> collectEnums(ProtoMessage message) {
+    List<ProtoEnum> result = new ArrayList<>(message.getEnums());
+    for (ProtoMessage nested : CppTypeUtil.descendantMessages(message)) {
+      result.addAll(nested.getEnums());
+    }
+    return result;
+  }
+
   private String emitTopLevelEnum(ProtoEnum protoEnum, ProtoFile file) {
+    currentFile = file;
+    typeMapper.setCurrentFile(file);
     CodeWriter w = new CodeWriter("  ");
 
     w.line(GENERATED_MARKER);
@@ -184,10 +205,9 @@ public class PbtkCppGenerator implements LanguageGenerator {
     includes.add("#include <cstdlib>");
     includes.add("#include <cstring>");
     includes.add("#include <cmath>");
+    // The base64 helpers are always emitted and use std::vector<uint8_t>.
+    includes.add("#include <vector>");
 
-    if (needsInclude(message, "vector")) {
-      includes.add("#include <vector>");
-    }
     if (needsInclude(message, "optional")) {
       includes.add("#include <optional>");
     }
@@ -199,6 +219,9 @@ public class PbtkCppGenerator implements LanguageGenerator {
     }
     if (needsInclude(message, "variant")) {
       includes.add("#include <variant>");
+    }
+    if (hasSelfReference(message)) {
+      includes.add("#include <memory>");
     }
 
     includes.stream().sorted().distinct().forEach(w::line);
@@ -249,115 +272,65 @@ public class PbtkCppGenerator implements LanguageGenerator {
 
   private void emitCrossFileIncludes(CodeWriter w, ProtoMessage message, ProtoFile file) {
     Set<String> includes = new LinkedHashSet<>();
-    collectCrossFileIncludes(message, file, includes);
+    collectCrossFileIncludes(message, message, file, includes);
     for (String inc : includes) {
       w.line(inc);
     }
   }
 
   private void collectCrossFileIncludes(
-      ProtoMessage message, ProtoFile file, Set<String> includes) {
-    String pkg = nameResolver.resolvePackage(file);
-    String currentPrefix =
-        file.getProtoPackage().isEmpty() ? "." : "." + file.getProtoPackage() + ".";
-
+      ProtoMessage message, ProtoMessage topLevel, ProtoFile file, Set<String> includes) {
     for (ProtoField field : message.getFields()) {
-      collectCppTypeInclude(
-          field.getTypeReference(), field, message, file, currentPrefix, pkg, includes);
-      if (field.isMap() && field.getMapValueTypeReference() != null) {
-        collectCppTypeInclude(
-            field.getMapValueTypeReference(), null, message, file, currentPrefix, pkg, includes);
+      // A map field's own type reference is the synthetic *MapEntry message, which is never
+      // generated; only the value type may need an include.
+      if (field.isMap()) {
+        collectCppTypeInclude(field.getMapValueTypeReference(), topLevel, file, includes);
+      } else if (!field.isWellKnownType()) {
+        collectCppTypeInclude(field.getTypeReference(), topLevel, file, includes);
       }
     }
 
     for (ProtoMessage nested : message.getNestedMessages()) {
-      collectCrossFileIncludes(nested, file, includes);
+      collectCrossFileIncludes(nested, topLevel, file, includes);
     }
   }
 
   private void collectCppTypeInclude(
-      String typeRef,
-      ProtoField field,
-      ProtoMessage message,
-      ProtoFile file,
-      String currentPrefix,
-      String pkg,
-      Set<String> includes) {
+      String typeRef, ProtoMessage topLevel, ProtoFile file, Set<String> includes) {
     if (typeRef == null) return;
-    if (field != null && field.isWellKnownType()) return;
 
-    for (ProtoMessage nested : message.getNestedMessages()) {
-      if (typeRef.equals(message.getFullName() + "." + nested.getName())) return;
-    }
+    // Types declared inside this top-level message are emitted in the same header.
+    if (typeRef.startsWith(topLevel.getFullName() + ".")) return;
+    if (typeRef.equals(topLevel.getFullName())) return;
 
+    String pkg = nameResolver.resolvePackage(file);
+    String currentPrefix = pkg.isEmpty() ? "." : "." + pkg + ".";
     if (typeRef.startsWith(currentPrefix)) {
+      // Same package, different file.
       String simpleName = ProtoTypeUtil.simpleTypeName(typeRef);
-      if (simpleName.equals(message.getName())) return;
       String dir = pkg.isEmpty() ? "" : pkg.replace('.', '/') + "/";
       includes.add("#include \"" + dir + simpleName + ".hpp\"");
+      return;
+    }
+
+    // Cross-package reference.
+    String inc = CppTypeUtil.crossPackageInclude(typeRef, file);
+    if (inc != null) {
+      includes.add(inc);
     }
   }
 
-  private void emitExternalForwardDeclarations(CodeWriter w, ProtoMessage message, ProtoFile file) {
-    Set<String> forwardDecls = new LinkedHashSet<>();
-    collectExternalForwardDeclarations(message, file, forwardDecls);
-    for (String decl : forwardDecls) {
-      w.line(decl);
-    }
-    if (!forwardDecls.isEmpty()) {
-      w.blankLine();
-    }
-  }
-
-  private void collectExternalForwardDeclarations(
-      ProtoMessage message, ProtoFile file, Set<String> forwardDecls) {
-    String currentPrefix =
-        file.getProtoPackage().isEmpty() ? "." : "." + file.getProtoPackage() + ".";
-
+  /**
+   * True if {@code message} or any nested message has a self-referential singular message field.
+   */
+  private boolean hasSelfReference(ProtoMessage message) {
     for (ProtoField field : message.getFields()) {
-      collectCppTypeForwardDecl(
-          field.getTypeReference(), field, message, currentPrefix, forwardDecls);
-      if (field.isMap() && field.getMapValueTypeReference() != null) {
-        collectCppTypeForwardDecl(
-            field.getMapValueTypeReference(), null, message, currentPrefix, forwardDecls);
-      }
+      if (CppTypeUtil.isSelfReference(field, message)) return true;
     }
-
     for (ProtoMessage nested : message.getNestedMessages()) {
-      collectExternalForwardDeclarations(nested, file, forwardDecls);
+      if (hasSelfReference(nested)) return true;
     }
-  }
-
-  private void collectCppTypeForwardDecl(
-      String typeRef,
-      ProtoField field,
-      ProtoMessage message,
-      String currentPrefix,
-      Set<String> forwardDecls) {
-    if (typeRef == null) return;
-    if (field != null && field.isWellKnownType()) return;
-    if (field != null
-        && field.getKind() != ProtoField.FieldKind.MESSAGE
-        && field.getKind() != ProtoField.FieldKind.WELL_KNOWN_TYPE) return;
-
-    for (ProtoMessage nested : message.getNestedMessages()) {
-      if (typeRef.equals(message.getFullName() + "." + nested.getName())) return;
-    }
-
-    if (typeRef.startsWith(currentPrefix)) {
-      String simpleName = ProtoTypeUtil.simpleTypeName(typeRef);
-      if (simpleName.equals(message.getName())) return;
-      forwardDecls.add("class " + simpleName + ";");
-    }
-  }
-
-  private void emitForwardDeclarations(CodeWriter w, ProtoMessage message) {
-    for (ProtoMessage nested : message.getNestedMessages()) {
-      w.line("class %s;", nested.getName());
-    }
-    if (!message.getNestedMessages().isEmpty()) {
-      w.blankLine();
-    }
+    return false;
   }
 
   // ========================================================================
@@ -408,9 +381,9 @@ public class PbtkCppGenerator implements LanguageGenerator {
 
   private void emitFields(CodeWriter w, ProtoMessage message) {
     for (ProtoField field : message.getFields()) {
-      String cppType = typeMapper.languageType(field);
+      String cppType = fieldType(field, message);
       String cppName = nameResolver.fieldName(field.getName()) + "_";
-      String defaultVal = typeMapper.defaultValue(field);
+      String defaultVal = fieldDefault(field, message);
       w.line("%s %s = %s;", cppType, cppName, defaultVal);
     }
 
@@ -420,9 +393,26 @@ public class PbtkCppGenerator implements LanguageGenerator {
     }
   }
 
+  /**
+   * The declared C++ type for a field; self-referential message fields are boxed via shared_ptr.
+   */
+  private String fieldType(ProtoField field, ProtoMessage message) {
+    if (CppTypeUtil.isSelfReference(field, message)) {
+      return "std::shared_ptr<" + nameResolver.messageClassName(message.getName()) + ">";
+    }
+    return typeMapper.languageType(field);
+  }
+
+  private String fieldDefault(ProtoField field, ProtoMessage message) {
+    if (CppTypeUtil.isSelfReference(field, message)) {
+      return "nullptr";
+    }
+    return typeMapper.defaultValue(field);
+  }
+
   private void emitGettersSetters(CodeWriter w, ProtoMessage message) {
     for (ProtoField field : message.getFields()) {
-      String cppType = typeMapper.languageType(field);
+      String cppType = fieldType(field, message);
       String cppName = nameResolver.fieldName(field.getName()) + "_";
       String getterName = nameResolver.getterName(field.getName());
       String setterName = nameResolver.setterName(field.getName());
@@ -454,7 +444,11 @@ public class PbtkCppGenerator implements LanguageGenerator {
               && (field.getKind() == ProtoField.FieldKind.MESSAGE
                   || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE))) {
         String hasName = "has_" + nameResolver.fieldName(field.getName());
-        w.line("bool %s() const { return %s.has_value(); }", hasName, cppName);
+        if (CppTypeUtil.isSelfReference(field, message)) {
+          w.line("bool %s() const { return %s != nullptr; }", hasName, cppName);
+        } else {
+          w.line("bool %s() const { return %s.has_value(); }", hasName, cppName);
+        }
       }
     }
   }
@@ -473,6 +467,8 @@ public class PbtkCppGenerator implements LanguageGenerator {
   // ========================================================================
 
   private void emitInlineImplementations(CodeWriter w, ProtoMessage message, String className) {
+    currentMessage = message;
+    currentClassName = className;
     // URL encode/decode utility namespace
     emitUrlHelpers(w, className);
 
@@ -656,7 +652,11 @@ public class PbtkCppGenerator implements LanguageGenerator {
       w.line("count += static_cast<int>(%s.size());", getter);
     } else if (field.getKind() == ProtoField.FieldKind.MESSAGE
         || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
-      w.line("if (%s.has_value()) count++;", getter);
+      if (CppTypeUtil.isSelfReference(field, currentMessage)) {
+        w.line("if (%s != nullptr) count++;", getter);
+      } else {
+        w.line("if (%s.has_value()) count++;", getter);
+      }
     } else if (field.isProto3Optional()) {
       w.line("if (%s.has_value()) count++;", getter);
     } else if (field.getProtoType() == FieldDescriptorProto.Type.TYPE_DOUBLE
@@ -826,7 +826,16 @@ public class PbtkCppGenerator implements LanguageGenerator {
 
   private void emitMessageSerialize(
       CodeWriter w, ProtoField field, String getter, int fieldNum, String className) {
-    String msgType = simpleTypeName(field.getTypeReference());
+    String msgType = typeName(field.getTypeReference());
+    if (CppTypeUtil.isSelfReference(field, currentMessage)) {
+      w.block(
+          "if (" + getter + ")",
+          () -> {
+            w.line("oss << \"!%dm\" << %s_count_pbtk_fields(*%s);", fieldNum, msgType, getter);
+            w.line("%s_append_pbtk_fields(oss, *%s);", msgType, getter);
+          });
+      return;
+    }
     w.block(
         "if (" + getter + ".has_value())",
         () -> {
@@ -842,7 +851,7 @@ public class PbtkCppGenerator implements LanguageGenerator {
         () -> {
           if (field.getKind() == ProtoField.FieldKind.MESSAGE
               || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
-            String msgType = simpleTypeName(field.getTypeReference());
+            String msgType = typeName(field.getTypeReference());
             w.line("oss << \"!%dm\" << %s_count_pbtk_fields(pb_elem);", fieldNum, msgType);
             w.line("%s_append_pbtk_fields(oss, pb_elem);", msgType);
           } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
@@ -902,7 +911,7 @@ public class PbtkCppGenerator implements LanguageGenerator {
           }
           // Value (field 2)
           if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE) {
-            String msgType = simpleTypeName(field.getMapValueTypeReference());
+            String msgType = typeName(field.getMapValueTypeReference());
             w.line("oss << \"!2m\" << %s_count_pbtk_fields(pb_v);", msgType);
             w.line("%s_append_pbtk_fields(oss, pb_v);", msgType);
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
@@ -1038,7 +1047,7 @@ public class PbtkCppGenerator implements LanguageGenerator {
 
   private void emitEnumDeserialize(CodeWriter w, ProtoField field, String className) {
     String setter = "obj." + nameResolver.setterName(field.getName());
-    String enumType = simpleTypeName(field.getTypeReference());
+    String enumType = typeName(field.getTypeReference());
     w.line(
         "%s(static_cast<%s>([&]() -> int { try { return std::stoi(value); } catch (...) { return 0; } }()));",
         setter, enumType);
@@ -1046,11 +1055,17 @@ public class PbtkCppGenerator implements LanguageGenerator {
 
   private void emitMessageDeserialize(CodeWriter w, ProtoField field, String className) {
     String setter = "obj." + nameResolver.setterName(field.getName());
-    String msgType = simpleTypeName(field.getTypeReference());
+    String msgType = typeName(field.getTypeReference());
     w.line(
         "int sub_count = [&]() -> int { try { return std::stoi(value); } catch (...) { return 0; } }();");
     w.line("offset++;");
-    w.line("%s(%s_parse_pbtk_tokens(tokens, sub_count, offset));", setter, msgType);
+    if (CppTypeUtil.isSelfReference(field, currentMessage)) {
+      w.line(
+          "%s(std::make_shared<%s>(%s_parse_pbtk_tokens(tokens, sub_count, offset)));",
+          setter, msgType, msgType);
+    } else {
+      w.line("%s(%s_parse_pbtk_tokens(tokens, sub_count, offset));", setter, msgType);
+    }
     w.line("offset--;");
   }
 
@@ -1061,7 +1076,7 @@ public class PbtkCppGenerator implements LanguageGenerator {
 
     if (field.getKind() == ProtoField.FieldKind.MESSAGE
         || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
-      String msgType = simpleTypeName(field.getTypeReference());
+      String msgType = typeName(field.getTypeReference());
       String elemType = typeMapper.elementType(field);
       w.line(
           "int sub_count = [&]() -> int { try { return std::stoi(value); } catch (...) { return 0; } }();");
@@ -1072,7 +1087,7 @@ public class PbtkCppGenerator implements LanguageGenerator {
       w.line("pb_vec.push_back(std::move(pb_elem));");
       w.line("obj.%s(std::move(pb_vec));", nameResolver.setterName(field.getName()));
     } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
-      String enumType = simpleTypeName(field.getTypeReference());
+      String enumType = typeName(field.getTypeReference());
       w.line("auto pb_vec = %s;", getter);
       w.line(
           "pb_vec.push_back(static_cast<%s>([&]() -> int { try { return std::stoi(value); } catch (...) { return 0; } }()));",
@@ -1097,7 +1112,7 @@ public class PbtkCppGenerator implements LanguageGenerator {
     String valType;
     if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE
         || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
-      valType = simpleTypeName(field.getMapValueTypeReference());
+      valType = typeName(field.getMapValueTypeReference());
     } else {
       valType = typeMapper.scalarType(field.getMapValueType());
     }
@@ -1131,7 +1146,7 @@ public class PbtkCppGenerator implements LanguageGenerator {
               () -> {
                 // Value
                 if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE) {
-                  String msgType = simpleTypeName(field.getMapValueTypeReference());
+                  String msgType = typeName(field.getMapValueTypeReference());
                   w.line(
                       "int val_sub_count = [&]() -> int { try { return std::stoi(mval); } catch (...) { return 0; } }();");
                   w.line("offset++;");
@@ -1278,26 +1293,21 @@ public class PbtkCppGenerator implements LanguageGenerator {
     return currentClassName;
   }
 
-  // Thread-local state for tracking which class we're emitting into.
-  // This avoids passing className through every method signature.
+  // Tracks which class we're emitting into, so the per-class pbtk_detail_<Class> helper namespace
+  // can be referenced. This avoids passing className through every method signature.
   private String currentClassName = "";
 
-  // Override emitInlineImplementations to set the context
-  private void emitInlineImplementationsWithContext(
-      CodeWriter w, ProtoMessage message, String className) {
-    String saved = currentClassName;
-    currentClassName = className;
-    emitInlineImplementations(w, message, className);
-    currentClassName = saved;
-  }
-
   /**
-   * Extract the simple type name from a fully-qualified proto type reference. E.g.,
-   * ".example.sub.Address" -> "Address"
+   * Resolve a fully-qualified proto type reference to the C++ type name to use, namespace-qualified
+   * for cross-package references. E.g. {@code .example.Address} -> {@code example::Address} when
+   * emitting from another package.
    */
-  private static String simpleTypeName(String protoFullName) {
-    String simple = ProtoTypeUtil.simpleTypeName(protoFullName);
-    return simple != null ? simple : "void*";
+  private String typeName(String protoFullName) {
+    if (currentFile == null) {
+      String simple = ProtoTypeUtil.simpleTypeName(protoFullName);
+      return simple != null ? simple : "void*";
+    }
+    return CppTypeUtil.qualifiedTypeName(protoFullName, currentFile);
   }
 
   static String pbtkTypeChar(FieldDescriptorProto.Type type) {
