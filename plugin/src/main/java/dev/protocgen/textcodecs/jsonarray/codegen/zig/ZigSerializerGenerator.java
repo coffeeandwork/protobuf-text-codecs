@@ -42,7 +42,11 @@ public class ZigSerializerGenerator {
             + ", allocator: std.mem.Allocator) !json.Value",
         () -> {
           int maxPos = message.getMaxFieldNumber();
-          w.line("var arr = try allocator.alloc(json.Value, %d);", maxPos);
+          if (maxPos == 0) {
+            // No fields: keep ast-check happy about the unused parameter
+            w.line("_ = self;");
+          }
+          w.line("const arr = try allocator.alloc(json.Value, %d);", maxPos);
 
           for (int pos = 0; pos < maxPos; pos++) {
             ProtoField field = message.fieldAtPosition(pos);

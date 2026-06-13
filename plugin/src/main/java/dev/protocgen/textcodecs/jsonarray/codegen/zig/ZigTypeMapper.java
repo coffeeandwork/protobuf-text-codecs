@@ -187,8 +187,8 @@ public class ZigTypeMapper implements TypeMapper {
         yield "blk: { const src = \""
             + java.util.Base64.getEncoder()
                 .encodeToString(defaultValue.getBytes(StandardCharsets.ISO_8859_1))
-            + "\"; const size = std.base64.standard.Decoder.calcSizeForSlice(src.len) catch 0;"
-            + " const dest = try allocator.alloc(u8, size);"
+            + "\"; const decoded_len = std.base64.standard.Decoder.calcSizeForSlice(src.len) catch 0;"
+            + " const dest = try allocator.alloc(u8, decoded_len);"
             + " std.base64.standard.Decoder.decode(dest, src) catch {}; break :blk dest; }";
       }
       default -> {

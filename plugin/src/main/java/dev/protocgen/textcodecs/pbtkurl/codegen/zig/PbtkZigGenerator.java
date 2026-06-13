@@ -160,12 +160,16 @@ public class PbtkZigGenerator implements LanguageGenerator {
         file.getProtoPackage().isEmpty() ? "." : "." + file.getProtoPackage() + ".";
 
     for (ProtoField field : message.getFields()) {
-      addTypeImportIfNeeded(
-          field.getTypeReference(), field.isWellKnownType(), message, currentPrefix, imports);
-      if (field.isMap() && field.getMapValueTypeReference() != null) {
-        addTypeImportIfNeeded(
-            field.getMapValueTypeReference(), false, message, currentPrefix, imports);
+      // A map field's own type reference is the synthetic *MapEntry message
+      if (field.isMap()) {
+        if (field.getMapValueTypeReference() != null) {
+          addTypeImportIfNeeded(
+              field.getMapValueTypeReference(), false, message, file, currentPrefix, imports);
+        }
+        continue;
       }
+      addTypeImportIfNeeded(
+          field.getTypeReference(), field.isWellKnownType(), message, file, currentPrefix, imports);
     }
     for (ProtoMessage nested : message.getNestedMessages()) {
       collectReferencedTypes(nested, file, imports);
@@ -176,21 +180,55 @@ public class PbtkZigGenerator implements LanguageGenerator {
       String typeRef,
       boolean isWellKnown,
       ProtoMessage message,
+      ProtoFile file,
       String currentPrefix,
       Set<String> imports) {
     if (typeRef == null || isWellKnown) return;
+    // A message that references itself (recursive type) needs no import
+    if (typeRef.equals(message.getFullName())) return;
     for (ProtoMessage nested : message.getNestedMessages()) {
       if (typeRef.equals(message.getFullName() + "." + nested.getName())) return;
     }
     for (ProtoEnum nestedEnum : message.getEnums()) {
       if (typeRef.equals(message.getFullName() + "." + nestedEnum.getName())) return;
     }
+    String simpleName = ProtoTypeUtil.simpleTypeName(typeRef);
+    String moduleName = zigToSnakeCase(simpleName);
+
     if (typeRef.startsWith(currentPrefix)) {
-      String simpleName = ProtoTypeUtil.simpleTypeName(typeRef);
-      String moduleName = zigToSnakeCase(simpleName);
       imports.add(
           "const " + simpleName + " = @import(\"" + moduleName + ".zig\")." + simpleName + ";");
+      return;
     }
+
+    // Cross-package: relative path from this file's package directory
+    String withoutDot = typeRef.startsWith(".") ? typeRef.substring(1) : typeRef;
+    String[] segments = withoutDot.split("\\.");
+    int firstType = 0;
+    StringBuilder pkgPath = new StringBuilder();
+    while (firstType < segments.length
+        && !segments[firstType].isEmpty()
+        && Character.isLowerCase(segments[firstType].charAt(0))) {
+      pkgPath.append(segments[firstType]).append('/');
+      firstType++;
+    }
+    if (firstType >= segments.length) return;
+    int currentDepth =
+        file.getProtoPackage().isEmpty() ? 0 : file.getProtoPackage().split("\\.").length;
+    StringBuilder rel = new StringBuilder();
+    for (int i = 0; i < currentDepth; i++) {
+      rel.append("../");
+    }
+    imports.add(
+        "const "
+            + simpleName
+            + " = @import(\""
+            + rel
+            + pkgPath
+            + moduleName
+            + ".zig\")."
+            + simpleName
+            + ";");
   }
 
   // ---------------------------------------------------------------------------
@@ -229,6 +267,11 @@ public class PbtkZigGenerator implements LanguageGenerator {
     w.block(
         "fn appendPbtkFields(self: *const " + structName + ", buf: *std.ArrayList(u8)) void",
         () -> {
+          if (message.getFields().isEmpty()) {
+            // No fields: keep ast-check happy about unused parameters
+            w.line("_ = self;");
+            w.line("_ = buf;");
+          }
           for (ProtoField field : message.getFields()) {
             emitFieldSerialize(w, field);
           }
@@ -239,6 +282,26 @@ public class PbtkZigGenerator implements LanguageGenerator {
     w.block(
         "fn countPbtkFields(self: *const " + structName + ") usize",
         () -> {
+          boolean usesSelf =
+              message.getFields().stream()
+                  .anyMatch(
+                      f ->
+                          f.isMap()
+                              || f.isRepeated()
+                              || f.isOneofMember()
+                              || f.isProto3Optional()
+                              || f.getKind() == ProtoField.FieldKind.MESSAGE
+                              || f.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE
+                              || f.getProtoType() == FieldDescriptorProto.Type.TYPE_FLOAT
+                              || f.getProtoType() == FieldDescriptorProto.Type.TYPE_DOUBLE);
+          if (!usesSelf) {
+            // Only unconditional counts: keep ast-check happy about the unused parameter
+            w.line("_ = self;");
+          }
+          if (message.getFields().isEmpty()) {
+            w.line("return 0;");
+            return;
+          }
           w.line("var count: usize = 0;");
           for (ProtoField field : message.getFields()) {
             emitFieldCount(w, field);
@@ -270,9 +333,10 @@ public class PbtkZigGenerator implements LanguageGenerator {
             w.block(
                 "switch (oneof_val)",
                 () -> {
-                  w.block(
+                  w.blockContinue(
                       "." + tagName + " => |v|",
                       () -> emitSingleFieldSerialize(w, field, "v", fieldNum));
+                  w.rawLine(",");
                   w.line("else => {},");
                 });
           });
@@ -328,15 +392,15 @@ public class PbtkZigGenerator implements LanguageGenerator {
         break;
       case TYPE_BYTES:
         w.line("buf.writer().print(\"!%d%s\", .{}) catch {};", fieldNum, typeChar);
-        w.line("const encoded = std.base64.standard.Encoder.encode(%s);", zigField);
-        w.line("buf.appendSlice(encoded) catch {};");
+        w.line("const encoded_%d = std.base64.standard.Encoder.encode(%s);", fieldNum, zigField);
+        w.line("buf.appendSlice(encoded_%d) catch {};", fieldNum);
         break;
       case TYPE_STRING:
         w.line("buf.writer().print(\"!%d%s\", .{}) catch {};", fieldNum, typeChar);
         w.line(
-            "const pct = std.Uri.percentEncode(%s, std.Uri.Component.query) catch return;",
-            zigField);
-        w.line("buf.writer().writeAll(pct) catch {};");
+            "const pct_%d = std.Uri.percentEncode(%s, std.Uri.Component.query) catch return;",
+            fieldNum, zigField);
+        w.line("buf.writer().writeAll(pct_%d) catch {};", fieldNum);
         break;
       case TYPE_FLOAT:
         w.line("if (!std.math.isNan(%s) and !std.math.isInf(%s))", zigField, zigField);
@@ -405,7 +469,13 @@ public class PbtkZigGenerator implements LanguageGenerator {
 
   private void emitMapSerialize(CodeWriter w, ProtoField field, String zigField, int fieldNum) {
     w.block(
-        "var it = " + zigField + ".iterator(); while (it.next()) |entry|",
+        "var it_"
+            + fieldNum
+            + " = "
+            + zigField
+            + ".iterator(); while (it_"
+            + fieldNum
+            + ".next()) |entry|",
         () -> {
           // Each map entry is a synthetic message with 2 sub-fields
           w.line("buf.writer().print(\"!%dm2\", .{}) catch {};", fieldNum);
@@ -506,7 +576,7 @@ public class PbtkZigGenerator implements LanguageGenerator {
         "fn parsePbtkTokens(tokens: []const []const u8, field_count: usize, offset: *usize) "
             + structName,
         () -> {
-          w.line("var obj = %s{};", structName);
+          w.line("%s obj = %s{};", message.getFields().isEmpty() ? "const" : "var", structName);
           w.line("var consumed: usize = 0;");
           w.block(
               "while (consumed < field_count and offset.* < tokens.len)",
@@ -525,6 +595,9 @@ public class PbtkZigGenerator implements LanguageGenerator {
                     });
                 w.line("const field_num = std.fmt.parseInt(i32, token[0..num_end], 10) catch 0;");
                 w.line("const value = token[num_end + 1 ..];");
+                if (message.getFields().isEmpty()) {
+                  w.line("_ = value;");
+                }
 
                 // Switch on field number
                 w.line("switch (field_num) {");
@@ -532,12 +605,13 @@ public class PbtkZigGenerator implements LanguageGenerator {
                 for (ProtoField field : message.getFields()) {
                   emitFieldCase(w, field);
                 }
-                w.block(
+                w.blockContinue(
                     "else =>",
                     () -> {
                       w.line("offset.* += 1;");
                       w.line("consumed += 1;");
                     });
+                w.rawLine(",");
                 w.dedent();
                 w.line("}");
               });
@@ -576,7 +650,8 @@ public class PbtkZigGenerator implements LanguageGenerator {
     int fieldNum = field.getFieldNumber();
     String zigName = nameResolver.fieldName(field.getName());
 
-    w.block(
+    // Zig switch prongs require a trailing comma after the block
+    w.blockContinue(
         fieldNum + " =>",
         () -> {
           if (field.isMap()) {
@@ -594,6 +669,7 @@ public class PbtkZigGenerator implements LanguageGenerator {
           w.line("offset.* += 1;");
           w.line("consumed += 1;");
         });
+    w.rawLine(",");
   }
 
   private void emitScalarDeserialize(CodeWriter w, ProtoField field, String zigName) {
@@ -836,7 +912,13 @@ public class PbtkZigGenerator implements LanguageGenerator {
               // Free allocator-owned string keys
               if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_STRING) {
                 w.block(
-                    "var key_it = " + zigName + ".keyIterator(); while (key_it.next()) |key|",
+                    "var key_it_"
+                        + field.getFieldNumber()
+                        + " = "
+                        + zigName
+                        + ".keyIterator(); while (key_it_"
+                        + field.getFieldNumber()
+                        + ".next()) |key|",
                     () -> {
                       w.line("allocator.free(key.*);");
                     });
@@ -844,7 +926,13 @@ public class PbtkZigGenerator implements LanguageGenerator {
               // Free allocator-owned string values
               if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_STRING) {
                 w.block(
-                    "var val_it = " + zigName + ".valueIterator(); while (val_it.next()) |val|",
+                    "var val_it_"
+                        + field.getFieldNumber()
+                        + " = "
+                        + zigName
+                        + ".valueIterator(); while (val_it_"
+                        + field.getFieldNumber()
+                        + ".next()) |val|",
                     () -> {
                       w.line("allocator.free(val.*);");
                     });
@@ -924,6 +1012,7 @@ public class PbtkZigGenerator implements LanguageGenerator {
           }
 
           if (!hasCleanup) {
+            w.line("_ = self;");
             w.line("_ = allocator;");
           }
         });
