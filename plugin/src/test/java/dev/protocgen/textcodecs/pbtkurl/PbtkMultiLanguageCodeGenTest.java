@@ -127,7 +127,7 @@ class PbtkMultiLanguageCodeGenTest {
                     Map.entry("pbtk_serialize", List.of("pub fn encode_to_vec(&self)")),
                     Map.entry("pbtk_deserialize", List.of("pub fn decode(")),
                     Map.entry("pbtk_prefix", List.of("!1s")),
-                    Map.entry("string_url_encode", List.of("urlencoding::encode(")),
+                    Map.entry("string_url_encode", List.of("pbtk_url_encode(")),
                     Map.entry("bytes_base64", List.of("general_purpose::STANDARD.encode(")),
                     Map.entry("nested_message", List.of("!1m")),
                     Map.entry("enum_field", List.of("!1e")),

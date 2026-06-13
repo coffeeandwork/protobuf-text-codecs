@@ -129,6 +129,11 @@ public class PbtkRustGenerator implements LanguageGenerator {
     emitImports(w, message);
     emitTypeImports(w, message, file);
 
+    // Inlined URL percent-encoding helpers (pbtk format uses no external URL crate).
+    if (hasStringField(message)) {
+      emitUrlHelpers(w);
+    }
+
     String structName = nameResolver.messageClassName(message.getName());
 
     // Nested enums
@@ -223,12 +228,17 @@ public class PbtkRustGenerator implements LanguageGenerator {
         file.getProtoPackage().isEmpty() ? "." : "." + file.getProtoPackage() + ".";
 
     for (ProtoField field : message.getFields()) {
+      if (field.isMap()) {
+        // A map field's own type reference is the synthetic *MapEntry message, which is
+        // never generated; only the value type may need an import.
+        if (field.getMapValueTypeReference() != null) {
+          addTypeImportIfNeeded(
+              field.getMapValueTypeReference(), false, message, currentPrefix, imports);
+        }
+        continue;
+      }
       addTypeImportIfNeeded(
           field.getTypeReference(), field.isWellKnownType(), message, currentPrefix, imports);
-      if (field.isMap() && field.getMapValueTypeReference() != null) {
-        addTypeImportIfNeeded(
-            field.getMapValueTypeReference(), false, message, currentPrefix, imports);
-      }
     }
     for (ProtoMessage nested : message.getNestedMessages()) {
       collectReferencedTypes(nested, file, imports);
@@ -242,16 +252,34 @@ public class PbtkRustGenerator implements LanguageGenerator {
       String currentPrefix,
       Set<String> imports) {
     if (typeRef == null || isWellKnown) return;
+
+    // A message that references itself (recursive type) needs no import.
+    if (typeRef.equals(message.getFullName())) return;
+
     for (ProtoMessage nested : message.getNestedMessages()) {
       if (typeRef.equals(message.getFullName() + "." + nested.getName())) return;
     }
     for (ProtoEnum nestedEnum : message.getEnums()) {
       if (typeRef.equals(message.getFullName() + "." + nestedEnum.getName())) return;
     }
+
+    String simpleName = ProtoTypeUtil.simpleTypeName(typeRef);
+    String moduleName = toSnakeCase(simpleName);
+
+    // Type in the same package but a different file.
     if (typeRef.startsWith(currentPrefix)) {
-      String simpleName = ProtoTypeUtil.simpleTypeName(typeRef);
-      String moduleName = toSnakeCase(simpleName);
       imports.add("use super::" + moduleName + "::" + simpleName + ";");
+      return;
+    }
+
+    // Cross-package: import via the crate root. Each proto package maps to a module
+    // directory (with a generated mod.rs); the consuming crate mounts those directories
+    // as crate-root modules.
+    String withoutDot = typeRef.startsWith(".") ? typeRef.substring(1) : typeRef;
+    int lastDot = withoutDot.lastIndexOf('.');
+    if (lastDot > 0) {
+      String pkgPath = withoutDot.substring(0, lastDot).replace(".", "::");
+      imports.add("use crate::" + pkgPath + "::" + moduleName + "::" + simpleName + ";");
     }
   }
 
@@ -261,10 +289,31 @@ public class PbtkRustGenerator implements LanguageGenerator {
 
   private void emitFields(CodeWriter w, ProtoMessage message) {
     for (ProtoField field : message.getFields()) {
-      String rustType = typeMapper.languageType(field);
+      String rustType = fieldRustType(field, message);
       String rustName = nameResolver.fieldName(field.getName());
       w.line("pub %s: %s,", rustName, rustType);
     }
+  }
+
+  /**
+   * The Rust type for a field declaration. Self-referencing singular message fields are boxed
+   * (Option&lt;Box&lt;T&gt;&gt;) — without indirection the type would have infinite size.
+   */
+  private String fieldRustType(ProtoField field, ProtoMessage message) {
+    String rustType = typeMapper.languageType(field);
+    if (isSelfReference(field, message)) {
+      String inner = rustType.substring("Option<".length(), rustType.length() - 1);
+      return "Option<Box<" + inner + ">>";
+    }
+    return rustType;
+  }
+
+  static boolean isSelfReference(ProtoField field, ProtoMessage message) {
+    return field.getKind() == ProtoField.FieldKind.MESSAGE
+        && !field.isRepeated()
+        && !field.isMap()
+        && field.getTypeReference() != null
+        && field.getTypeReference().equals(message.getFullName());
   }
 
   private void emitOneofCaseFields(CodeWriter w, ProtoMessage message) {
@@ -276,7 +325,7 @@ public class PbtkRustGenerator implements LanguageGenerator {
 
   private void emitGettersSetters(CodeWriter w, ProtoMessage message) {
     for (ProtoField field : message.getFields()) {
-      String rustType = typeMapper.languageType(field);
+      String rustType = fieldRustType(field, message);
       String rustName = nameResolver.fieldName(field.getName());
       String getterName = nameResolver.getterName(field.getName());
       String setterName = nameResolver.setterName(field.getName());
@@ -303,7 +352,9 @@ public class PbtkRustGenerator implements LanguageGenerator {
             }
           });
 
-      if (field.isProto3Optional() || field.getKind() == ProtoField.FieldKind.MESSAGE) {
+      if ((field.isProto3Optional() || field.getKind() == ProtoField.FieldKind.MESSAGE)
+          && !field.isRepeated()
+          && !field.isMap()) {
         w.blankLine();
         String hasName = "has_" + nameResolver.fieldName(field.getName());
         w.block(
@@ -319,7 +370,7 @@ public class PbtkRustGenerator implements LanguageGenerator {
   private void emitAppendPbtkFields(CodeWriter w, ProtoMessage message) {
     w.blankLine();
     w.block(
-        "fn append_pbtk_fields(&self, s: &mut String)",
+        "pub fn append_pbtk_fields(&self, s: &mut String)",
         () -> {
           for (ProtoField field : message.getFields()) {
             emitFieldSerialize(w, field);
@@ -330,7 +381,7 @@ public class PbtkRustGenerator implements LanguageGenerator {
   private void emitCountPbtkFields(CodeWriter w, ProtoMessage message) {
     w.blankLine();
     w.block(
-        "fn count_pbtk_fields(&self) -> usize",
+        "pub fn count_pbtk_fields(&self) -> usize",
         () -> {
           w.line("let mut count: usize = 0;");
           for (ProtoField field : message.getFields()) {
@@ -398,7 +449,7 @@ public class PbtkRustGenerator implements LanguageGenerator {
     switch (type) {
       case TYPE_BOOL:
         w.line(
-            "s.push_str(&format!(\"%%s%%s\", \"%s\", if %s%s { \"1\" } else { \"0\" }));",
+            "s.push_str(\"%s\"); s.push_str(if %s%s { \"1\" } else { \"0\" });",
             prefix, isRef ? "*" : "", rustField);
         break;
       case TYPE_BYTES:
@@ -414,32 +465,18 @@ public class PbtkRustGenerator implements LanguageGenerator {
         break;
       case TYPE_STRING:
         if (isRef) {
-          w.line("s.push_str(\"%s\"); s.push_str(&urlencoding::encode(%s));", prefix, rustField);
+          w.line("s.push_str(\"%s\"); s.push_str(&pbtk_url_encode(%s));", prefix, rustField);
         } else {
-          w.line("s.push_str(\"%s\"); s.push_str(&urlencoding::encode(&%s));", prefix, rustField);
+          w.line("s.push_str(\"%s\"); s.push_str(&pbtk_url_encode(&%s));", prefix, rustField);
         }
         break;
       case TYPE_FLOAT:
-        w.line(
-            "if !%s%s.is_nan() && !%s%s.is_infinite() { s.push_str(\"%s\"); s.push_str(&%s%s.to_string()); }",
-            isRef ? "*" : "",
-            rustField,
-            isRef ? "*" : "",
-            rustField,
-            prefix,
-            isRef ? "*" : "",
-            rustField);
-        break;
       case TYPE_DOUBLE:
+        // Method calls auto-deref through references, so no explicit `*` is needed here
+        // (and `!*v.is_nan()` would mis-parse as dereferencing the bool result).
         w.line(
-            "if !%s%s.is_nan() && !%s%s.is_infinite() { s.push_str(\"%s\"); s.push_str(&%s%s.to_string()); }",
-            isRef ? "*" : "",
-            rustField,
-            isRef ? "*" : "",
-            rustField,
-            prefix,
-            isRef ? "*" : "",
-            rustField);
+            "if !%s.is_nan() && !%s.is_infinite() { s.push_str(\"%s\"); s.push_str(&%s.to_string()); }",
+            rustField, rustField, prefix, rustField);
         break;
       default:
         w.line(
@@ -499,7 +536,7 @@ public class PbtkRustGenerator implements LanguageGenerator {
           // Key (field 1)
           String keyTypeChar = pbtkTypeChar(field.getMapKeyType());
           if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_STRING) {
-            w.line("s.push_str(\"!1%s\"); s.push_str(&urlencoding::encode(k));", keyTypeChar);
+            w.line("s.push_str(\"!1%s\"); s.push_str(&pbtk_url_encode(k));", keyTypeChar);
           } else if (field.getMapKeyType() == FieldDescriptorProto.Type.TYPE_BOOL) {
             w.line(
                 "s.push_str(\"!1%s\"); s.push_str(if *k { \"1\" } else { \"0\" });", keyTypeChar);
@@ -514,7 +551,7 @@ public class PbtkRustGenerator implements LanguageGenerator {
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
             w.line("s.push_str(\"!2e\"); s.push_str(&(*v as i32).to_string());");
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_STRING) {
-            w.line("s.push_str(\"!2s\"); s.push_str(&urlencoding::encode(v));");
+            w.line("s.push_str(\"!2s\"); s.push_str(&pbtk_url_encode(v));");
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BYTES) {
             w.line("s.push_str(\"!2z\"); s.push_str(&general_purpose::STANDARD.encode(v));");
           } else if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_BOOL) {
@@ -567,7 +604,7 @@ public class PbtkRustGenerator implements LanguageGenerator {
     // Internal parser
     w.blankLine();
     w.block(
-        "fn parse_pbtk_tokens(tokens: &[&str], field_count: usize, offset: &mut usize) -> Self",
+        "pub fn parse_pbtk_tokens(tokens: &[&str], field_count: usize, offset: &mut usize) -> Self",
         () -> {
           w.line("let mut obj = %s::default();", structName);
           w.line("let mut consumed: usize = 0;");
@@ -587,7 +624,7 @@ public class PbtkRustGenerator implements LanguageGenerator {
                     "match field_num",
                     () -> {
                       for (ProtoField field : message.getFields()) {
-                        emitFieldCase(w, field);
+                        emitFieldCase(w, field, message);
                       }
                       w.line("_ => { *offset += 1; consumed += 1; }");
                     });
@@ -609,7 +646,7 @@ public class PbtkRustGenerator implements LanguageGenerator {
         });
   }
 
-  private void emitFieldCase(CodeWriter w, ProtoField field) {
+  private void emitFieldCase(CodeWriter w, ProtoField field, ProtoMessage message) {
     int fieldNum = field.getFieldNumber();
     String rustName = nameResolver.fieldName(field.getName());
 
@@ -622,7 +659,7 @@ public class PbtkRustGenerator implements LanguageGenerator {
             emitRepeatedDeserialize(w, field, rustName);
           } else if (field.getKind() == ProtoField.FieldKind.MESSAGE
               || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
-            emitMessageDeserialize(w, field, rustName);
+            emitMessageDeserialize(w, field, rustName, isSelfReference(field, message));
           } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
             emitEnumDeserialize(w, field, rustName);
           } else {
@@ -661,11 +698,19 @@ public class PbtkRustGenerator implements LanguageGenerator {
     }
   }
 
-  private void emitMessageDeserialize(CodeWriter w, ProtoField field, String rustName) {
+  private void emitMessageDeserialize(
+      CodeWriter w, ProtoField field, String rustName, boolean selfReference) {
     String msgType = simpleTypeName(field.getTypeReference());
     w.line("let sub_count: usize = value.parse().unwrap_or(0);");
     w.line("*offset += 1;");
-    w.line("obj.%s = Some(%s::parse_pbtk_tokens(tokens, sub_count, offset));", rustName, msgType);
+    if (selfReference) {
+      // Self-referencing fields are boxed (Option<Box<T>>) to give the type a finite size.
+      w.line(
+          "obj.%s = Some(Box::new(%s::parse_pbtk_tokens(tokens, sub_count, offset)));",
+          rustName, msgType);
+    } else {
+      w.line("obj.%s = Some(%s::parse_pbtk_tokens(tokens, sub_count, offset));", rustName, msgType);
+    }
     w.line("*offset -= 1;"); // compensate for outer offset increment
     if (field.isOneofMember()) {
       w.line(
@@ -759,7 +804,7 @@ public class PbtkRustGenerator implements LanguageGenerator {
       case TYPE_INT32, TYPE_SINT32, TYPE_SFIXED32 -> valueVar + ".parse::<i32>().unwrap_or(0)";
       case TYPE_UINT32, TYPE_FIXED32 -> valueVar + ".parse::<u32>().unwrap_or(0)";
       case TYPE_BOOL -> valueVar + " == \"1\"";
-      case TYPE_STRING -> "urlencoding::decode(" + valueVar + ").unwrap_or_default().into_owned()";
+      case TYPE_STRING -> "pbtk_url_decode(" + valueVar + ")";
       case TYPE_BYTES -> "general_purpose::STANDARD.decode(" + valueVar + ").unwrap_or_default()";
       default -> valueVar + ".to_string()";
     };
@@ -773,12 +818,17 @@ public class PbtkRustGenerator implements LanguageGenerator {
     w.blankLine();
     w.line("#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]");
     w.line("#[repr(i32)]");
+    // With allow_alias, only the first name per number becomes a variant (Rust
+    // rejects duplicate discriminants).
+    Set<Integer> seenNumbers = new LinkedHashSet<>();
     w.block(
         "pub enum " + protoEnum.getName(),
         () -> {
           for (ProtoEnum.EnumValue val : protoEnum.getValues()) {
-            String rustName = nameResolver.enumConstantName(val.name());
-            w.line("%s = %d,", rustName, val.number());
+            if (seenNumbers.add(val.number())) {
+              String rustName = nameResolver.enumConstantName(val.name());
+              w.line("%s = %d,", rustName, val.number());
+            }
           }
         });
 
@@ -809,7 +859,11 @@ public class PbtkRustGenerator implements LanguageGenerator {
                 w.block(
                     "match value",
                     () -> {
+                      Set<Integer> matchedNumbers = new LinkedHashSet<>();
                       for (ProtoEnum.EnumValue val : protoEnum.getValues()) {
+                        if (!matchedNumbers.add(val.number())) {
+                          continue; // aliased value: first name wins
+                        }
                         String rustName = nameResolver.enumConstantName(val.name());
                         w.line("%d => %s::%s,", val.number(), protoEnum.getName(), rustName);
                       }
@@ -981,11 +1035,88 @@ public class PbtkRustGenerator implements LanguageGenerator {
   private boolean hasFieldOfType(ProtoMessage message, FieldDescriptorProto.Type type) {
     for (ProtoField field : message.getFields()) {
       if (field.getProtoType() == type) return true;
+      if (field.isMap() && (field.getMapKeyType() == type || field.getMapValueType() == type)) {
+        return true;
+      }
     }
     for (ProtoMessage nested : message.getNestedMessages()) {
       if (hasFieldOfType(nested, type)) return true;
     }
     return false;
+  }
+
+  /**
+   * Whether the message (or any nested message) has a string-typed field, map key, or map value.
+   */
+  private boolean hasStringField(ProtoMessage message) {
+    return hasFieldOfType(message, FieldDescriptorProto.Type.TYPE_STRING);
+  }
+
+  /** Emit module-level percent-encode/decode helpers used by string serialization. */
+  private void emitUrlHelpers(CodeWriter w) {
+    w.block(
+        "fn pbtk_url_encode(input: &str) -> String",
+        () -> {
+          w.line("let mut out = String::with_capacity(input.len());");
+          w.block(
+              "for &byte in input.as_bytes()",
+              () -> {
+                w.block(
+                    "match byte",
+                    () -> {
+                      w.line(
+                          "b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' =>"
+                              + " out.push(byte as char),");
+                      w.block(
+                          "_ =>",
+                          () -> {
+                            w.line("out.push('%');");
+                            w.line("out.push_str(&format!(\"{:02X}\", byte));");
+                          });
+                    });
+              });
+          w.line("out");
+        });
+    w.blankLine();
+    w.block(
+        "fn pbtk_url_decode(input: &str) -> String",
+        () -> {
+          w.block(
+              "fn hex_val(c: u8) -> Option<u8>",
+              () -> {
+                w.block(
+                    "match c",
+                    () -> {
+                      w.line("b'0'..=b'9' => Some(c - b'0'),");
+                      w.line("b'A'..=b'F' => Some(c - b'A' + 10),");
+                      w.line("b'a'..=b'f' => Some(c - b'a' + 10),");
+                      w.line("_ => None,");
+                    });
+              });
+          w.line("let bytes = input.as_bytes();");
+          w.line("let mut out: Vec<u8> = Vec::with_capacity(bytes.len());");
+          w.line("let mut i = 0;");
+          w.block(
+              "while i < bytes.len()",
+              () -> {
+                w.block(
+                    "if bytes[i] == b'%' && i + 2 < bytes.len()",
+                    () -> {
+                      w.block(
+                          "if let (Some(h), Some(l)) = (hex_val(bytes[i + 1]), hex_val(bytes[i +"
+                              + " 2]))",
+                          () -> {
+                            w.line("out.push((h << 4) | l);");
+                            w.line("i += 3;");
+                            w.line("continue;");
+                          });
+                    });
+                w.line("out.push(bytes[i]);");
+                w.line("i += 1;");
+              });
+          w.line("String::from_utf8_lossy(&out).into_owned()");
+        });
+    w.blankLine();
   }
 
   private boolean hasMapFields(ProtoMessage message) {
