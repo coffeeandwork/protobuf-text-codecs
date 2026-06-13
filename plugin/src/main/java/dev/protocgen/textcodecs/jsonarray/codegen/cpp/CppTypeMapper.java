@@ -19,6 +19,7 @@ import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.codegen.TypeMapper;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
+import dev.protocgen.textcodecs.jsonarray.model.ProtoFile;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -28,6 +29,21 @@ import java.nio.charset.StandardCharsets;
  */
 public class CppTypeMapper implements TypeMapper {
 
+  // The file currently being generated, used to resolve cross-package type references. Set per file
+  // before emission; generation is single-threaded so this shared context is safe.
+  private ProtoFile currentFile;
+
+  /** Set the file currently being generated so type references can be namespace-qualified. */
+  public void setCurrentFile(ProtoFile currentFile) {
+    this.currentFile = currentFile;
+  }
+
+  /** Resolve a proto type reference to the C++ type name, namespace-qualified when possible. */
+  private String typeName(String typeRef) {
+    if (currentFile == null) return simpleTypeName(typeRef);
+    return CppTypeUtil.qualifiedTypeName(typeRef, currentFile);
+  }
+
   @Override
   public String languageType(ProtoField field) {
     if (field.isMap()) {
@@ -35,7 +51,7 @@ public class CppTypeMapper implements TypeMapper {
       String valueType;
       if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE
           || field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
-        valueType = simpleTypeName(field.getMapValueTypeReference());
+        valueType = typeName(field.getMapValueTypeReference());
       } else {
         valueType = scalarType(field.getMapValueType());
       }
@@ -69,10 +85,10 @@ public class CppTypeMapper implements TypeMapper {
     }
     if (field.getKind() == ProtoField.FieldKind.MESSAGE
         || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
-      return "std::optional<" + simpleTypeName(field.getTypeReference()) + ">";
+      return "std::optional<" + typeName(field.getTypeReference()) + ">";
     }
     if (field.getKind() == ProtoField.FieldKind.ENUM) {
-      return "std::optional<" + simpleTypeName(field.getTypeReference()) + ">";
+      return "std::optional<" + typeName(field.getTypeReference()) + ">";
     }
     return "std::optional<" + scalarType(field.getProtoType()) + ">";
   }
@@ -87,7 +103,7 @@ public class CppTypeMapper implements TypeMapper {
       return "std::nullopt";
     }
     if (field.getKind() == ProtoField.FieldKind.ENUM) {
-      return "static_cast<" + simpleTypeName(field.getTypeReference()) + ">(0)";
+      return "static_cast<" + typeName(field.getTypeReference()) + ">(0)";
     }
     return scalarDefault(field.getProtoType());
   }
@@ -117,10 +133,10 @@ public class CppTypeMapper implements TypeMapper {
   public String elementType(ProtoField field) {
     if (field.getKind() == ProtoField.FieldKind.MESSAGE
         || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
-      return simpleTypeName(field.getTypeReference());
+      return typeName(field.getTypeReference());
     }
     if (field.getKind() == ProtoField.FieldKind.ENUM) {
-      return simpleTypeName(field.getTypeReference());
+      return typeName(field.getTypeReference());
     }
     return scalarType(field.getProtoType());
   }
@@ -129,10 +145,10 @@ public class CppTypeMapper implements TypeMapper {
   private String singularType(ProtoField field) {
     if (field.getKind() == ProtoField.FieldKind.MESSAGE
         || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
-      return simpleTypeName(field.getTypeReference());
+      return typeName(field.getTypeReference());
     }
     if (field.getKind() == ProtoField.FieldKind.ENUM) {
-      return simpleTypeName(field.getTypeReference());
+      return typeName(field.getTypeReference());
     }
     return scalarType(field.getProtoType());
   }

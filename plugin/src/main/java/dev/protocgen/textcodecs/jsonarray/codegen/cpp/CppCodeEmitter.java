@@ -47,6 +47,7 @@ public class CppCodeEmitter {
 
   /** Generate a complete C++ header file for a message. */
   public String emitMessage(ProtoMessage message, ProtoFile file) {
+    typeMapper.setCurrentFile(file);
     CodeWriter w = new CodeWriter("  ");
 
     emitHeaderPreamble(w, message, file);
@@ -62,34 +63,36 @@ public class CppCodeEmitter {
       w.blankLine();
     }
 
-    // Forward declarations for externally-referenced message types
-    emitExternalForwardDeclarations(w, message, file);
+    // Every nested message and enum is flattened to a namespace-level definition; emit them
+    // deepest-first so each is complete before the type that uses it.
+    List<ProtoMessage> nestedMessages = CppTypeUtil.descendantMessages(message);
 
-    // Forward-declare nested types if needed
-    emitForwardDeclarations(w, message);
+    // Forward-declare flattened nested message types.
+    for (ProtoMessage nested : nestedMessages) {
+      w.line("class %s;", nested.getName());
+    }
+    if (!nestedMessages.isEmpty()) {
+      w.blankLine();
+    }
 
-    // Nested enums first (must be defined before the class that uses them)
-    for (ProtoEnum protoEnum : message.getEnums()) {
+    // Enums first (including those nested at any depth) -- must precede classes that use them.
+    for (ProtoEnum protoEnum : collectEnums(message)) {
       emitEnum(w, protoEnum);
       w.blankLine();
     }
 
-    // Nested message class definitions (forward declarations + full definitions)
-    for (ProtoMessage nested : message.getNestedMessages()) {
+    // Nested message class definitions, then the main class.
+    for (ProtoMessage nested : nestedMessages) {
       emitClassDeclaration(w, nested);
       w.blankLine();
     }
-
-    // Main class declaration
     emitClassDeclaration(w, message);
 
-    // Inline implementations for nested messages
-    for (ProtoMessage nested : message.getNestedMessages()) {
-      emitInlineImplementations(w, nested, nested.getName());
+    // Inline implementations for nested messages, then the main message.
+    for (ProtoMessage nested : nestedMessages) {
+      emitInlineImplementations(w, nested, nested.getName(), file);
     }
-
-    // Inline implementations for the main message
-    emitInlineImplementations(w, message, message.getName());
+    emitInlineImplementations(w, message, message.getName(), file);
 
     // Close namespaces
     String[] nsClose = nameResolver.namespaceClose(file);
@@ -101,8 +104,18 @@ public class CppCodeEmitter {
     return w.toString();
   }
 
+  /** Collect all enums declared in {@code message} or any of its nested messages (any depth). */
+  private List<ProtoEnum> collectEnums(ProtoMessage message) {
+    List<ProtoEnum> result = new ArrayList<>(message.getEnums());
+    for (ProtoMessage nested : CppTypeUtil.descendantMessages(message)) {
+      result.addAll(nested.getEnums());
+    }
+    return result;
+  }
+
   /** Generate a complete C++ header file for a top-level enum. */
   public String emitTopLevelEnum(ProtoEnum protoEnum, ProtoFile file) {
+    typeMapper.setCurrentFile(file);
     CodeWriter w = new CodeWriter("  ");
 
     w.line("#pragma once");
@@ -159,12 +172,28 @@ public class CppCodeEmitter {
     if (needsInclude(message, "variant")) {
       includes.add("#include <variant>");
     }
+    if (hasSelfReference(message)) {
+      includes.add("#include <memory>");
+    }
 
     // Sort and deduplicate
     includes.stream().sorted().distinct().forEach(w::line);
 
     // Cross-file includes for referenced message/enum types
     emitCrossFileIncludes(w, message, file);
+  }
+
+  /**
+   * True if {@code message} or any nested message has a self-referential singular message field.
+   */
+  private boolean hasSelfReference(ProtoMessage message) {
+    for (ProtoField field : message.getFields()) {
+      if (CppTypeUtil.isSelfReference(field, message)) return true;
+    }
+    for (ProtoMessage nested : message.getNestedMessages()) {
+      if (hasSelfReference(nested)) return true;
+    }
+    return false;
   }
 
   private boolean needsInclude(ProtoMessage message, String header) {
@@ -216,131 +245,64 @@ public class CppCodeEmitter {
 
   /**
    * Walk all fields (including nested messages) and collect #include directives for MESSAGE/ENUM
-   * types defined in a different proto file within the same package.
+   * types defined in another proto file -- whether in the same package (different file) or a
+   * different package. Types defined inside this top-level message, and the message itself, are
+   * emitted in the same header and need no include.
    */
   private void collectCrossFileIncludes(
       ProtoMessage message, ProtoFile file, Set<String> includes) {
-    String pkg = nameResolver.resolvePackage(file);
-    String currentPrefix =
-        file.getProtoPackage().isEmpty() ? "." : "." + file.getProtoPackage() + ".";
-
     for (ProtoField field : message.getFields()) {
-      collectCppTypeInclude(
-          field.getTypeReference(), field, message, file, currentPrefix, pkg, includes);
-
-      // For map value type references
-      if (field.isMap() && field.getMapValueTypeReference() != null) {
-        collectCppTypeInclude(
-            field.getMapValueTypeReference(), null, message, file, currentPrefix, pkg, includes);
+      // A map field's own type reference is the synthetic *MapEntry message, which is never
+      // generated; only the value type may need an include.
+      if (field.isMap()) {
+        collectCppTypeInclude(field.getMapValueTypeReference(), message, file, includes);
+      } else if (!field.isWellKnownType()) {
+        collectCppTypeInclude(field.getTypeReference(), message, file, includes);
       }
     }
 
     // Recurse into nested messages
     for (ProtoMessage nested : message.getNestedMessages()) {
-      collectCrossFileIncludes(nested, file, includes);
+      collectCrossFileIncludes(nested, message, file, includes);
+    }
+  }
+
+  private void collectCrossFileIncludes(
+      ProtoMessage message, ProtoMessage topLevel, ProtoFile file, Set<String> includes) {
+    for (ProtoField field : message.getFields()) {
+      if (field.isMap()) {
+        collectCppTypeInclude(field.getMapValueTypeReference(), topLevel, file, includes);
+      } else if (!field.isWellKnownType()) {
+        collectCppTypeInclude(field.getTypeReference(), topLevel, file, includes);
+      }
+    }
+    for (ProtoMessage nested : message.getNestedMessages()) {
+      collectCrossFileIncludes(nested, topLevel, file, includes);
     }
   }
 
   private void collectCppTypeInclude(
-      String typeRef,
-      ProtoField field,
-      ProtoMessage message,
-      ProtoFile file,
-      String currentPrefix,
-      String pkg,
-      Set<String> includes) {
+      String typeRef, ProtoMessage topLevel, ProtoFile file, Set<String> includes) {
     if (typeRef == null) return;
-    if (field != null && field.isWellKnownType()) return;
 
-    // Check if the type is a nested type within the current message
-    for (ProtoMessage nested : message.getNestedMessages()) {
-      if (typeRef.equals(message.getFullName() + "." + nested.getName())) {
-        return;
-      }
-    }
+    // Types declared inside this top-level message are emitted in the same header.
+    if (typeRef.startsWith(topLevel.getFullName() + ".")) return;
+    if (typeRef.equals(topLevel.getFullName())) return;
 
-    // Check if this is a type in the same package but different file
+    String pkg = nameResolver.resolvePackage(file);
+    String currentPrefix = pkg.isEmpty() ? "." : "." + pkg + ".";
     if (typeRef.startsWith(currentPrefix)) {
+      // Same package, different file.
       String simpleName = ProtoTypeUtil.simpleTypeName(typeRef);
-      // Skip if this is the same message we're generating
-      if (simpleName.equals(message.getName())) return;
-
       String dir = pkg.isEmpty() ? "" : pkg.replace('.', '/') + "/";
       includes.add("#include \"" + dir + simpleName + ".hpp\"");
-    }
-  }
-
-  /**
-   * Emit forward declarations (class X;) for externally-referenced message types. This prevents
-   * issues with circular header includes.
-   */
-  private void emitExternalForwardDeclarations(CodeWriter w, ProtoMessage message, ProtoFile file) {
-    Set<String> forwardDecls = new LinkedHashSet<>();
-    collectExternalForwardDeclarations(message, file, forwardDecls);
-    for (String decl : forwardDecls) {
-      w.line(decl);
-    }
-    if (!forwardDecls.isEmpty()) {
-      w.blankLine();
-    }
-  }
-
-  private void collectExternalForwardDeclarations(
-      ProtoMessage message, ProtoFile file, Set<String> forwardDecls) {
-    String currentPrefix =
-        file.getProtoPackage().isEmpty() ? "." : "." + file.getProtoPackage() + ".";
-
-    for (ProtoField field : message.getFields()) {
-      collectCppTypeForwardDecl(
-          field.getTypeReference(), field, message, file, currentPrefix, forwardDecls);
-      if (field.isMap() && field.getMapValueTypeReference() != null) {
-        collectCppTypeForwardDecl(
-            field.getMapValueTypeReference(), null, message, file, currentPrefix, forwardDecls);
-      }
+      return;
     }
 
-    for (ProtoMessage nested : message.getNestedMessages()) {
-      collectExternalForwardDeclarations(nested, file, forwardDecls);
-    }
-  }
-
-  private void collectCppTypeForwardDecl(
-      String typeRef,
-      ProtoField field,
-      ProtoMessage message,
-      ProtoFile file,
-      String currentPrefix,
-      Set<String> forwardDecls) {
-    if (typeRef == null) return;
-    if (field != null && field.isWellKnownType()) return;
-    // Only message types need forward declarations (not enums)
-    if (field != null
-        && field.getKind() != ProtoField.FieldKind.MESSAGE
-        && field.getKind() != ProtoField.FieldKind.WELL_KNOWN_TYPE) return;
-
-    // Check if the type is a nested type within the current message
-    for (ProtoMessage nested : message.getNestedMessages()) {
-      if (typeRef.equals(message.getFullName() + "." + nested.getName())) {
-        return;
-      }
-    }
-
-    // Check if this is a type in the same package but different file
-    if (typeRef.startsWith(currentPrefix)) {
-      String simpleName = ProtoTypeUtil.simpleTypeName(typeRef);
-      if (simpleName.equals(message.getName())) return;
-
-      forwardDecls.add("class " + simpleName + ";");
-    }
-  }
-
-  private void emitForwardDeclarations(CodeWriter w, ProtoMessage message) {
-    // Forward-declare nested message types that are referenced by the parent
-    for (ProtoMessage nested : message.getNestedMessages()) {
-      w.line("class %s;", nested.getName());
-    }
-    if (!message.getNestedMessages().isEmpty()) {
-      w.blankLine();
+    // Cross-package reference.
+    String inc = CppTypeUtil.crossPackageInclude(typeRef, file);
+    if (inc != null) {
+      includes.add(inc);
     }
   }
 
@@ -391,9 +353,9 @@ public class CppCodeEmitter {
 
   private void emitFields(CodeWriter w, ProtoMessage message) {
     for (ProtoField field : message.getFields()) {
-      String cppType = typeMapper.languageType(field);
+      String cppType = fieldType(field, message);
       String cppName = nameResolver.fieldName(field.getName()) + "_";
-      String defaultVal = typeMapper.defaultValue(field);
+      String defaultVal = fieldDefault(field, message);
 
       w.line("%s %s = %s;", cppType, cppName, defaultVal);
     }
@@ -405,9 +367,26 @@ public class CppCodeEmitter {
     }
   }
 
+  /**
+   * The declared C++ type for a field; self-referential message fields are boxed via shared_ptr.
+   */
+  private String fieldType(ProtoField field, ProtoMessage message) {
+    if (CppTypeUtil.isSelfReference(field, message)) {
+      return "std::shared_ptr<" + nameResolver.messageClassName(message.getName()) + ">";
+    }
+    return typeMapper.languageType(field);
+  }
+
+  private String fieldDefault(ProtoField field, ProtoMessage message) {
+    if (CppTypeUtil.isSelfReference(field, message)) {
+      return "nullptr";
+    }
+    return typeMapper.defaultValue(field);
+  }
+
   private void emitGettersSetters(CodeWriter w, ProtoMessage message) {
     for (ProtoField field : message.getFields()) {
-      String cppType = typeMapper.languageType(field);
+      String cppType = fieldType(field, message);
       String cppName = nameResolver.fieldName(field.getName()) + "_";
       String getterName = nameResolver.getterName(field.getName());
       String setterName = nameResolver.setterName(field.getName());
@@ -443,7 +422,11 @@ public class CppCodeEmitter {
               && (field.getKind() == ProtoField.FieldKind.MESSAGE
                   || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE))) {
         String hasName = "has_" + nameResolver.fieldName(field.getName());
-        w.line("bool %s() const { return %s.has_value(); }", hasName, cppName);
+        if (CppTypeUtil.isSelfReference(field, message)) {
+          w.line("bool %s() const { return %s != nullptr; }", hasName, cppName);
+        } else {
+          w.line("bool %s() const { return %s.has_value(); }", hasName, cppName);
+        }
       }
     }
   }
@@ -457,12 +440,13 @@ public class CppCodeEmitter {
     }
   }
 
-  private void emitInlineImplementations(CodeWriter w, ProtoMessage message, String className) {
+  private void emitInlineImplementations(
+      CodeWriter w, ProtoMessage message, String className, ProtoFile file) {
     // Serialize method
     serializerGen.generate(w, message, className);
 
     // Deserialize method
-    deserializerGen.generate(w, message, className);
+    deserializerGen.generate(w, message, className, file);
   }
 
   private void emitEnum(CodeWriter w, ProtoEnum protoEnum) {

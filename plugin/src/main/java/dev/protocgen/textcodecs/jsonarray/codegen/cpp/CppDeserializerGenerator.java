@@ -19,6 +19,7 @@ import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
 import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
+import dev.protocgen.textcodecs.jsonarray.model.ProtoFile;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoMessage;
 
 /**
@@ -35,7 +36,12 @@ public class CppDeserializerGenerator {
     this.nameResolver = nameResolver;
   }
 
-  public void generate(CodeWriter w, ProtoMessage message, String className) {
+  private ProtoFile currentFile;
+  private ProtoMessage currentMessage;
+
+  public void generate(CodeWriter w, ProtoMessage message, String className, ProtoFile file) {
+    this.currentFile = file;
+    this.currentMessage = message;
     w.blankLine();
     w.block(
         "inline " + className + " " + className + "::deserialize(const nlohmann::json& arr)",
@@ -117,13 +123,17 @@ public class CppDeserializerGenerator {
   }
 
   private void emitEnumDeserialize(CodeWriter w, ProtoField field, String setter, String nodeExpr) {
-    String enumType = simpleTypeName(field.getTypeReference());
+    String enumType = typeName(field.getTypeReference());
     w.line("%s(static_cast<%s>(%s.get<int>()));", setter, enumType, nodeExpr);
   }
 
   private void emitMessageDeserialize(
       CodeWriter w, ProtoField field, String setter, String nodeExpr) {
-    String msgType = simpleTypeName(field.getTypeReference());
+    String msgType = typeName(field.getTypeReference());
+    if (CppTypeUtil.isSelfReference(field, currentMessage)) {
+      w.line("%s(std::make_shared<%s>(%s::deserialize(%s)));", setter, msgType, msgType, nodeExpr);
+      return;
+    }
     w.line("%s(std::make_optional(%s::deserialize(%s)));", setter, msgType, nodeExpr);
   }
 
@@ -136,10 +146,10 @@ public class CppDeserializerGenerator {
         () -> {
           if (field.getKind() == ProtoField.FieldKind.MESSAGE
               || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
-            String msgType = simpleTypeName(field.getTypeReference());
+            String msgType = typeName(field.getTypeReference());
             w.line("list.push_back(%s::deserialize(elem));", msgType);
           } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
-            String enumType = simpleTypeName(field.getTypeReference());
+            String enumType = typeName(field.getTypeReference());
             w.line("list.push_back(static_cast<%s>(elem.get<int>()));", enumType);
           } else {
             String readExpr = scalarReadExpr(field.getProtoType(), "elem");
@@ -209,18 +219,22 @@ public class CppDeserializerGenerator {
 
   private String mapValueReadExpr(ProtoField field, String nodeExpr) {
     if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE) {
-      String msgType = simpleTypeName(field.getMapValueTypeReference());
+      String msgType = typeName(field.getMapValueTypeReference());
       return msgType + "::deserialize(" + nodeExpr + ")";
     }
     if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {
-      String enumType = simpleTypeName(field.getMapValueTypeReference());
+      String enumType = typeName(field.getMapValueTypeReference());
       return "static_cast<" + enumType + ">(" + nodeExpr + ".get<int>())";
     }
     return scalarReadExpr(field.getMapValueType(), nodeExpr);
   }
 
-  private String simpleTypeName(String protoFullName) {
-    String simple = ProtoTypeUtil.simpleTypeName(protoFullName);
-    return simple != null ? simple : "void*";
+  /** Resolve a proto type reference to the C++ type name, namespace-qualified when possible. */
+  private String typeName(String protoFullName) {
+    if (currentFile == null) {
+      String simple = ProtoTypeUtil.simpleTypeName(protoFullName);
+      return simple != null ? simple : "void*";
+    }
+    return CppTypeUtil.qualifiedTypeName(protoFullName, currentFile);
   }
 }

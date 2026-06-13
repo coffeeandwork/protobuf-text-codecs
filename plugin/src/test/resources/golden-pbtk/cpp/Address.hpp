@@ -11,6 +11,7 @@
 #include <iomanip>
 #include <sstream>
 #include <string>
+#include <vector>
 
 namespace example {
 
@@ -148,9 +149,9 @@ inline int Address_count_pbtk_fields(const Address& msg) {
 }
 
 inline void Address_append_pbtk_fields(std::ostringstream& oss, const Address& msg) {
-  oss << "!1s" << pbtk_detail_::url_encode(msg.street());
-  oss << "!2s" << pbtk_detail_::url_encode(msg.city());
-  oss << "!3s" << pbtk_detail_::url_encode(msg.state());
+  oss << "!1s" << pbtk_detail_Address::url_encode(msg.street());
+  oss << "!2s" << pbtk_detail_Address::url_encode(msg.city());
+  oss << "!3s" << pbtk_detail_Address::url_encode(msg.state());
   oss << "!4i" << msg.zip();
 }
 
