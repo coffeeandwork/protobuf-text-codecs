@@ -27,30 +27,10 @@ public class GoNameResolver implements NameResolver {
 
   @Override
   public String resolvePackage(ProtoFile file) {
-    // Go uses the proto package name as the Go package.
-    // In a real protoc plugin, go_package option would be read from FileOptions;
-    // since ProtoFile doesn't expose it, we derive from the proto package.
-    String pkg = file.getProtoPackage();
-    if (pkg == null || pkg.isEmpty()) {
-      // Derive from file name: "user.proto" -> "user"
-      String fileName = file.getFileName();
-      int slash = fileName.lastIndexOf('/');
-      if (slash >= 0) {
-        fileName = fileName.substring(slash + 1);
-      }
-      int dot = fileName.lastIndexOf('.');
-      if (dot >= 0) {
-        fileName = fileName.substring(0, dot);
-      }
-      return fileName.toLowerCase();
-    }
-    // Use the last segment of the proto package as the Go package name.
-    // e.g., "com.example.user" -> "user"
-    int lastDot = pkg.lastIndexOf('.');
-    if (lastDot >= 0) {
-      return pkg.substring(lastDot + 1).toLowerCase();
-    }
-    return pkg.toLowerCase();
+    // Honor the go_package option when present (its explicit name or last import-path segment),
+    // otherwise derive the package from the proto package or the file's base name.
+    return GoImportUtil.packageName(
+        file.getGoPackage(), file.getProtoPackage(), file.getFileName());
   }
 
   @Override

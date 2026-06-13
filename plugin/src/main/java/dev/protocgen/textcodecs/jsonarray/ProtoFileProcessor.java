@@ -88,6 +88,10 @@ public class ProtoFileProcessor {
         fileDescriptor.getOptions().hasJavaOuterClassname()
             ? fileDescriptor.getOptions().getJavaOuterClassname()
             : null;
+    String goPackage =
+        fileDescriptor.getOptions().hasGoPackage()
+            ? fileDescriptor.getOptions().getGoPackage()
+            : null;
 
     ProtoFile protoFile =
         new ProtoFile(
@@ -95,6 +99,7 @@ public class ProtoFileProcessor {
             protoPackage,
             javaPackage,
             javaOuterClassname,
+            goPackage,
             fileDescriptor.getSyntax(),
             messages,
             enums,

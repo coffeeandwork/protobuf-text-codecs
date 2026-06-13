@@ -3,6 +3,7 @@ syntax = "proto2";
 package proto2test;
 
 option java_package = "com.example.proto2test";
+option go_package = "smoke/proto2test;proto2test";
 
 // Enum with non-zero default
 enum Priority {

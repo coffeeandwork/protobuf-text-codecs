@@ -46,7 +46,7 @@ jobs:
           - { lang: swift, os: macos-latest }
           - { lang: csharp, os: ubuntu-latest }
           - { lang: typescript, os: ubuntu-latest }
-          - { lang: go, os: ubuntu-latest, broken: true }
+          - { lang: go, os: ubuntu-latest }
           - { lang: rust, os: ubuntu-latest, broken: true }
           - { lang: objc, os: macos-latest }
           - { lang: zig, os: ubuntu-latest }

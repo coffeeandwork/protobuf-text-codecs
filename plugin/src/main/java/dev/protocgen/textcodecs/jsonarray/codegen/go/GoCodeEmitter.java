@@ -20,6 +20,7 @@ import dev.protocgen.textcodecs.jsonarray.model.ProtoEnum;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoFile;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoMessage;
+import dev.protocgen.textcodecs.jsonarray.model.TypeRegistry;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -42,7 +43,8 @@ public class GoCodeEmitter {
   }
 
   /** Generate a complete Go source file for a message. */
-  public String emitMessage(ProtoMessage message, ProtoFile file) {
+  public String emitMessage(ProtoMessage message, ProtoFile file, TypeRegistry registry) {
+    typeMapper.setContext(file, registry);
     CodeWriter w = new CodeWriter("\t"); // Go uses tabs
     String pkg = nameResolver.resolvePackage(file);
     String structName = nameResolver.messageClassName(message.getName());
@@ -51,13 +53,18 @@ public class GoCodeEmitter {
     w.line("package %s", pkg);
     w.blankLine();
 
-    // Imports - collect needed imports
-    Set<String> imports = collectImports(message);
-    if (!imports.isEmpty()) {
+    // Imports - stdlib first (bare paths wrapped in quotes), then cross-package module specs
+    // (which collectCrossPackageImports already returns fully formatted, with aliases as needed).
+    Set<String> importSpecs = new LinkedHashSet<>();
+    for (String imp : collectImports(message)) {
+      importSpecs.add("\"" + imp + "\"");
+    }
+    importSpecs.addAll(GoImportUtil.collectCrossPackageImports(message, file, registry));
+    if (!importSpecs.isEmpty()) {
       w.line("import (");
       w.indent();
-      for (String imp : imports) {
-        w.line("\"%s\"", imp);
+      for (String spec : importSpecs) {
+        w.line("%s", spec);
       }
       w.dedent();
       w.line(")");
@@ -89,7 +96,8 @@ public class GoCodeEmitter {
   }
 
   /** Generate a complete Go source file for a top-level enum. */
-  public String emitTopLevelEnum(ProtoEnum protoEnum, ProtoFile file) {
+  public String emitTopLevelEnum(ProtoEnum protoEnum, ProtoFile file, TypeRegistry registry) {
+    typeMapper.setContext(file, registry);
     CodeWriter w = new CodeWriter("\t");
     String pkg = nameResolver.resolvePackage(file);
 
@@ -226,8 +234,9 @@ public class GoCodeEmitter {
       if (isInt64Kind(t)) {
         return true;
       }
-      if (field.isMap()
-          && (isInt64Kind(field.getMapKeyType()) || isInt64Kind(field.getMapValueType()))) {
+      // Map keys are written/read directly (never via strconv); only int64 map *values* are
+      // serialized as strings through strconv.
+      if (field.isMap() && isInt64Kind(field.getMapValueType())) {
         return true;
       }
     }
