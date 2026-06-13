@@ -41,7 +41,11 @@ public class GoDeserializerGenerator {
         "func Deserialize" + structName + "(arr []any) (*" + structName + ", error)",
         () -> {
           w.line("obj := &%s{}", structName);
-          w.line("size := len(arr)");
+          // size is only referenced by field-presence guards; skip it for field-less messages
+          // to avoid an "declared and not used" compile error.
+          if (!message.getFields().isEmpty()) {
+            w.line("size := len(arr)");
+          }
 
           int maxPos = message.getMaxFieldNumber();
           for (int pos = 0; pos < maxPos; pos++) {
@@ -197,11 +201,11 @@ public class GoDeserializerGenerator {
 
   private void emitMessageDeserialize(
       CodeWriter w, ProtoField field, String goField, String elemExpr) {
-    String msgType = typeMapper.simpleTypeName(field.getTypeReference());
+    String deserializeFn = deserializeFn(field.getTypeReference());
     w.block(
         "if subArr, ok := " + elemExpr + ".([]any); ok",
         () -> {
-          w.line("sub, err := Deserialize%s(subArr)", msgType);
+          w.line("sub, err := %s(subArr)", deserializeFn);
           w.block(
               "if err == nil",
               () -> {
@@ -222,7 +226,7 @@ public class GoDeserializerGenerator {
               () -> {
                 if (field.getKind() == ProtoField.FieldKind.MESSAGE
                     || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
-                  String msgType = typeMapper.simpleTypeName(field.getTypeReference());
+                  String deserializeFn = deserializeFn(field.getTypeReference());
                   w.blockContinue(
                       "if elem == nil",
                       () -> {
@@ -232,7 +236,7 @@ public class GoDeserializerGenerator {
                   w.block(
                       "else if subArr, ok := elem.([]any); ok",
                       () -> {
-                        w.line("sub, err := Deserialize%s(subArr)", msgType);
+                        w.line("sub, err := %s(subArr)", deserializeFn);
                         w.block(
                             "if err == nil",
                             () -> {
@@ -411,6 +415,16 @@ public class GoDeserializerGenerator {
   }
 
   /**
+   * The package-qualified name of the Deserialize function for a message type. The package prefix
+   * precedes "Deserialize" (e.g. "example.DeserializeAddress") so cross-package references resolve.
+   */
+  private String deserializeFn(String typeReference) {
+    return typeMapper.qualifier(typeReference)
+        + "Deserialize"
+        + GoTypeMapper.flatName(typeReference);
+  }
+
+  /**
    * Emit safe scalar deserialization using the ok-pattern type assertion. For non-int64 scalar
    * fields in the top-level emitScalarDeserialize flow.
    */
@@ -496,6 +510,7 @@ public class GoDeserializerGenerator {
     if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_MESSAGE) {
       // This is a simplified inline; complex deserialization would need error handling
       String msgType = typeMapper.simpleTypeName(field.getMapValueTypeReference());
+      String deserializeFn = deserializeFn(field.getMapValueTypeReference());
       return "func() *"
           + msgType
           + " { if "
@@ -504,8 +519,8 @@ public class GoDeserializerGenerator {
           + "if subArr, ok := "
           + valueExpr
           + ".([]any); ok { "
-          + "sub, _ := Deserialize"
-          + msgType
+          + "sub, _ := "
+          + deserializeFn
           + "(subArr); return sub }; return nil }()";
     }
     if (field.getMapValueType() == FieldDescriptorProto.Type.TYPE_ENUM) {

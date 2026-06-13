@@ -3,6 +3,7 @@ syntax = "proto3";
 package edgecases;
 
 option java_package = "com.example.edgecases";
+option go_package = "smoke/edgecases;edgecases";
 
 import "address.proto";
 

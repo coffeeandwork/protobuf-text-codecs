@@ -24,6 +24,7 @@ public class ProtoFile {
   private final String protoPackage;
   private final String javaPackage; // from java_package option, may be null
   private final String javaOuterClassname; // from java_outer_classname option, may be null
+  private final String goPackage; // from go_package option, may be null
   private final String syntax; // "proto2" or "proto3"
   private final List<ProtoMessage> messages;
   private final List<ProtoEnum> enums;
@@ -38,10 +39,33 @@ public class ProtoFile {
       List<ProtoMessage> messages,
       List<ProtoEnum> enums,
       List<String> dependencies) {
+    this(
+        fileName,
+        protoPackage,
+        javaPackage,
+        javaOuterClassname,
+        null,
+        syntax,
+        messages,
+        enums,
+        dependencies);
+  }
+
+  public ProtoFile(
+      String fileName,
+      String protoPackage,
+      String javaPackage,
+      String javaOuterClassname,
+      String goPackage,
+      String syntax,
+      List<ProtoMessage> messages,
+      List<ProtoEnum> enums,
+      List<String> dependencies) {
     this.fileName = fileName;
     this.protoPackage = protoPackage;
     this.javaPackage = javaPackage;
     this.javaOuterClassname = javaOuterClassname;
+    this.goPackage = goPackage;
     this.syntax = syntax;
     this.messages = List.copyOf(messages);
     this.enums = List.copyOf(enums);
@@ -62,6 +86,10 @@ public class ProtoFile {
 
   public String getJavaOuterClassname() {
     return javaOuterClassname;
+  }
+
+  public String getGoPackage() {
+    return goPackage;
   }
 
   public String getSyntax() {

@@ -3,6 +3,7 @@ syntax = "proto3";
 package example;
 
 option java_package = "com.example";
+option go_package = "smoke/example;example";
 
 import "address.proto";
 

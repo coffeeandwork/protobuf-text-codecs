@@ -13,7 +13,7 @@ type Address struct {
 	Zip int32
 }
 
-func (m *Address) countPbtkFields() int {
+func (m *Address) CountPbtkFields() int {
 	count := 0
 	count++
 	count++
@@ -22,7 +22,7 @@ func (m *Address) countPbtkFields() int {
 	return count
 }
 
-func (m *Address) appendPbtkFields(sb *strings.Builder) {
+func (m *Address) AppendPbtkFields(sb *strings.Builder) {
 	sb.WriteString("!1s")
 	sb.WriteString(url.QueryEscape(m.Street))
 	sb.WriteString("!2s")
@@ -35,11 +35,11 @@ func (m *Address) appendPbtkFields(sb *strings.Builder) {
 
 func (m *Address) Marshal() ([]byte, error) {
 	var sb strings.Builder
-	m.appendPbtkFields(&sb)
+	m.AppendPbtkFields(&sb)
 	return []byte(sb.String()), nil
 }
 
-func parseAddressPbtkTokens(tokens []string, fieldCount int, offset *int) *Address {
+func ParseAddressPbtkTokens(tokens []string, fieldCount int, offset *int) *Address {
 	obj := &Address{}
 	consumed := 0
 	for consumed < fieldCount && *offset < len(tokens) {
@@ -86,14 +86,14 @@ func (m *Address) Unmarshal(data []byte) error {
 	if input == "" {
 		return nil
 	}
-	tokens := pbtkTokenize(input)
+	tokens := pbtkTokenizeAddress(input)
 	offset := 0
-	parsed := parseAddressPbtkTokens(tokens, len(tokens), &offset)
+	parsed := ParseAddressPbtkTokens(tokens, len(tokens), &offset)
 	*m = *parsed
 	return nil
 }
 
-func pbtkTokenize(input string) []string {
+func pbtkTokenizeAddress(input string) []string {
 	var tokens []string
 	i := 0
 	if len(input) > 0 && input[0] == '!' {

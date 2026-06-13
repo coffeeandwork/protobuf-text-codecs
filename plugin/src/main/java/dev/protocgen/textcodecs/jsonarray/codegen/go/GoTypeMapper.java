@@ -18,10 +18,30 @@ package dev.protocgen.textcodecs.jsonarray.codegen.go;
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import dev.protocgen.textcodecs.jsonarray.codegen.TypeMapper;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoField;
+import dev.protocgen.textcodecs.jsonarray.model.ProtoFile;
+import dev.protocgen.textcodecs.jsonarray.model.TypeRegistry;
 import java.nio.charset.StandardCharsets;
 
 /** Maps proto types to Go types, pointer types, and default value expressions. */
 public class GoTypeMapper implements TypeMapper {
+
+  // Per-file context used to qualify cross-package type references. Set before emitting each file.
+  private ProtoFile currentFile;
+  private TypeRegistry registry;
+
+  /**
+   * Establish the file/registry context for cross-package qualification. Must be called before
+   * emitting a file; type references in other packages are prefixed with their Go package name.
+   */
+  public void setContext(ProtoFile currentFile, TypeRegistry registry) {
+    this.currentFile = currentFile;
+    this.registry = registry;
+  }
+
+  /** The package qualifier prefix (e.g. {@code "example."}) for a type reference, or empty. */
+  public String qualifier(String protoFullName) {
+    return GoImportUtil.qualifier(protoFullName, currentFile, registry);
+  }
 
   @Override
   public String languageType(ProtoField field) {
@@ -217,14 +237,29 @@ public class GoTypeMapper implements TypeMapper {
   }
 
   /**
-   * Convert a fully-qualified proto type reference to the generated Go type name. Nested types are
-   * flattened with underscores, matching the declarations the emitter produces. E.g.,
-   * ".example.Address" -> "Address", ".example.KitchenSink.Status" -> "KitchenSink_Status".
+   * Convert a fully-qualified proto type reference to the generated Go type name, qualified with
+   * its Go package name when the type lives in a different package than the current file. E.g.,
+   * from the {@code example} package ".example.Address" -> "Address"; from another package ->
+   * "example.Address".
+   */
+  public String simpleTypeName(String protoFullName) {
+    String flat = flatName(protoFullName);
+    if (flat.equals("interface{}")) {
+      return flat;
+    }
+    return qualifier(protoFullName) + flat;
+  }
+
+  /**
+   * Flatten a fully-qualified proto type reference to its generated Go type name without any
+   * package qualifier. Nested types are flattened with underscores, matching the declarations the
+   * emitter produces. E.g. ".example.Address" -> "Address", ".example.KitchenSink.Status" ->
+   * "KitchenSink_Status".
    *
    * <p>Package segments are distinguished from type segments by case: proto style mandates
    * lowercase package names and PascalCase type names.
    */
-  String simpleTypeName(String protoFullName) {
+  public static String flatName(String protoFullName) {
     if (protoFullName == null || protoFullName.isEmpty()) {
       return "interface{}";
     }

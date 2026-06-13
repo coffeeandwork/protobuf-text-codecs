@@ -19,7 +19,7 @@ import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse;
 import dev.protocgen.textcodecs.jsonarray.CodeWriter;
 import dev.protocgen.textcodecs.jsonarray.codegen.LanguageGenerator;
-import dev.protocgen.textcodecs.jsonarray.codegen.ProtoTypeUtil;
+import dev.protocgen.textcodecs.jsonarray.codegen.go.GoImportUtil;
 import dev.protocgen.textcodecs.jsonarray.codegen.go.GoNameResolver;
 import dev.protocgen.textcodecs.jsonarray.codegen.go.GoTypeMapper;
 import dev.protocgen.textcodecs.jsonarray.model.ProtoEnum;
@@ -90,12 +90,23 @@ public class PbtkGoGenerator implements LanguageGenerator {
   }
 
   /**
-   * Extract the simple type name from a fully-qualified proto type reference. E.g.,
-   * ".example.sub.Address" -> "Address"
+   * The package-qualified Go type name for a proto type reference (e.g. "Address",
+   * "KitchenSink_Status", or "example.Address" when defined in a different package). Relies on the
+   * cross-package context set on the shared type mapper.
    */
-  private static String simpleTypeName(String protoFullName) {
-    String simple = ProtoTypeUtil.simpleTypeName(protoFullName);
-    return simple != null ? simple : "interface{}";
+  private String typeName(String protoFullName) {
+    return typeMapper.simpleTypeName(protoFullName);
+  }
+
+  /**
+   * The package-qualified name of the {@code Parse<Type>PbtkTokens} function for a message type.
+   * The package prefix precedes "Parse" so cross-package references resolve.
+   */
+  private String parseFn(String protoFullName) {
+    return typeMapper.qualifier(protoFullName)
+        + "Parse"
+        + GoTypeMapper.flatName(protoFullName)
+        + "PbtkTokens";
   }
 
   @Override
@@ -104,7 +115,7 @@ public class PbtkGoGenerator implements LanguageGenerator {
 
     for (ProtoMessage message : file.getMessages()) {
       nameResolver.validateFieldNames(message.getFields());
-      String sourceCode = emitMessage(message, file);
+      String sourceCode = emitMessage(message, file, registry);
       String outputPath = nameResolver.outputFilePath(file, message.getName());
 
       result.add(
@@ -115,7 +126,7 @@ public class PbtkGoGenerator implements LanguageGenerator {
     }
 
     for (ProtoEnum protoEnum : file.getEnums()) {
-      String sourceCode = emitTopLevelEnum(protoEnum, file);
+      String sourceCode = emitTopLevelEnum(protoEnum, file, registry);
       String outputPath = nameResolver.outputFilePath(file, protoEnum.getName());
 
       result.add(
@@ -133,22 +144,30 @@ public class PbtkGoGenerator implements LanguageGenerator {
   // ---------------------------------------------------------------------------
 
   /** Generate a complete Go source file for a message. */
-  private String emitMessage(ProtoMessage message, ProtoFile file) {
+  private String emitMessage(ProtoMessage message, ProtoFile file, TypeRegistry registry) {
+    typeMapper.setContext(file, registry);
     CodeWriter w = new CodeWriter("\t"); // Go uses tabs
     String pkg = nameResolver.resolvePackage(file);
     String structName = nameResolver.messageClassName(message.getName());
+    // One tokenizer per file, named after the top-level struct so it never collides with the
+    // tokenizers other files in the same package emit.
+    String tokenizerName = "pbtkTokenize" + structName;
 
     // Package declaration
     w.line("package %s", pkg);
     w.blankLine();
 
-    // Imports
-    Set<String> imports = collectImports(message);
-    if (!imports.isEmpty()) {
+    // Imports - stdlib first, then cross-package module specs (already fully formatted).
+    Set<String> importSpecs = new LinkedHashSet<>();
+    for (String imp : collectImports(message)) {
+      importSpecs.add("\"" + imp + "\"");
+    }
+    importSpecs.addAll(GoImportUtil.collectCrossPackageImports(message, file, registry));
+    if (!importSpecs.isEmpty()) {
       w.line("import (");
       w.indent();
-      for (String imp : imports) {
-        w.line("\"%s\"", imp);
+      for (String spec : importSpecs) {
+        w.line("%s", spec);
       }
       w.dedent();
       w.line(")");
@@ -158,17 +177,9 @@ public class PbtkGoGenerator implements LanguageGenerator {
     // Struct declaration
     emitStruct(w, message, structName);
 
-    // Nested message structs (Go doesn't have nested types, so they're top-level)
-    for (ProtoMessage nested : message.getNestedMessages()) {
-      w.blankLine();
-      String nestedName = structName + "_" + nameResolver.messageClassName(nested.getName());
-      emitStruct(w, nested, nestedName);
-      emitCountPbtkFields(w, nested, nestedName);
-      emitAppendPbtkFields(w, nested, nestedName);
-      emitMarshal(w, nestedName);
-      emitParsePbtkTokens(w, nested, nestedName);
-      emitUnmarshal(w, nestedName);
-    }
+    // Nested message structs at any depth (Go has no nested types, so they're emitted
+    // top-level with underscore-flattened names).
+    emitNestedStructs(w, message, structName, tokenizerName);
 
     // Nested enums
     for (ProtoEnum protoEnum : message.getEnums()) {
@@ -185,13 +196,17 @@ public class PbtkGoGenerator implements LanguageGenerator {
 
     // Deserialization methods
     emitParsePbtkTokens(w, message, structName);
-    emitUnmarshal(w, structName);
+    emitUnmarshal(w, structName, tokenizerName);
+
+    // A single tokenizer for the whole file, shared by every Unmarshal above.
+    emitTokenizer(w, tokenizerName);
 
     return w.toString();
   }
 
   /** Generate a complete Go source file for a top-level enum. */
-  private String emitTopLevelEnum(ProtoEnum protoEnum, ProtoFile file) {
+  private String emitTopLevelEnum(ProtoEnum protoEnum, ProtoFile file, TypeRegistry registry) {
+    typeMapper.setContext(file, registry);
     CodeWriter w = new CodeWriter("\t");
     String pkg = nameResolver.resolvePackage(file);
 
@@ -200,6 +215,26 @@ public class PbtkGoGenerator implements LanguageGenerator {
 
     emitEnum(w, protoEnum, "");
     return w.toString();
+  }
+
+  /** Recursively emit nested message structs and their methods, deepest names flattened. */
+  private void emitNestedStructs(
+      CodeWriter w, ProtoMessage message, String structName, String tokenizerName) {
+    for (ProtoMessage nested : message.getNestedMessages()) {
+      w.blankLine();
+      String nestedName = structName + "_" + nameResolver.messageClassName(nested.getName());
+      emitStruct(w, nested, nestedName);
+      emitOneofConstants(w, nested, nestedName);
+      emitCountPbtkFields(w, nested, nestedName);
+      emitAppendPbtkFields(w, nested, nestedName);
+      emitMarshal(w, nestedName);
+      emitParsePbtkTokens(w, nested, nestedName);
+      emitUnmarshal(w, nestedName, tokenizerName);
+      emitNestedStructs(w, nested, nestedName, tokenizerName);
+      for (ProtoEnum protoEnum : nested.getEnums()) {
+        emitEnum(w, protoEnum, nestedName);
+      }
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -225,29 +260,9 @@ public class PbtkGoGenerator implements LanguageGenerator {
 
   private String resolveFieldType(
       ProtoField field, String parentStructName, ProtoMessage parentMessage) {
-    if (isNestedMessageRef(field, parentMessage)) {
-      String nestedSimpleName = simpleTypeName(field.getTypeReference());
-      String flattenedName = parentStructName + "_" + nestedSimpleName;
-      if (field.isRepeated()) {
-        return "[]*" + flattenedName;
-      }
-      return "*" + flattenedName;
-    }
+    // GoTypeMapper.languageType already flattens nested type references (e.g.
+    // KitchenSink_InnerMessage) and qualifies cross-package references with their Go package name.
     return typeMapper.languageType(field);
-  }
-
-  private boolean isNestedMessageRef(ProtoField field, ProtoMessage parentMessage) {
-    if (field.getKind() != ProtoField.FieldKind.MESSAGE
-        && field.getKind() != ProtoField.FieldKind.WELL_KNOWN_TYPE) {
-      return false;
-    }
-    if (field.getTypeReference() == null) return false;
-    for (ProtoMessage nested : parentMessage.getNestedMessages()) {
-      if (field.getTypeReference().endsWith("." + nested.getName())) {
-        return true;
-      }
-    }
-    return false;
   }
 
   private void emitEnum(CodeWriter w, ProtoEnum protoEnum, String parentPrefix) {
@@ -298,11 +313,11 @@ public class PbtkGoGenerator implements LanguageGenerator {
   // Serialization: Marshal
   // ---------------------------------------------------------------------------
 
-  /** Emit countPbtkFields method: counts how many tokens this message will produce. */
+  /** Emit CountPbtkFields method: counts how many tokens this message will produce. */
   private void emitCountPbtkFields(CodeWriter w, ProtoMessage message, String structName) {
     w.blankLine();
     w.block(
-        "func (m *" + structName + ") countPbtkFields() int",
+        "func (m *" + structName + ") CountPbtkFields() int",
         () -> {
           w.line("count := 0");
           for (ProtoField field : message.getFields()) {
@@ -325,7 +340,7 @@ public class PbtkGoGenerator implements LanguageGenerator {
               w.block(
                   "if " + goField + " != nil",
                   () -> {
-                    w.line("count += 1 + %s.countPbtkFields()", goField);
+                    w.line("count += 1 + %s.CountPbtkFields()", goField);
                   });
             } else {
               w.line("count++");
@@ -370,11 +385,11 @@ public class PbtkGoGenerator implements LanguageGenerator {
     }
   }
 
-  /** Emit appendPbtkFields method: appends all field tokens to a strings.Builder. */
+  /** Emit AppendPbtkFields method: appends all field tokens to a strings.Builder. */
   private void emitAppendPbtkFields(CodeWriter w, ProtoMessage message, String structName) {
     w.blankLine();
     w.block(
-        "func (m *" + structName + ") appendPbtkFields(sb *strings.Builder)",
+        "func (m *" + structName + ") AppendPbtkFields(sb *strings.Builder)",
         () -> {
           for (ProtoField field : message.getFields()) {
             emitFieldSerialize(w, field);
@@ -427,10 +442,13 @@ public class PbtkGoGenerator implements LanguageGenerator {
     String typeChar = pbtkTypeChar(type);
 
     if (field.isProto3Optional()) {
+      // Optional bytes are stored as a plain nilable []byte slice (not a pointer), so they are
+      // used directly; every other optional scalar is a pointer and must be dereferenced.
+      String valueExpr = type == FieldDescriptorProto.Type.TYPE_BYTES ? goField : "*" + goField;
       w.block(
           "if " + goField + " != nil",
           () -> {
-            emitScalarAppend(w, type, "*" + goField, fieldNum, typeChar);
+            emitScalarAppend(w, type, valueExpr, fieldNum, typeChar);
           });
       return;
     }
@@ -519,8 +537,8 @@ public class PbtkGoGenerator implements LanguageGenerator {
         "if " + goField + " != nil",
         () -> {
           w.line("sb.WriteString(\"!%dm\")", fieldNum);
-          w.line("sb.WriteString(strconv.Itoa(%s.countPbtkFields()))", goField);
-          w.line("%s.appendPbtkFields(sb)", goField);
+          w.line("sb.WriteString(strconv.Itoa(%s.CountPbtkFields()))", goField);
+          w.line("%s.AppendPbtkFields(sb)", goField);
         });
   }
 
@@ -535,8 +553,8 @@ public class PbtkGoGenerator implements LanguageGenerator {
                 "if " + itemVar + " != nil",
                 () -> {
                   w.line("sb.WriteString(\"!%dm\")", fieldNum);
-                  w.line("sb.WriteString(strconv.Itoa(%s.countPbtkFields()))", itemVar);
-                  w.line("%s.appendPbtkFields(sb)", itemVar);
+                  w.line("sb.WriteString(strconv.Itoa(%s.CountPbtkFields()))", itemVar);
+                  w.line("%s.AppendPbtkFields(sb)", itemVar);
                 });
           } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
             w.line("sb.WriteString(\"!%de\")", fieldNum);
@@ -608,8 +626,8 @@ public class PbtkGoGenerator implements LanguageGenerator {
           "if " + valExpr + " != nil",
           () -> {
             w.line("sb.WriteString(\"!2m\")");
-            w.line("sb.WriteString(strconv.Itoa(%s.countPbtkFields()))", valExpr);
-            w.line("%s.appendPbtkFields(sb)", valExpr);
+            w.line("sb.WriteString(strconv.Itoa(%s.CountPbtkFields()))", valExpr);
+            w.line("%s.AppendPbtkFields(sb)", valExpr);
           });
       return;
     }
@@ -680,7 +698,7 @@ public class PbtkGoGenerator implements LanguageGenerator {
         "func (m *" + structName + ") Marshal() ([]byte, error)",
         () -> {
           w.line("var sb strings.Builder");
-          w.line("m.appendPbtkFields(&sb)");
+          w.line("m.AppendPbtkFields(&sb)");
           w.line("return []byte(sb.String()), nil");
         });
   }
@@ -689,11 +707,14 @@ public class PbtkGoGenerator implements LanguageGenerator {
   // Deserialization: Unmarshal
   // ---------------------------------------------------------------------------
 
-  /** Emit the internal parsePbtkTokens function that processes a token slice. */
+  /**
+   * Emit the Parse&lt;Type&gt;PbtkTokens function that processes a token slice. Exported so other
+   * packages can deserialize nested/cross-package message fields.
+   */
   private void emitParsePbtkTokens(CodeWriter w, ProtoMessage message, String structName) {
     w.blankLine();
     w.block(
-        "func parse"
+        "func Parse"
             + structName
             + "PbtkTokens(tokens []string, fieldCount int, offset *int) *"
             + structName,
@@ -717,7 +738,12 @@ public class PbtkGoGenerator implements LanguageGenerator {
                       w.line("continue");
                     });
                 w.line("fieldNum, _ := strconv.Atoi(token[:numEnd])");
-                w.line("value := token[numEnd+1:]");
+                // Field cases read `value`; messages with no fields would leave it unused.
+                if (message.getFields().isEmpty()) {
+                  w.line("_ = token[numEnd+1:]");
+                } else {
+                  w.line("value := token[numEnd+1:]");
+                }
 
                 // Switch on field number
                 w.block(
@@ -852,31 +878,35 @@ public class PbtkGoGenerator implements LanguageGenerator {
   }
 
   private void emitEnumDeserialize(CodeWriter w, ProtoField field, String goField) {
-    String enumType = simpleTypeName(field.getTypeReference());
+    String enumType = typeName(field.getTypeReference());
     w.line("tmpEnumVal, _ := strconv.ParseInt(value, 10, 32)");
-    w.line("%s = %s(int32(tmpEnumVal))", goField, enumType);
+    if (field.isProto3Optional()) {
+      // Optional enums are pointer-typed for presence tracking.
+      w.line("tmpEnum := %s(int32(tmpEnumVal))", enumType);
+      w.line("%s = &tmpEnum", goField);
+    } else {
+      w.line("%s = %s(int32(tmpEnumVal))", goField, enumType);
+    }
   }
 
   private void emitMessageDeserialize(CodeWriter w, ProtoField field, String goField) {
-    String msgType = simpleTypeName(field.getTypeReference());
+    String parseFn = parseFn(field.getTypeReference());
     w.line("subCount, _ := strconv.Atoi(value)");
     w.line("*offset++");
-    w.line("%s = parse%sPbtkTokens(tokens, subCount, offset)", goField, msgType);
+    w.line("%s = %s(tokens, subCount, offset)", goField, parseFn);
     w.line("*offset--"); // compensate for the outer *offset++ after break
   }
 
   private void emitRepeatedDeserialize(CodeWriter w, ProtoField field, String goField) {
     if (field.getKind() == ProtoField.FieldKind.MESSAGE
         || field.getKind() == ProtoField.FieldKind.WELL_KNOWN_TYPE) {
-      String msgType = simpleTypeName(field.getTypeReference());
+      String parseFn = parseFn(field.getTypeReference());
       w.line("subCount, _ := strconv.Atoi(value)");
       w.line("*offset++");
-      w.line(
-          "%s = append(%s, parse%sPbtkTokens(tokens, subCount, offset))",
-          goField, goField, msgType);
+      w.line("%s = append(%s, %s(tokens, subCount, offset))", goField, goField, parseFn);
       w.line("*offset--");
     } else if (field.getKind() == ProtoField.FieldKind.ENUM) {
-      String enumType = simpleTypeName(field.getTypeReference());
+      String enumType = typeName(field.getTypeReference());
       w.line("tmpEnumVal, _ := strconv.ParseInt(value, 10, 32)");
       w.line("%s = append(%s, %s(int32(tmpEnumVal)))", goField, goField, enumType);
     } else {
@@ -978,10 +1008,10 @@ public class PbtkGoGenerator implements LanguageGenerator {
   private void emitMapValueVarDecl(CodeWriter w, ProtoField field) {
     FieldDescriptorProto.Type valType = field.getMapValueType();
     if (valType == FieldDescriptorProto.Type.TYPE_MESSAGE) {
-      String msgType = simpleTypeName(field.getMapValueTypeReference());
+      String msgType = typeName(field.getMapValueTypeReference());
       w.line("var mapVal *%s", msgType);
     } else if (valType == FieldDescriptorProto.Type.TYPE_ENUM) {
-      String enumType = simpleTypeName(field.getMapValueTypeReference());
+      String enumType = typeName(field.getMapValueTypeReference());
       w.line("var mapVal %s", enumType);
     } else {
       String goType = typeMapper.scalarType(valType);
@@ -1020,13 +1050,13 @@ public class PbtkGoGenerator implements LanguageGenerator {
   private void emitMapValueParse(CodeWriter w, ProtoField field, String valExpr) {
     FieldDescriptorProto.Type valType = field.getMapValueType();
     if (valType == FieldDescriptorProto.Type.TYPE_MESSAGE) {
-      String msgType = simpleTypeName(field.getMapValueTypeReference());
+      String parseFn = parseFn(field.getMapValueTypeReference());
       w.line("valSubCount, _ := strconv.Atoi(%s)", valExpr);
       w.line("*offset++");
-      w.line("mapVal = parse%sPbtkTokens(tokens, valSubCount, offset)", msgType);
+      w.line("mapVal = %s(tokens, valSubCount, offset)", parseFn);
       w.line("*offset--");
     } else if (valType == FieldDescriptorProto.Type.TYPE_ENUM) {
-      String enumType = simpleTypeName(field.getMapValueTypeReference());
+      String enumType = typeName(field.getMapValueTypeReference());
       w.line("tmpValEnum, _ := strconv.ParseInt(%s, 10, 32)", valExpr);
       w.line("mapVal = %s(int32(tmpValEnum))", enumType);
     } else {
@@ -1069,7 +1099,7 @@ public class PbtkGoGenerator implements LanguageGenerator {
   }
 
   /** Emit the public Unmarshal method on receiver: takes []byte, returns error. */
-  private void emitUnmarshal(CodeWriter w, String structName) {
+  private void emitUnmarshal(CodeWriter w, String structName, String tokenizerName) {
     w.blankLine();
     w.block(
         "func (m *" + structName + ") Unmarshal(data []byte) error",
@@ -1077,24 +1107,19 @@ public class PbtkGoGenerator implements LanguageGenerator {
           w.line("input := string(data)");
           w.block("if input == \"\"", () -> w.line("return nil"));
           // Tokenize: split on '!'
-          w.line("tokens := pbtkTokenize(input)");
+          w.line("tokens := %s(input)", tokenizerName);
           w.line("offset := 0");
-          w.line("parsed := parse%sPbtkTokens(tokens, len(tokens), &offset)", structName);
+          w.line("parsed := Parse%sPbtkTokens(tokens, len(tokens), &offset)", structName);
           w.line("*m = *parsed");
           w.line("return nil");
         });
-
-    // Only emit the tokenizer once: check if it's the top-level call by including
-    // it alongside the public deserialize method. We use a package-level function
-    // that Go will deduplicate if multiple messages exist (same signature).
-    emitTokenizer(w);
   }
 
-  /** Emit the pbtkTokenize helper function. */
-  private void emitTokenizer(CodeWriter w) {
+  /** Emit the per-file tokenizer helper function under its file-unique name. */
+  private void emitTokenizer(CodeWriter w, String tokenizerName) {
     w.blankLine();
     w.block(
-        "func pbtkTokenize(input string) []string",
+        "func " + tokenizerName + "(input string) []string",
         () -> {
           w.line("var tokens []string");
           w.line("i := 0");
