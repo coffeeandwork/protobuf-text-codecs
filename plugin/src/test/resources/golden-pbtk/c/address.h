@@ -15,12 +15,13 @@
 extern "C" {
 #endif
 
-typedef struct {
+typedef struct example_Address example_Address;
+struct example_Address {
   char* street;
   char* city;
   char* state;
   int32_t zip;
-} example_Address;
+};
 
 /* pbtk URL serialization */
 char* example_address_pack(const example_Address* msg);
