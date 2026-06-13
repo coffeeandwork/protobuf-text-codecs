@@ -9,7 +9,7 @@ plugins {
 dependencies {
     implementation 'com.google.protobuf:protobuf-java:4.29.3'
 
-    errorprone 'com.google.errorprone:error_prone_core:2.36.0'
+    errorprone 'com.google.errorprone:error_prone_core:2.50.0'
     spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.14.0'
 
     testImplementation 'org.junit.jupiter:junit-jupiter:6.1.0'
