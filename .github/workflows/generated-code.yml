@@ -87,7 +87,7 @@ jobs:
         uses: dart-lang/setup-dart@v1
       - name: Install Kotlin
         if: matrix.lang == 'kotlin'
-        uses: fwilhe2/setup-kotlin@v1
+        uses: fwilhe2/setup-kotlin@v2
       - name: Install PHP
         if: matrix.lang == 'php'
         uses: shivammathur/setup-php@v2
